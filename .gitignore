@@ -1,0 +1,6 @@
+# Ignore PyTorch model files
+*.pth
+
+# Optional: ignore other ML files
+*.pt
+*.h5
