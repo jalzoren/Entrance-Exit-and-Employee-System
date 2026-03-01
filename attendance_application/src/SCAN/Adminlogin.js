@@ -126,8 +126,8 @@ export default function LoginPage() {
     setTimeout(() => { setResetLoading(false); setView("forgot-sent"); }, 2000);
   };
 
-  // ── Navigate to LandingPage ──
-  if (showLanding) return <LandingPage />;
+  // ── Navigate to LandingPage (Employee Scanner) ──
+  if (showLanding) return <LandingPage onNavigateAdmin={() => { setShowLanding(false); setShowAdmin(false); }} />;
 
   // ── Navigate to AdminDashboard ──
   if (showAdmin) return <AdminDashboard />;
