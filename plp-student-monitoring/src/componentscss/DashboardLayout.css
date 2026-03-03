@@ -1,0 +1,62 @@
+/* src/components/DashboardLayout.css */
+
+.dashboard-container {
+  display: flex;
+  min-height: 100vh;
+  background: #f8fafc;
+}
+
+.main-content {
+  flex: 1;
+  margin-left: 72px;               /* collapsed sidebar width */
+  transition: margin-left 0.3s ease;
+}
+
+.sidebar.open + .main-content {
+  margin-left: 260px;              /* open sidebar width */
+}
+
+.page-content {
+  width: 100%;
+  padding: 1.5rem;
+}
+
+/* Make sure content fills full width when sidebar collapsed */
+@media (max-width: 1024px) {
+  .main-content,
+  .sidebar.open + .main-content {
+    margin-left: 0 !important;
+  }
+}
+
+.main-area {
+  flex: 1;
+  margin-left: 72px;            /* collapsed sidebar */
+  transition: margin-left 0.3s ease;
+}
+
+.main-area.sidebar-open {
+  margin-left: 260px;           /* expanded sidebar */
+}
+
+.page-content {
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* Reset margin completely when collapsed or on small screens */
+@media (max-width: 1023px) {
+  .main-area,
+  .main-area.sidebar-open {
+    margin-left: 0 !important;
+  }
+}
+
+.main-content {
+  margin-left: 0;                    /* no margin when closed */
+  transition: margin-left 0.28s ease;
+}
+
+.sidebar.open + .main-content {
+  margin-left: 260px;                /* shift right when open */
+}

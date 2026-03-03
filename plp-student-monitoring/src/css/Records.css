@@ -1,0 +1,452 @@
+/* Records.css - Updated to match Students.css */
+
+:root {
+  --color-bg-main: #fcfbf4;
+  --color-primary: #548772;
+  --color-primary-dark: #01311d;
+  --color-accent: #d99201;
+  --color-accent-hover: #58761b;
+  --color-text-dark: #01311d;
+  --color-text-black: #0f0f0f;
+  --color-text-light: #fafafa;
+  --color-border-light: rgba(0, 0, 0, 0.08);
+  --color-shadow-soft: rgba(0, 0, 0, 0.1);
+  --transition: 0.28s ease;
+}
+
+.records-container {
+  padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+  background-color: var(--color-bg-main);
+  min-height: 100vh;
+}
+
+/* Header Styles - Matching Students.css */
+.header-card {
+  margin-bottom: 10px;
+}
+
+.header-card h1 {
+  color: var(--color-text-dark);
+  font-size: 24px;
+  margin-bottom: 5px;
+}
+
+.subtitle {
+  color: #666;
+  font-size: 14px;
+}
+
+.header-divider {
+  margin: 15px 0;
+  border: none;
+  border-top: 1px solid #eee;
+}
+
+/* Filters Container - Matching Students.css controls */
+.filters-container {
+  background-color: white;
+  padding: 15px 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px var(--color-shadow-soft);
+  margin-bottom: 20px;
+}
+
+.filters-wrapper {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+/* Filter Groups */
+.filter-group {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Adjusted widths for better visibility */
+.year-group {
+  min-width: 140px;
+  width: 140px;
+}
+
+.dept-group {
+  min-width: 250px; /* Increased width for department dropdown */
+  width: 250px;
+}
+
+.action-group {
+  min-width: 140px;
+  width: 140px;
+}
+
+.date-group {
+  min-width: 140px;
+  width: 140px;
+}
+
+/* Filter Select - Matching Students.css */
+.filter-select {
+  padding: 8px 30px 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: white;
+  cursor: pointer;
+  font-size: 13px;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 10px;
+  width: 100%;
+  color: var(--color-text-dark);
+  transition: var(--transition);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.filter-select:hover,
+.filter-select:focus {
+  border-color: var(--color-primary-dark);
+  outline: none;
+}
+
+/* Dropdown option styling */
+.filter-select option {
+  white-space: normal;
+  word-wrap: break-word;
+  padding: 8px;
+  font-size: 13px;
+  max-width: 300px;
+}
+
+/* Search Input - Matching Students.css */
+.search-group {
+  flex: 1;
+  min-width: 200px;
+}
+
+.search-input {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 13px;
+  width: 100%;
+  color: var(--color-text-dark);
+  transition: var(--transition);
+}
+
+.search-input:hover,
+.search-input:focus {
+  border-color: var(--color-primary-dark);
+  outline: none;
+}
+
+/* Button Group */
+.button-group {
+  min-width: 150px;
+}
+
+.generate-report-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  background-color: var(--color-primary-dark);
+  color: white;
+  transition: var(--transition);
+  white-space: nowrap;
+  width: 100%;
+  justify-content: center;
+}
+
+.generate-report-btn:hover {
+  background-color: #024d2c;
+}
+
+/* Table Styles - Matching Students.css */
+.table-container {
+  background-color: white;
+  border-radius: 8px;
+  overflow-x: auto;
+  box-shadow: 0 2px 4px var(--color-shadow-soft);
+  margin-bottom: 20px;
+}
+
+.records-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  min-width: 1000px;
+}
+
+.records-table thead {
+  background-color: var(--color-primary-dark);
+}
+
+.records-table th {
+  padding: 12px 15px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 14px;
+  color: white;
+  white-space: nowrap;
+}
+
+.records-table tbody tr {
+  border-bottom: 1px solid #e9ecef;
+}
+
+.records-table tbody tr:hover {
+  background-color: #f8f9fa;
+  cursor: pointer;
+}
+
+.records-table td {
+  padding: 12px 15px;
+  font-size: 14px;
+  color: var(--color-text-black);
+}
+
+/* Action Badge - Matching Students.css status-badge */
+.action-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: center;
+}
+
+.action-badge.entry {
+  background-color: #d4edda;
+  color: var(--color-primary-dark);
+}
+
+.action-badge.exit {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+/* Pagination Styles - Matching Students.css */
+.pagination-container {
+  margin-top: 20px;
+  padding: 10px 0;
+}
+
+.pagination-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.pagination-arrow {
+  padding: 8px 16px;
+  border: 1px solid #ddd;
+  background-color: white;
+  color: #333;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: var(--transition);
+}
+
+.pagination-arrow:hover:not(:disabled) {
+  background-color: #f5f5f5;
+  border-color: var(--color-primary-dark);
+  color: var(--color-primary-dark);
+}
+
+.pagination-arrow:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.arrow-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.pagination-pages {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.pagination-page {
+  min-width: 36px;
+  height: 36px;
+  padding: 0 8px;
+  border: 1px solid #ddd;
+  background-color: white;
+  color: #333;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+}
+
+.pagination-page:hover {
+  background-color: #f5f5f5;
+  border-color: var(--color-primary-dark);
+  color: var(--color-primary-dark);
+}
+
+.pagination-page.active {
+  background-color: var(--color-primary-dark);
+  border-color: var(--color-primary-dark);
+  color: white;
+}
+
+.pagination-ellipsis {
+  color: #666;
+  padding: 0 5px;
+  font-size: 14px;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .dept-group {
+    min-width: 220px;
+    width: 220px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .filters-wrapper {
+    gap: 10px;
+  }
+  
+  .year-group {
+    min-width: 130px;
+    width: 130px;
+  }
+  
+  .dept-group {
+    min-width: 200px;
+    width: 200px;
+  }
+  
+  .action-group,
+  .date-group {
+    min-width: 130px;
+    width: 130px;
+  }
+  
+  .button-group {
+    min-width: 140px;
+  }
+}
+
+@media (max-width: 900px) {
+  .filters-wrapper {
+    justify-content: flex-start;
+  }
+  
+  .dept-group {
+    min-width: 180px;
+    width: 180px;
+  }
+}
+
+@media (max-width: 768px) {
+  .filters-wrapper {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 15px;
+  }
+
+  .year-group,
+  .dept-group,
+  .action-group,
+  .date-group,
+  .search-group,
+  .button-group {
+    width: 100%;
+    min-width: auto;
+  }
+
+  .records-table {
+    font-size: 12px;
+  }
+  
+  .records-table th,
+  .records-table td {
+    padding: 8px 10px;
+  }
+
+  .pagination-wrapper {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .pagination-arrow {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+
+  .pagination-page {
+    min-width: 32px;
+    height: 32px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .records-container {
+    padding: 10px;
+  }
+  
+  .filter-select,
+  .search-input,
+  .generate-report-btn {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+  
+  .records-table {
+    font-size: 11px;
+  }
+  
+  .records-table th,
+  .records-table td {
+    padding: 6px 8px;
+  }
+  
+  .action-badge {
+    padding: 3px 6px;
+    font-size: 10px;
+  }
+
+  .pagination-page {
+    min-width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+
+  .pagination-arrow {
+    width: 100%;
+    justify-content: center;
+  }
+}
+

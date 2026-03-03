@@ -1,0 +1,333 @@
+/* Import Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+
+:root {
+  --report-bg-main: #fcfbf4;
+  --report-primary: #548772;
+  --report-primary-dark: #01311d;
+  --report-accent: #d99201;
+  --report-accent-hover: #58761b;
+  --report-text-dark: #01311d;
+  --report-text-black: #0f0f0f;
+  --report-text-light: #fafafa;
+  --report-border-light: rgba(0, 0, 0, 0.08);
+  --report-shadow-soft: rgba(0, 0, 0, 0.15);
+  --report-red: #FF2E2E;
+  --report-success: #52c41a;
+  --report-error: #ff4d4f;
+  --report-overlay: rgba(0, 0, 0, 0.5);
+  --report-input-border: #e0e0e0;
+  --report-input-bg: #f9f9f9;
+  --report-input-hover-border: #548772;
+  --report-input-hover-bg: #f0f7f4;
+  --report-input-focus-shadow: rgba(84, 135, 114, 0.1);
+  --report-dropdown-arrow: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23548772' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+}
+
+/* Overlay */
+.report-filter-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--report-overlay);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999999;
+  animation: reportFadeIn 0.2s ease;
+}
+
+/* Main Container */
+.report-filter-container {
+  max-width: 600px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  margin: 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px var(--report-shadow-soft);
+  font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  animation: reportSlideIn 0.3s ease;
+  position: relative;
+}
+
+/* Header Section */
+.report-filter-header {
+  display: flex;
+  color: var(--report-text-light);
+  background-color: var(--report-primary-dark);
+  padding: 18px 24px;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+}
+
+.report-filter-title {
+  font-weight: 600;
+  font-size: 1.3rem;
+  letter-spacing: 0.5px;
+  font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.report-filter-close-btn {
+  background: transparent;
+  border: none;
+  font-size: 26px;
+  color: var(--report-text-light);
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  padding: 0;
+}
+
+.report-filter-close-btn:hover {
+  opacity: 0.8;
+}
+
+/* Filter Form */
+.report-filter-form {
+  padding: 32px 30px;
+  background-color: #ffffff;
+}
+
+.report-filter-row {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.report-filter-group {
+  flex: 1 1 calc(50% - 10px);
+  min-width: 200px;
+}
+
+.report-filter-label {
+  display: block;
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+  color: var(--report-text-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* ===== UNIFIED INPUT STYLES ===== */
+.report-filter-field,
+.report-filter-select,
+.report-datepicker-field,
+.react-datepicker__input-container input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1.5px solid var(--report-input-border);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  background-color: var(--report-input-bg);
+  font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: var(--report-text-dark);
+  box-sizing: border-box;
+  height: 50px;
+  line-height: 1.2;
+}
+
+.report-filter-select {
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: var(--report-dropdown-arrow);
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  background-size: 14px;
+  padding-right: 40px;
+}
+
+.report-datepicker-field,
+.react-datepicker__input-container input {
+  cursor: pointer;
+}
+
+/* Hover state for all inputs */
+.report-filter-field:hover,
+.report-filter-select:hover,
+.report-datepicker-field:hover,
+.react-datepicker__input-container input:hover {
+  border-color: var(--report-input-hover-border);
+  background-color: var(--report-input-hover-bg);
+}
+
+/* Focus state for all inputs */
+.report-filter-field:focus,
+.report-filter-select:focus,
+.report-datepicker-field:focus,
+.react-datepicker__input-container input:focus {
+  outline: none;
+  border-color: var(--report-primary);
+  background-color: #ffffff;
+  box-shadow: 0 0 0 3px var(--report-input-focus-shadow);
+}
+
+/* Placeholder styling */
+.report-filter-field::placeholder,
+.report-datepicker-field::placeholder,
+.react-datepicker__input-container input::placeholder {
+  color: #aaa;
+  font-style: italic;
+  font-size: 0.9rem;
+  font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  opacity: 1;
+}
+
+/* DatePicker specific wrapper styles */
+.report-datepicker-wrapper {
+  width: 100%;
+  display: block;
+}
+
+.react-datepicker-wrapper {
+  width: 100%;
+  display: block;
+}
+
+.react-datepicker__input-container {
+  width: 100%;
+  display: block;
+}
+
+/* Full width group for department */
+.report-filter-group.report-full-width {
+  flex: 1 1 100%;
+}
+
+/* Filter Actions */
+.report-filter-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+  margin-top: 32px;
+  border-top: 1px solid var(--report-border-light);
+  padding-top: 24px;
+}
+
+.report-filter-btn {
+  padding: 14px 36px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  height: 50px;
+  min-width: 140px;
+}
+
+.report-filter-btn-cancel {
+  background-color: var(--report-red);
+  color: white;
+}
+
+.report-filter-btn-cancel:hover {
+  background-color: #b30000;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(255, 46, 46, 0.2);
+}
+
+.report-filter-btn-generate {
+  background-color: var(--report-primary-dark);
+  color: var(--report-text-light);
+}
+
+.report-filter-btn-generate:hover {
+  background-color: #024d2c;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(1, 49, 29, 0.2);
+}
+
+.report-filter-btn-generate:active,
+.report-filter-btn-cancel:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+
+/* Animations */
+@keyframes reportFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes reportSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .report-filter-container {
+    width: 95%;
+    margin: 10px;
+  }
+  
+  .report-filter-form {
+    padding: 24px 20px;
+  }
+  
+  .report-filter-row {
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  
+  .report-filter-group {
+    flex: 1 1 100%;
+    min-width: 100%;
+  }
+  
+  .report-filter-group.report-full-width {
+    width: 100%;
+  }
+  
+  .report-filter-actions {
+    flex-direction: column-reverse;
+    gap: 12px;
+  }
+  
+  .report-filter-btn {
+    width: 100%;
+    padding: 14px 20px;
+    min-width: 100%;
+  }
+  
+  .react-datepicker {
+    font-size: 0.9rem !important;
+  }
+  
+  .react-datepicker__day {
+    width: 32px !important;
+    line-height: 32px !important;
+  }
+}
+

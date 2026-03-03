@@ -1,0 +1,284 @@
+/* src/pages/Dashboard.css */
+:root {
+  @import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Oswald:wght@200..700&display=swap");
+  --color-bg-main: #fcfbf4;
+  --color-primary: #548772;
+  --color-primary-dark: #01311d;
+  --color-accent: #d99201;
+  --color-accent-hover: #58761b;
+  --color-text-dark: #01311d;
+  --color-text-black: #0f0f0f;
+
+  --color-text-light: #fafafa;
+  --color-border-light: rgba(0, 0, 0, 0.08);
+  --color-shadow-soft: rgba(0, 0, 0, 0.1);
+
+  --sidebar-collapsed: 0px;
+  --sidebar-open: 260px;
+  --transition: 0.28s ease;
+}
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.dashboard {
+  display: flex;
+  height: 100vh;
+  font-family: Arial, sans-serif;
+}
+
+.camera-side {
+  width: 60%;
+  height: 100vh;
+  background-color: #f3f3f3;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 5px solid white; 
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.3s ease;
+}
+.camera-side {
+  border: 5px solid white;
+  transition: all 0.3s ease;
+}
+
+.camera-side.detected {
+  border-color: #16a34a;
+  box-shadow: 0 0 25px #16a34a;
+}
+
+.camera-side.unauthorized {
+  border-color: #dc2626;
+  box-shadow: 0 0 25px #dc2626;
+}
+
+.fade-text {
+  transition: opacity 0.5s ease;
+}
+
+.fade-in {
+  opacity: 1;
+}
+
+.fade-out {
+  opacity: 0;
+}
+
+.scan-btn {
+  position: absolute;
+  bottom: 20px;
+  padding: 10px 20px;
+  background: #16a34a;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+.camera-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1); 
+}
+
+
+
+.camera-text {
+  position: absolute;
+  top: 20px; 
+  left: 50%; 
+  transform: translateX(-50%);
+  color: var(--color-text-light);
+  opacity: 0.8;
+  font-weight: bold;
+  padding: 8px 16px;
+  border-radius: 4px;
+  text-align: center;
+  font-family: "Montserrat", sans-serif;
+  text-shadow: #0f0f0f 0px 0px 4px;
+background-color: rgba(15, 15, 15, 0.6);
+}
+/* Right side: UI */
+.ui-side {
+  width: 50%;
+  background: url("./src/assets/MAIN.png") no-repeat center center;
+  background-size: cover;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  align-items: center;
+  gap: 5px;
+  align-items: center;
+  
+}
+
+/* School Info stays at top */
+.school-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.school-logo {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.school-text h1 {
+  font-size: 28px;
+  font-weight: 500;
+  margin: 0;
+  color: #fafafa;
+  line-height: 1.15;
+  font-family: "Cinzel", serif;
+  align-items: center;
+}
+
+.school-text p {
+  font-size: 14px;
+  color: #fafafae7;
+  margin: 0;
+  font-family: "Montserrat", sans-serif;
+}
+
+/* Section 2: Mabuhay / greeting */
+.mabuhay-section {
+  text-align: center;
+  width: 100%;
+  line-height: 1.2;
+  margin-top: 2px;
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.mabuhay-section h2 {
+  font-size: 46px;
+  font-weight: 400;
+  font-family: "Oswald", sans-serif;
+  color: #fafafa;
+  font-stretch: condensed;
+  letter-spacing: 0px;
+  text-shadow: 0 0 4px rgba(0, 0, 0, 1);
+}
+
+.message-box {
+  background-color: #f3f3f3;
+  padding: 14px;
+  border-radius: 8px;
+  margin-top: 5px;
+  text-align: center;
+  width: 80%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: #01311d solid 2px;
+  font-family: "Oswald", sans-serif;
+  font-size: 40px;
+  font-weight: 500;
+  color: var(--color-text-dark);
+  font-stretch: condensed;
+  letter-spacing: -1px;
+  align-items: center;
+    margin-top: 20px;
+
+}
+
+.greet{
+  gap: 0px;
+}
+
+/* Section 3: Time / Status */
+.time-status-section {
+  text-align: center;
+  width: 100%;
+  font-family: "Oswald", sans-serif;
+  margin-top: 5px;
+}
+
+.time {
+  font-size: 36px;
+  color: #fafafa;
+  font-weight: 500;
+  font-stretch: condensed;
+  text-shadow: 0 0 4px rgba(0, 0, 0, 1);
+}
+
+
+.date {
+  font-size:20px;
+  color: var(--color-text-light);
+  font-weight: 800;
+  font-stretch: condensed;
+    text-shadow: 0 0 5px rgba(0, 0, 0, 5);
+    font-family: "Oswald", sans-serif;
+
+}
+.status-box {
+  background-color: var(--color-primary-dark); /* dark green */
+  color: white;
+  padding: 20px;
+  border-radius: 8px;
+  text-align: center;
+  margin-top: 10px;
+  width: 80%;
+        height : auto;
+        padding: 5px;
+}
+
+.status-box h2 {
+  font-size: 24px;
+  margin-bottom: 10px;
+  font-family: "Oswald", sans-serif;
+  font-stretch: condensed;
+  letter-spacing:-1px;
+  font-weight: 500;
+}
+
+.plpian{
+  font-weight: 700;
+  font-style: italic;
+  font-family: "Oswald", sans-serif;
+  color: #fafafa;
+  font-size: 48px;
+  font-stretch: condensed;
+  text-shadow: #01311d 0px 0px 4px;
+}
+
+.status-box p {
+  font-size: 18px;
+  margin: 5px 0;
+  font-family: "Montserrat", sans-serif;
+  font-weight: 600;
+  
+}
+.status-box span {
+  font-weight: 200;
+  font-family: "Montserrat", sans-serif;
+}
+
+.back-link {
+  align-self: flex-end;
+  font-family: "Montserrat", sans-serif;
+  color: #fafafa;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 10px;
+}
+
+.fade-text {
+  transition: opacity 0.5s ease-in-out;
+}
+
+.fade-in {
+  opacity: 1;
+}
+
+.fade-out {
+  opacity: 0;
+}
