@@ -1,25 +1,27 @@
-import React, { useState, useEffect } from 'react';
-import '../css/Students.css';
-import RegisterStudent from '../components/RegisterStudent';
-import ImportStudent from '../components/ImportStudents';
-import axios from 'axios';
-import { FiDownload, FiPlus, FiFilter } from 'react-icons/fi';
-import { IoMdArrowDropdown } from 'react-icons/io';
+import React, { useState, useEffect } from "react";
+import "../css/Students.css";
+import RegisterStudent from "../components/RegisterStudent";
+import ImportStudent from "../components/ImportStudents";
+import axios from "axios";
+import { FiDownload, FiPlus, FiFilter } from "react-icons/fi";
+import { IoMdArrowDropdown } from "react-icons/io";
 
 function Students() {
   const [students, setStudents] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [department, setDepartment] = useState('');
-  const [yearLevel, setYearLevel] = useState('');
-  const [registrationDate, setRegistrationDate] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [department, setDepartment] = useState("");
+  const [yearLevel, setYearLevel] = useState("");
+  const [registrationDate, setRegistrationDate] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [showRegisterModal, setShowRegisterModal] = useState(false);
-  const [showImportModal, setShowImportModal] = useState(false); // New state for import modal
+  const [showImportModal, setShowImportModal] = useState(false);
 
-  // ✅ FETCH STUDENTS FROM DATABASE
+  // ================= FETCH STUDENTS =================
   const fetchStudents = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/students');
+      const response = await axios.get(
+        "http://localhost:5000/api/students"
+      );
       setStudents(response.data);
     } catch (error) {
       console.error("Error fetching students:", error);
@@ -30,27 +32,39 @@ function Students() {
     fetchStudents();
   }, []);
 
-  // ✅ FILTERING
+  // ================= FILTERING =================
   const filteredStudents = students.filter((student) => {
-    const fullName = `${student.first_name} ${student.last_name} ${student.middle_name || ''}`.toLowerCase();
+    const fullName = `${student.first_name || ""} ${student.last_name || ""} ${
+      student.middle_name || ""
+    }`.toLowerCase();
 
     return (
-      (department === '' || student.college_department === department) &&
-      (yearLevel === '' || student.year_level === yearLevel) &&
-      (registrationDate === '' || student.created_at?.includes(registrationDate)) &&
-      (searchQuery === '' ||
-        student.student_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (department === "" ||
+        student.college_department === department) &&
+      (yearLevel === "" || student.year_level === yearLevel) &&
+      (registrationDate === "" ||
+        student.created_at?.includes(registrationDate)) &&
+      (searchQuery === "" ||
+        (student.student_id || "")
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase()) ||
         fullName.includes(searchQuery.toLowerCase()))
     );
   });
 
-  // ✅ PAGINATION
+  // ================= PAGINATION =================
   const recordsPerPage = 5;
-  const totalPages = Math.ceil(filteredStudents.length / recordsPerPage);
+  const totalPages = Math.ceil(
+    filteredStudents.length / recordsPerPage
+  );
 
   const indexOfLastRecord = currentPage * recordsPerPage;
   const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
-  const currentStudents = filteredStudents.slice(indexOfFirstRecord, indexOfLastRecord);
+
+  const currentStudents = filteredStudents.slice(
+    indexOfFirstRecord,
+    indexOfLastRecord
+  );
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
@@ -58,144 +72,57 @@ function Students() {
     }
   };
 
+  // ================= MODAL CONTROLS =================
   const handleAddClick = () => {
     setShowRegisterModal(true);
-    document.body.style.overflow = 'hidden';
+    document.body.style.overflow = "hidden";
   };
 
   const handleImportClick = () => {
     setShowImportModal(true);
-    // Prevent body scrolling when modal is open
-    document.body.style.overflow = 'hidden';
+    document.body.style.overflow = "hidden";
   };
 
   const handleCloseRegisterModal = () => {
     setShowRegisterModal(false);
-    document.body.style.overflow = 'unset';
+    document.body.style.overflow = "unset";
   };
 
   const handleCloseImportModal = () => {
     setShowImportModal(false);
-    // Restore body scrolling
-    document.body.style.overflow = 'unset';
+    document.body.style.overflow = "unset";
   };
 
+  // ================= ACTIONS =================
   const handleEdit = (studentId) => {
-    console.log('Edit student:', studentId);
+    console.log("Edit:", studentId);
   };
 
-  const handleDeactivate = (studentId, currentStatus) => {
-    console.log('Deactivate student:', studentId, currentStatus);
+  const handleDeactivate = (studentId, status) => {
+    console.log("Toggle status:", studentId, status);
   };
 
   const handleViewPhoto = (studentId) => {
-    console.log('View photo:', studentId);
-  };
-
-  const renderPageNumbers = () => {
-    const pages = [];
-    const maxVisiblePages = 5;
-    
-    if (totalPages <= maxVisiblePages) {
-      // Show all pages if total pages are less than max visible
-      for (let i = 1; i <= totalPages; i++) {
-        pages.push(
-          <button
-            key={i}
-            className={`page-number ${currentPage === i ? 'active' : ''}`}
-            onClick={() => handlePageChange(i)}
-          >
-            {i}
-          </button>
-        );
-      }
-    } else {
-      // Always show first page
-      pages.push(
-        <button
-          key={1}
-          className={`page-number ${currentPage === 1 ? 'active' : ''}`}
-          onClick={() => handlePageChange(1)}
-        >
-          1
-        </button>
-      );
-
-      // Calculate start and end of visible pages
-      let start = Math.max(2, currentPage - 1);
-      let end = Math.min(totalPages - 1, currentPage + 1);
-      
-      // Adjust if at the beginning
-      if (currentPage <= 2) {
-        end = Math.min(totalPages - 1, 4);
-      }
-      
-      // Adjust if at the end
-      if (currentPage >= totalPages - 1) {
-        start = Math.max(2, totalPages - 3);
-      }
-      
-      // Add ellipsis after first page if needed
-      if (start > 2) {
-        pages.push(<span key="ellipsis1" className="ellipsis">...</span>);
-      }
-      
-      // Add middle pages
-      for (let i = start; i <= end; i++) {
-        pages.push(
-          <button
-            key={i}
-            className={`page-number ${currentPage === i ? 'active' : ''}`}
-            onClick={() => handlePageChange(i)}
-          >
-            {i}
-          </button>
-        );
-      }
-      
-      // Add ellipsis before last page if needed
-      if (end < totalPages - 1) {
-        pages.push(<span key="ellipsis2" className="ellipsis">...</span>);
-      }
-      
-      // Always show last page
-      pages.push(
-        <button
-          key={totalPages}
-          className={`page-number ${currentPage === totalPages ? 'active' : ''}`}
-          onClick={() => handlePageChange(totalPages)}
-        >
-          {totalPages}
-        </button>
-      );
-    }
-    
-    for (let i = 1; i <= totalPages; i++) {
-      pages.push(
-        <button
-          key={i}
-          className={`page-number ${currentPage === i ? 'active' : ''}`}
-          onClick={() => handlePageChange(i)}
-        >
-          {i}
-        </button>
-      );
-    }
-    return pages;
+    console.log("View photo:", studentId);
   };
 
   return (
     <div>
       <header className="header-card">
         <h1>STUDENT MANAGEMENT</h1>
-        <p className="subtitle">Dashboard / Student Management</p>
+        <p className="subtitle">
+          Dashboard / Student Management
+        </p>
       </header>
+
       <hr className="header-divider" />
 
       <div className="student-management">
-        {/* Controls */}
+
+        {/* ================= CONTROLS ================= */}
         <div className="controls">
-          <button className="sort-button">
+
+          <button type="button" className="sort-button">
             <FiFilter className="sort-icon" />
             Sort
             <IoMdArrowDropdown className="dropdown-icon" />
@@ -211,20 +138,6 @@ function Students() {
             <option value="College of Engineering">College of Engineering</option>
             <option value="College of Education">College of Education</option>
             <option value="College of Computer Studies">College of Computer Studies</option>
-            <option value="College of Arts and Science">College of Arts and Science</option>
-            <option value="College of Business and Accountancy">
-              College of Business and Accountancy
-            </option>
-            <option value="College of Hospitality Management">
-              College of Hospitality Management
-            </option>
-            <option value="College of Nursing">College of Nursing</option>
-            <option value="College of Engineering">College of Engineering</option>
-            <option value="College of Education">College of Education</option>
-            <option value="College of Computer Studies">College of Computer Studies</option>
-            <option value="College of Arts and Science">College of Arts and Science</option>
-            <option value="College of Business and Accountancy">College of Business and Accountancy</option>
-            <option value="College of Hospitality Management">College of Hospitality Management</option>
           </select>
 
           <select
@@ -259,18 +172,26 @@ function Students() {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
 
-          <button className="action-button import-button" onClick={handleImportClick}>
+          <button
+            type="button"
+            className="action-button import-button"
+            onClick={handleImportClick}
+          >
             <FiDownload className="button-icon" />
             Import
           </button>
 
-          <button className="action-button add-button" onClick={handleAddClick}>
+          <button
+            type="button"
+            className="action-button add-button"
+            onClick={handleAddClick}
+          >
             <FiPlus className="button-icon" />
             Add
           </button>
         </div>
 
-        {/* TABLE */}
+        {/* ================= TABLE ================= */}
         <div className="table-container">
           <table className="student-table">
             <thead>
@@ -287,46 +208,9 @@ function Students() {
             </thead>
 
             <tbody>
-              {currentStudents.map((student, index) => (
-                <tr key={student.id}>
-                  <td>{indexOfFirstRecord + index + 1}</td>
-                  <td>{student.studentId}</td>
-                  <td>{student.fullName}</td>
-                  <td>{student.department}</td>
-                  <td>{student.yearLevel}</td>
-                  <td>
-                    <span className={`status-badge ${student.enrollmentStatus.toLowerCase()}`}>
-                      {student.enrollmentStatus}
-                    </span>
-                  </td>
-                  <td>{student.dateRegistered}</td>
-                  <td className="action-cell">
-                    <div className="action-buttons-text">
-                      <button 
-                        className="action-text-btn edit-text-btn" 
-                        onClick={() => handleEdit(student.id)}
-                      >
-                        Edit
-                      </button>
-                      <button 
-                        className="action-text-btn photo-text-btn" 
-                        onClick={() => handleViewPhoto(student.id)}
-                      >
-                        View Photo
-                      </button>
-                      <button 
-                        className={`action-text-btn ${student.enrollmentStatus === 'Active' ? 'deactivate-text-btn' : 'activate-text-btn'}`}
-                        onClick={() => handleDeactivate(student.id, student.enrollmentStatus)}
-                      >
-                        {student.enrollmentStatus === 'Active' ? 'Deactivate' : 'Activate'}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
               {currentStudents.length === 0 ? (
                 <tr>
-                  <td colSpan="8" style={{ textAlign: 'center' }}>
+                  <td colSpan="8" style={{ textAlign: "center" }}>
                     No students found
                   </td>
                 </tr>
@@ -341,34 +225,23 @@ function Students() {
                     <td>{student.college_department}</td>
                     <td>{student.year_level}</td>
                     <td>
-                      <span className={`status-badge ${student.status.toLowerCase()}`}>
+                      <span
+                        className={`status-badge ${(student.status || "").toLowerCase()}`}
+                      >
                         {student.status}
                       </span>
                     </td>
-                    <td>{student.created_at?.split('T')[0]}</td>
-                    <td className="action-cell">
-                      <div className="action-buttons-text">
-                        <button
-                          className="action-text-btn edit-text-btn"
-                          onClick={() => handleEdit(student.student_id)}
-                        >
-                          Edit
-                        </button>
-
-                        <button
-                          className="action-text-btn photo-text-btn"
-                          onClick={() => handleViewPhoto(student.student_id)}
-                        >
-                          View Photo
-                        </button>
-
-                        <button
-                          className="action-text-btn deactivate-text-btn"
-                          onClick={() => handleDeactivate(student.student_id, student.status)}
-                        >
-                          Deactivate
-                        </button>
-                      </div>
+                    <td>{student.created_at?.split("T")[0]}</td>
+                    <td>
+                      <button onClick={() => handleEdit(student.student_id)}>Edit</button>
+                      <button onClick={() => handleViewPhoto(student.student_id)}>View Photo</button>
+                      <button
+                        onClick={() =>
+                          handleDeactivate(student.student_id, student.status)
+                        }
+                      >
+                        {student.status === "Active" ? "Deactivate" : "Activate"}
+                      </button>
                     </td>
                   </tr>
                 ))
@@ -376,50 +249,29 @@ function Students() {
             </tbody>
           </table>
         </div>
-
-        {/* PAGINATION */}
-        <div className="pagination">
-          <button
-            className="pagination-button"
-            onClick={() => handlePageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-          >
-            ← Previous
-          </button>
-
-          <div className="page-numbers">
-            {renderPageNumbers()}
-          </div>
-
-          <button
-            className="pagination-button"
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
-          >
-            Next →
-          </button>
-        </div>
       </div>
 
-      {/* REGISTER MODAL */}
+      {/* ================= REGISTER MODAL ================= */}
       {showRegisterModal && (
-        <div className="modal-overlay" onClick={handleCloseRegisterModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <RegisterStudent onClose={handleCloseRegisterModal} />
+        <div className="modal-overlay">
+          <div className="modal-content">
             <RegisterStudent
-              onClose={handleCloseModal}
-              refreshTable={fetchStudents}   // 🔥 auto refresh
+              onClose={handleCloseRegisterModal}
+              refreshTable={fetchStudents}
             />
           </div>
         </div>
       )}
 
-      {/* Import Student Modal */}
+      {/* ================= IMPORT MODAL ================= */}
       {showImportModal && (
-        <ImportStudent 
-          isOpen={showImportModal} 
-          onClose={handleCloseImportModal} 
-        />
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <ImportStudent
+              onClose={handleCloseImportModal}
+            />
+          </div>
+        </div>
       )}
     </div>
   );
