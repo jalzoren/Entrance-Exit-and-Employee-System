@@ -20,6 +20,9 @@ function EventsPage({ onNavigate }) {
   const [showCreateModal, setShowCreateModal] = useState(false);
 
   const [loadError, setLoadError] = useState('');
+  const [createError, setCreateError] = useState('');
+  const [createSuccess, setCreateSuccess] = useState('');
+  const [creating, setCreating] = useState(false);
 
   const [newEvent, setNewEvent] = useState({
     event_name: '',
@@ -97,11 +100,22 @@ function EventsPage({ onNavigate }) {
 
   const handleSubmitCreate = async (e) => {
     e.preventDefault();
-
-    await createEvent(newEvent);
-    await loadEvents();
-
-    closeCreateModal();
+    setCreateError('');
+    setCreateSuccess('');
+    try {
+      setCreating(true);
+      const res = await createEvent(newEvent);
+      await loadEvents();
+      closeCreateModal();
+      setCreateSuccess(res?.message || 'Event created successfully');
+      setTimeout(() => setCreateSuccess(''), 4000);
+    } catch (err) {
+      const msg = err?.message || 'Failed to create event. Please check "events.php".';
+      setCreateError(msg);
+      setTimeout(() => setCreateError(''), 5000);
+    } finally {
+      setCreating(false);
+    }
   };
 
   // =========================================
@@ -169,6 +183,16 @@ function EventsPage({ onNavigate }) {
               {loadError}
             </div>
           )}
+          {createSuccess && (
+            <div className="alert alert-success mb-3" role="alert">
+              {createSuccess}
+            </div>
+          )}
+          {createError && (
+            <div className="alert alert-danger mb-3" role="alert">
+              {createError}
+            </div>
+          )}
 
           {/* Search & Filter */}
           <Row className="mb-4">
@@ -206,6 +230,7 @@ function EventsPage({ onNavigate }) {
                 key={event.event_ID}
                 className="event-item-card"
                 onClick={() => handleViewEvent(event)}
+                style={{ cursor: 'pointer' }}
               >
                 <Card.Body className="d-flex align-items-center">
 
@@ -382,8 +407,8 @@ function EventsPage({ onNavigate }) {
               >
                 Cancel
               </Button>
-              <Button type="submit">
-                Create Event
+              <Button type="submit" disabled={creating}>
+                {creating ? 'Creating...' : 'Create Event'}
               </Button>
             </div>
 

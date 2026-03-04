@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Row, Col, Card, Form, Button, Table, Modal } from 'react-bootstrap';
-import { getEmployees, addEmployee, deleteEmployee } from '../api';
+import { getEmployees, addEmployee, deleteEmployee, getDepartments, getPositions, getEmailsList } from '../api';
 import './ccs/employee.css';
 
 function EmployeesPage() {
@@ -14,11 +14,21 @@ function EmployeesPage() {
   const [selectedDepartment, setSelectedDepartment] = useState('All Departments');
 
   const [showAddModal, setShowAddModal] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [addError, setAddError] = useState('');
+  const [addSuccess, setAddSuccess] = useState('');
+
+  const [departments, setDepartments] = useState([]);
+  const [positions, setPositions] = useState([]);
+  const [emails, setEmails] = useState([]);
 
   const [newEmployee, setNewEmployee] = useState({
     employee_code: '',
     employee_firstName: '',
     employee_LastName: '',
+    department_ID: '',
+    position_ID: '',
+    email_ID: ''
   });
 
   // ===============================
@@ -27,12 +37,28 @@ function EmployeesPage() {
 
   useEffect(() => {
     loadEmployees();
+    loadMeta();
   }, []);
 
   const loadEmployees = async () => {
     const data = await getEmployees();
     const list = Array.isArray(data) ? data : (data?.data ?? []);
     setEmployees(list);
+  };
+
+  const loadMeta = async () => {
+    try {
+      const [d, p, e] = await Promise.all([
+        getDepartments(),
+        getPositions(),
+        getEmailsList()
+      ]);
+      setDepartments(Array.isArray(d) ? d : (d?.data ?? []));
+      setPositions(Array.isArray(p) ? p : (p?.data ?? []));
+      setEmails(Array.isArray(e) ? e : (e?.data ?? []));
+    } catch (err) {
+      console.error('Failed to load metadata', err);
+    }
   };
 
   // ===============================
@@ -86,24 +112,35 @@ function EmployeesPage() {
 
   const handleSubmitAdd = async (e) => {
     e.preventDefault();
-
-    await addEmployee({
-      employee_code: newEmployee.employee_code,
-      employee_firstName: newEmployee.employee_firstName,
-      employee_LastName: newEmployee.employee_LastName,
-      department_ID: 1, // Adjust if you implement dynamic department selection
-      position_ID: 1,
-      email_ID: 1
-    });
-
-    setShowAddModal(false);
-    setNewEmployee({
-      employee_code: '',
-      employee_firstName: '',
-      employee_LastName: '',
-    });
-
-    loadEmployees();
+    setAddError('');
+    try {
+      setSaving(true);
+      const res = await addEmployee({
+        employee_code: newEmployee.employee_code,
+        employee_firstName: newEmployee.employee_firstName,
+        employee_LastName: newEmployee.employee_LastName,
+        department_ID: newEmployee.department_ID || null,
+        position_ID: newEmployee.position_ID || null,
+        email_ID: newEmployee.email_ID || null
+      });
+      setShowAddModal(false);
+      setNewEmployee({
+        employee_code: '',
+        employee_firstName: '',
+        employee_LastName: '',
+        department_ID: '',
+        position_ID: '',
+        email_ID: ''
+      });
+      await loadEmployees();
+      setAddSuccess(res?.message || 'Employee added successfully');
+      setTimeout(() => setAddSuccess(''), 4000);
+    } catch (err) {
+      setAddError(err?.message || 'Failed to add employee. Please check "employee.php".');
+      setTimeout(() => setAddError(''), 5000);
+    } finally {
+      setSaving(false);
+    }
   };
 
   // ===============================
@@ -123,6 +160,17 @@ function EmployeesPage() {
 
       <Card className="content-card">
         <Card.Body>
+
+          {addSuccess && (
+            <div className="alert alert-success mb-3" role="alert">
+              {addSuccess}
+            </div>
+          )}
+          {addError && (
+            <div className="alert alert-danger mb-3" role="alert">
+              {addError}
+            </div>
+          )}
 
           {/* SEARCH */}
           <Row className="mb-3">
@@ -245,7 +293,49 @@ function EmployeesPage() {
               />
             </Form.Group>
 
-            <Button type="submit">Save</Button>
+            <Row className="mb-3">
+              <Col md={6}>
+                <Form.Label>Department</Form.Label>
+                <Form.Select
+                  required
+                  value={newEmployee.department_ID}
+                  onChange={e => setNewEmployee({ ...newEmployee, department_ID: e.target.value })}
+                >
+                  <option value="">Select Department</option>
+                  {departments.map(d => (
+                    <option key={d.department_ID} value={d.department_ID}>{d.department_name}</option>
+                  ))}
+                </Form.Select>
+              </Col>
+              <Col md={6}>
+                <Form.Label>Position</Form.Label>
+                <Form.Select
+                  required
+                  value={newEmployee.position_ID}
+                  onChange={e => setNewEmployee({ ...newEmployee, position_ID: e.target.value })}
+                >
+                  <option value="">Select Position</option>
+                  {positions.map(p => (
+                    <option key={p.position_ID} value={p.position_ID}>{p.position_name}</option>
+                  ))}
+                </Form.Select>
+              </Col>
+            </Row>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Email</Form.Label>
+              <Form.Select
+                value={newEmployee.email_ID}
+                onChange={e => setNewEmployee({ ...newEmployee, email_ID: e.target.value })}
+              >
+                <option value="">Select Email (optional)</option>
+                {emails.map(em => (
+                  <option key={em.email_ID} value={em.email_ID}>{em.email}</option>
+                ))}
+              </Form.Select>
+            </Form.Group>
+
+            <Button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save'}</Button>
           </Form>
         </Modal.Body>
       </Modal>

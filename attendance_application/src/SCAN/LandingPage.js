@@ -57,11 +57,11 @@ function EmployeePage({ onBack, onNavigateAdmin }) {
 
     setManualSearched(true);
 
-    const normalizedInput = manualId.replace(/-/g, '').toLowerCase();
+    const normalizedInput = manualId.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
 
     const found = employees.find(emp => {
       const codeRaw = String(emp.employee_code || '');
-      const codeNoDash = codeRaw.replace(/-/g, '').toLowerCase();
+      const codeNoDash = codeRaw.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
       return (
         codeNoDash === normalizedInput ||
         codeRaw.toLowerCase() === manualId.toLowerCase()
@@ -70,7 +70,7 @@ function EmployeePage({ onBack, onNavigateAdmin }) {
 
     if (found) {
       setRecognizedUser({
-        name: `${found.employee_firstName} ${found.employee_LastName}`,
+        name: `${found.employee_firstName} ${(found.employee_LastName || found.employee_lastName || '')}`.trim(),
         id: found.employee_code,
         department: found.department_name,
         role: found.position,
@@ -129,20 +129,20 @@ function EmployeePage({ onBack, onNavigateAdmin }) {
           getEmployees(),
         ]);
 
-        if (Array.isArray(eventsData)) {
-          const formattedEvents = eventsData.map(event => ({
+        const eventsArr = Array.isArray(eventsData) ? eventsData : (eventsData?.data ?? []);
+        if (Array.isArray(eventsArr)) {
+          const formattedEvents = eventsArr.map(event => ({
             id: event.event_ID,
             name: event.event_name,
-            time: event.event_time,
-            description: event.description,
-            type: event.eventtype_name,
+            time: event.event_time ?? event.time ?? '',
+            description: event.description ?? event.event_desc ?? '',
+            type: event.eventtype_name ?? event.eventtype ?? '',
           }));
           setAvailableEvents(formattedEvents);
         }
 
-        if (Array.isArray(employeesData)) {
-          setEmployees(employeesData);
-        }
+        const empArr = Array.isArray(employeesData) ? employeesData : (employeesData?.data ?? []);
+        setEmployees(Array.isArray(empArr) ? empArr : []);
       } catch (error) {
         console.error('Failed to load initial data:', error);
         setDataError(error.message || 'Failed to load events or employees.');
@@ -182,7 +182,7 @@ function EmployeePage({ onBack, onNavigateAdmin }) {
         if (employees.length) {
           const first = employees[0];
           const detectedEmployee = {
-            name: `${first.employee_firstName} ${first.employee_LastName}`,
+            name: `${first.employee_firstName} ${(first.employee_LastName || first.employee_lastName || '')}`.trim(),
             id: first.employee_code,
             department: first.department_name,
             role: first.position,
@@ -299,7 +299,7 @@ function EmployeePage({ onBack, onNavigateAdmin }) {
     }}>
       <div className="background-overlay"></div>
 
-      {/* Pasig City Logo - Left */}
+   
       <div className="logo-container logo-left">
         <img 
           src={`${process.env.PUBLIC_URL}/LOGO.png`} 
@@ -308,7 +308,6 @@ function EmployeePage({ onBack, onNavigateAdmin }) {
         />
       </div>
 
-      {/* CCS Logo - Right */}
       <div className="logo-container logo-right">
         <img 
           src={`${process.env.PUBLIC_URL}/ccs.png`} 
@@ -317,7 +316,6 @@ function EmployeePage({ onBack, onNavigateAdmin }) {
         />
       </div>
 
-      {/* Main Content */}
       <Container fluid className="main-content px-4">
         <Row className="justify-content-center">
           <Col xs={12} lg={11} xl={10} xxl={9}>
@@ -330,15 +328,13 @@ function EmployeePage({ onBack, onNavigateAdmin }) {
               </Card.Body>
             </Card>
 
-            {/* Event Selection Section */}
             <Card className="event-card shadow-lg">
               <Card.Body>
                 <h5 className="mb-2 fw-bold">
                   <i className="bi bi-calendar-event me-2 text-success"></i>
                   Select Event
                 </h5>
-                
-                {/* Event Dropdown */}
+
                 <Form.Group className="mb-2">
                   <Form.Select 
                     size="lg"
@@ -355,7 +351,6 @@ function EmployeePage({ onBack, onNavigateAdmin }) {
                   </Form.Select>
                 </Form.Group>
 
-                {/* Event Details Display */}
                 {selectedEventDetails && (
                   <Card className="border event-detail-card">
                     <Card.Header 
@@ -397,10 +392,9 @@ function EmployeePage({ onBack, onNavigateAdmin }) {
               </Card.Body>
             </Card>
 
-            {/* Camera / Manual ID Section */}
             <Card className="camera-card shadow-lg">
               <Card.Body>
-                {/* Header with mode toggle */}
+
                 <div className="d-flex align-items-center justify-content-between mb-3">
                   <h5 className="mb-0 fw-bold">
                     {manualMode

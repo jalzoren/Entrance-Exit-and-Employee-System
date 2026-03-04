@@ -6,7 +6,7 @@ import axios from "axios";
 
 const API_BASE_URL =
   process.env.REACT_APP_API_URL ||
-  "http://localhost/facial_attendance_api/controllers";
+  "http://localhost/Emp/Employee-Detection-System/facial_attendance_api/controllers";
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -29,6 +29,41 @@ const handleError = (error) => {
     throw { message: "Server not responding" };
   } else {
     throw { message: "Unexpected error occurred" };
+  }
+};
+
+// ====================================
+// AUTH ENDPOINTS
+// ====================================
+
+export const login = async ({ username, password }) => {
+  try {
+    const { data } = await api.post("/auth.php", { username, password });
+    return data;
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+export const requestPasswordReset = async ({ email }) => {
+  try {
+    const { data } = await api.post("/password_reset_request.php", { email });
+    return data;
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+export const resetPasswordWithOtp = async ({ email, otp, new_password }) => {
+  try {
+    const { data } = await api.post("/reset_password.php", {
+      email,
+      otp,
+      new_password,
+    });
+    return data;
+  } catch (error) {
+    handleError(error);
   }
 };
 
@@ -144,6 +179,32 @@ export const getLocations = async () => {
   }
 };
 
+export const getDepartments = async () => {
+  try {
+    const { data } = await api.get("/department.php");
+    return data;
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+export const getPositions = async () => {
+  try {
+    const { data } = await api.get("/position.php");
+    return data;
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+export const getEmailsList = async () => {
+  try {
+    const { data } = await api.get("/email.php");
+    return data;
+  } catch (error) {
+    handleError(error);
+  }
+};
 // ====================================
 // FACIAL RECOGNITION ENDPOINTS
 // ====================================

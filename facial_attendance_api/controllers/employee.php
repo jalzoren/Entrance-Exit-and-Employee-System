@@ -15,39 +15,104 @@ $method = $_SERVER['REQUEST_METHOD'];
 if ($method === 'GET') {
 
     try {
-
-        $query = "
+        // Try schema with department/position/email singular table names and columns *_name
+        $q1 = "
             SELECT 
                 e.employee_ID,
                 e.employee_code,
-                e.employee_firstName,
-                e.employee_lastName,
+                e.employee_firstName AS employee_firstName,
+                e.employee_lastName AS employee_LastName,
                 d.department_name,
-                p.position_name,
-                em.email_address,
+                p.position_name AS position,
+                em.email_address AS email,
                 e.created_at
             FROM employees e
-            LEFT JOIN departments d ON e.department_ID = d.department_ID
-            LEFT JOIN positions p ON e.position_ID = p.position_ID
-            LEFT JOIN emails em ON e.email_ID = em.email_ID
+            LEFT JOIN department d  ON e.department_ID = d.department_ID
+            LEFT JOIN position  p   ON e.position_ID  = p.position_ID
+            LEFT JOIN email     em  ON e.email_ID     = em.email_ID
             ORDER BY e.employee_lastName ASC
         ";
-
-        $stmt = $conn->prepare($query);
+        $stmt = $conn->prepare($q1);
         $stmt->execute();
-
         $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        echo json_encode([
-            "success" => true,
-            "data" => $employees
-        ]);
-
-    } catch (Exception $e) {
-        echo json_encode([
-            "error" => true,
-            "message" => $e->getMessage()
-        ]);
+        echo json_encode([ "success" => true, "data" => $employees ]);
+    } catch (Exception $e1) {
+        try {
+            // Fallback 1: same singular tables, columns without *_name
+            $q2 = "
+                SELECT 
+                    e.employee_ID,
+                    e.employee_code,
+                    e.employee_firstName AS employee_firstName,
+                    e.employee_lastName AS employee_LastName,
+                    d.department_name,
+                    p.position AS position,
+                    em.email AS email,
+                    e.created_at
+                FROM employees e
+                LEFT JOIN department d  ON e.department_ID = d.department_ID
+                LEFT JOIN position  p   ON e.position_ID  = p.position_ID
+                LEFT JOIN email     em  ON e.email_ID     = em.email_ID
+                ORDER BY e.employee_lastName ASC
+            ";
+            $stmt = $conn->prepare($q2);
+            $stmt->execute();
+            $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            echo json_encode([ "success" => true, "data" => $employees ]);
+        } catch (Exception $e2) {
+            try {
+                // Fallback 2: plural table names, *_name columns
+                $q3 = "
+                    SELECT 
+                        e.employee_ID,
+                        e.employee_code,
+                        e.employee_firstName AS employee_firstName,
+                        e.employee_lastName AS employee_LastName,
+                        d.department_name,
+                        p.position_name AS position,
+                        em.email_address AS email,
+                        e.created_at
+                    FROM employees e
+                    LEFT JOIN departments d ON e.department_ID = d.department_ID
+                    LEFT JOIN positions  p  ON e.position_ID  = p.position_ID
+                    LEFT JOIN emails     em ON e.email_ID     = em.email_ID
+                    ORDER BY e.employee_lastName ASC
+                ";
+                $stmt = $conn->prepare($q3);
+                $stmt->execute();
+                $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                echo json_encode([ "success" => true, "data" => $employees ]);
+            } catch (Exception $e3) {
+                try {
+                    // Fallback 3: plural table names, plain columns
+                    $q4 = "
+                        SELECT 
+                            e.employee_ID,
+                            e.employee_code,
+                            e.employee_firstName AS employee_firstName,
+                            e.employee_lastName AS employee_LastName,
+                            d.department_name,
+                            p.position AS position,
+                            em.email AS email,
+                            e.created_at
+                        FROM employees e
+                        LEFT JOIN departments d ON e.department_ID = d.department_ID
+                        LEFT JOIN positions  p  ON e.position_ID  = p.position_ID
+                        LEFT JOIN emails     em ON e.email_ID     = em.email_ID
+                        ORDER BY e.employee_lastName ASC
+                    ";
+                    $stmt = $conn->prepare($q4);
+                    $stmt->execute();
+                    $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                    echo json_encode([ "success" => true, "data" => $employees ]);
+                } catch (Exception $e4) {
+                    echo json_encode([
+                        "error" => true,
+                        "message" => $e4->getMessage()
+                    ]);
+                }
+            }
+        }
     }
 
     exit;

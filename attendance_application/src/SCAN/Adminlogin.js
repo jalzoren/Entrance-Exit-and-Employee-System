@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { login as loginApi, requestPasswordReset, resetPasswordWithOtp } from "../api";
 import LandingPage from "./LandingPage";
 import AdminDashboard from "../ADMIN/AdminDashboard";
 
@@ -42,15 +43,6 @@ const MailIcon = () => (
   </svg>
 );
 
-// ── Hardcoded valid credentials ──
-const VALID_USERS = [
-  { username: "23-00001", password: "00000" },
-  { username: "23-00002", password: "00000" },
-  { username: "23-00003", password: "00000" },
-  { username: "23-00004", password: "00000" },
-  { username: "23-00005", password: "00000" },
-];
-
 export default function LoginPage() {
   const [time, setTime] = useState(new Date());
   const [username, setUsername] = useState("");
@@ -65,6 +57,9 @@ export default function LoginPage() {
   const [resetEmail, setResetEmail] = useState("");
   const [resetLoading, setResetLoading] = useState(false);
   const [resetShake, setResetShake] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [newPass, setNewPass] = useState("");
+  const [newPass2, setNewPass2] = useState("");
 
   const [showLanding, setShowLanding] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false); // ── NEW: navigate to AdminDashboard
@@ -88,49 +83,100 @@ export default function LoginPage() {
 
   const formatDate = (d) => d.toLocaleDateString("en-US", { weekday:"long", year:"numeric", month:"long", day:"numeric" });
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!username || !password) {
       setErrorMsg("Please enter both username and password.");
       setShake(true);
       setTimeout(() => setShake(false), 500);
       return;
     }
-
-    // ── Check against hardcoded credentials ──
-    const isValid = VALID_USERS.some(
-      u => u.username === username.trim() && u.password === password.trim()
-    );
-
-    if (!isValid) {
-      setErrorMsg("Invalid username or password.");
+    try {
+      setLoading(true);
+      const res = await loginApi({ username: username.trim(), password: password.trim() });
+      if (res && res.success) {
+        setErrorMsg("");
+        setShowAdmin(true);
+      } else {
+        setErrorMsg(res?.message || "Invalid username or password.");
+        setShake(true);
+        setTimeout(() => setShake(false), 500);
+      }
+    } catch (e) {
+      setErrorMsg(e?.message || "Login failed");
       setShake(true);
       setTimeout(() => setShake(false), 500);
-      return;
-    }
-
-    setErrorMsg("");
-    setLoading(true);
-    setTimeout(() => {
+    } finally {
       setLoading(false);
-      setShowAdmin(true); // ── Navigate to AdminDashboard on success
-    }, 1500);
+    }
   };
 
-  const handleReset = () => {
+  const handleReset = async () => {
     if (!resetEmail) {
       setResetShake(true);
       setTimeout(() => setResetShake(false), 500);
       return;
     }
-    setResetLoading(true);
-    setTimeout(() => { setResetLoading(false); setView("forgot-sent"); }, 2000);
+    try {
+      setResetLoading(true);
+      const res = await requestPasswordReset({ email: resetEmail.trim() });
+      if (res && res.success) {
+        setErrorMsg("");
+        setView("otp");
+      } else {
+        setErrorMsg(res?.message || "Failed to send OTP");
+        setResetShake(true);
+        setTimeout(() => setResetShake(false), 500);
+      }
+    } catch (e) {
+      setErrorMsg(e?.message || "Failed to send OTP");
+      setResetShake(true);
+      setTimeout(() => setResetShake(false), 500);
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  const handleResetConfirm = async () => {
+    if (!otp || !newPass || !newPass2) {
+      setErrorMsg("Please complete all fields.");
+      setResetShake(true);
+      setTimeout(() => setResetShake(false), 500);
+      return;
+    }
+    if (newPass !== newPass2) {
+      setErrorMsg("Passwords do not match.");
+      setResetShake(true);
+      setTimeout(() => setResetShake(false), 500);
+      return;
+    }
+    try {
+      setResetLoading(true);
+      const res = await resetPasswordWithOtp({ email: resetEmail.trim(), otp: otp.trim(), new_password: newPass });
+      if (res && res.success) {
+        setErrorMsg("");
+        setOtp("");
+        setNewPass("");
+        setNewPass2("");
+        setView("forgot-sent");
+      } else {
+        setErrorMsg(res?.message || "Reset failed");
+        setResetShake(true);
+        setTimeout(() => setResetShake(false), 500);
+      }
+    } catch (e) {
+      setErrorMsg(e?.message || "Reset failed");
+      setResetShake(true);
+      setTimeout(() => setResetShake(false), 500);
+    } finally {
+      setResetLoading(false);
+    }
   };
 
   // ── Navigate to LandingPage (Employee Scanner) ──
   if (showLanding) return <LandingPage onNavigateAdmin={() => { setShowLanding(false); setShowAdmin(false); }} />;
 
   // ── Navigate to AdminDashboard ──
-  if (showAdmin) return <AdminDashboard />;
+  if (showAdmin) return <AdminDashboard onLogout={() => { setShowAdmin(false); setView("login"); setUsername(""); setPassword(""); setErrorMsg(""); }} />;
 
   // Logo size
   const LOGO_SIZE = 100;
@@ -362,6 +408,87 @@ export default function LoginPage() {
                       ) : (
                         <><MailIcon /> Send Reset Link</>
                       )}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* ── EMAIL SENT CONFIRMATION VIEW ── */}
+              {view === "otp" && (
+                <div style={{ animation:"fadeSlideIn 0.3s ease" }}>
+                  <button onClick={() => setView("forgot")} style={{
+                    display:"flex", alignItems:"center", gap:6, background:"none", border:"none",
+                    color:"#7a9a85", fontSize:13, cursor:"pointer", padding:0, marginBottom:20,
+                    transition:"color 0.2s"
+                  }}
+                    onMouseOver={e => e.currentTarget.style.color = "#1a8a3a"}
+                    onMouseOut={e => e.currentTarget.style.color = "#7a9a85"}
+                  >
+                    <ArrowLeftIcon /> Back
+                  </button>
+
+                  <div style={{ marginBottom:24 }}>
+                    <h1 style={{ fontSize:26, fontWeight:800, color:"#0d2e15", margin:"0 0 6px", letterSpacing:"-0.5px" }}>Enter OTP</h1>
+                    <p style={{ color:"#7a9a85", fontSize:13, margin:0, lineHeight:1.5 }}>
+                      We sent a 6‑digit code to {resetEmail}. Enter it and set a new password.
+                    </p>
+                  </div>
+
+                  <div style={{ animation: resetShake ? "shake 0.4s ease" : "none" }}>
+                    <label style={{ display:"block", fontSize:11, fontWeight:700, color:"#4a6a55", letterSpacing:"0.12em", marginBottom:6 }}>OTP CODE</label>
+                    <div style={{ position:"relative", marginBottom:16 }}>
+                      <input type="text" placeholder="6-digit code" value={otp}
+                        onChange={e => { setOtp(e.target.value); setErrorMsg(""); }}
+                        style={{ width:"100%", padding:"12px 16px", borderRadius:10, border:"1.5px solid #d0e0d5", fontSize:14, outline:"none", background:"#f6fbf7", color:"#0d2e15", boxSizing:"border-box", transition:"border 0.2s" }}
+                        onFocus={e => e.target.style.border = "1.5px solid #2da84a"}
+                        onBlur={e => e.target.style.border = "1.5px solid #d0e0d5"}
+                      />
+                    </div>
+
+                    <label style={{ display:"block", fontSize:11, fontWeight:700, color:"#4a6a55", letterSpacing:"0.12em", marginBottom:6 }}>NEW PASSWORD</label>
+                    <div style={{ position:"relative", marginBottom:16 }}>
+                      <input type="password" placeholder="New password" value={newPass}
+                        onChange={e => { setNewPass(e.target.value); setErrorMsg(""); }}
+                        style={{ width:"100%", padding:"12px 16px", borderRadius:10, border:"1.5px solid #d0e0d5", fontSize:14, outline:"none", background:"#f6fbf7", color:"#0d2e15", boxSizing:"border-box", transition:"border 0.2s" }}
+                        onFocus={e => e.target.style.border = "1.5px solid #2da84a"}
+                        onBlur={e => e.target.style.border = "1.5px solid #d0e0d5"}
+                      />
+                    </div>
+
+                    <label style={{ display:"block", fontSize:11, fontWeight:700, color:"#4a6a55", letterSpacing:"0.12em", marginBottom:6 }}>CONFIRM PASSWORD</label>
+                    <div style={{ position:"relative", marginBottom: errorMsg ? 10 : 26 }}>
+                      <input type="password" placeholder="Confirm new password" value={newPass2}
+                        onChange={e => { setNewPass2(e.target.value); setErrorMsg(""); }}
+                        style={{ width:"100%", padding:"12px 16px", borderRadius:10, border:"1.5px solid #d0e0d5", fontSize:14, outline:"none", background:"#f6fbf7", color:"#0d2e15", boxSizing:"border-box", transition:"border 0.2s" }}
+                        onFocus={e => e.target.style.border = "1.5px solid #2da84a"}
+                        onBlur={e => e.target.style.border = "1.5px solid #d0e0d5"}
+                      />
+                    </div>
+
+                    {errorMsg && (
+                      <div style={{
+                        display:"flex", alignItems:"center", gap:6,
+                        background:"#fff0f0", border:"1px solid #f5c0c0",
+                        borderRadius:8, padding:"8px 12px", marginBottom:16
+                      }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d94444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                        </svg>
+                        <span style={{ color:"#c03030", fontSize:12, fontWeight:500 }}>{errorMsg}</span>
+                      </div>
+                    )}
+
+                    <button onClick={handleResetConfirm} style={{
+                      width:"100%", padding:"13px", borderRadius:10, border:"none",
+                      background: resetLoading ? "#7fca9a" : "linear-gradient(135deg, #1a8a3a 0%, #2dc856 100%)",
+                      color:"white", fontSize:15, fontWeight:700, cursor: resetLoading ? "default" : "pointer",
+                      display:"flex", alignItems:"center", justifyContent:"center", gap:8,
+                      boxShadow:"0 4px 16px rgba(30,160,70,0.35)", transition:"all 0.2s", letterSpacing:"0.02em"
+                    }}
+                      onMouseOver={e => { if (!resetLoading) { e.currentTarget.style.transform="translateY(-1px)"; e.currentTarget.style.boxShadow="0 6px 20px rgba(30,160,70,0.45)"; }}}
+                      onMouseOut={e => { e.currentTarget.style.transform=""; e.currentTarget.style.boxShadow="0 4px 16px rgba(30,160,70,0.35)"; }}
+                    >
+                      {resetLoading ? "Processing..." : "Confirm Reset"}
                     </button>
                   </div>
                 </div>

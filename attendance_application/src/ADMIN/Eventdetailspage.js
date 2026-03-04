@@ -105,7 +105,7 @@ function EventDetailsPage({ onNavigate, eventData }) {
 
       <div className="page-header-section">
         <h1 className="page-title">
-          Event Attendance ({eventName})
+          Event Details ({eventName})
         </h1>
 
         <Button onClick={() => onNavigate('events')}>
