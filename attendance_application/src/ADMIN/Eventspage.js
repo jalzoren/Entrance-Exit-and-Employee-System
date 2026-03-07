@@ -7,6 +7,7 @@ import {
   getLocations
 } from '../api';
 import './ccs/event.css';
+import InfoTooltip from "../components/InfoTooltip";
 
 function EventsPage({ onNavigate }) {
 
@@ -270,11 +271,34 @@ function EventsPage({ onNavigate }) {
                   </div>
 
                   <div className="event-attendance">
-                    <div className="attendance-number">
-                      {event.attended_count || 0}
-                    </div>
-                    <div className="attendance-label">Attended</div>
-                  </div>
+
+  {/* compute values with safe fallbacks */}
+  {(() => {
+    const attended = Number(event.attended_count || 0);
+    // use explicit not_attended_count if available; otherwise fallback to 0 or derive from total_expected if your data has it
+    const notAttended =
+      event.not_attended_count !== undefined
+        ? Number(event.not_attended_count)
+        : (event.total_expected !== undefined ? Math.max(0, Number(event.total_expected) - attended) : 0);
+
+    const tooltipText = `Attended - ${attended} / Not Attended - ${notAttended}`;
+
+    return (
+      <>
+        <div className="attendance-number">
+          {attended}
+        </div>
+
+        {/* keep label */}
+        <div className="attendance-label">Attended</div>
+
+        {/* InfoTooltip — the container itself is the trigger (no icon) */}
+        <InfoTooltip text={tooltipText} />
+      </>
+    );
+  })()}
+
+</div>
 
                 </Card.Body>
               </Card>

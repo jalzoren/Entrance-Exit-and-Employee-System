@@ -6,7 +6,7 @@ import axios from "axios";
 
 const API_BASE_URL =
   process.env.REACT_APP_API_URL ||
-  "http://localhost/Emp/Employee-Detection-System/facial_attendance_api/controllers";
+  "http://localhost/EMP/Employee-Detection-System/facial_attendance_api/controllers";
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
