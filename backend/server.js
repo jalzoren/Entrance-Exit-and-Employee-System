@@ -24,3 +24,4 @@ app.listen(PORT, () => {
 // DB_PASSWORD=
 // DB_NAME=eems
 // DB_PORT=3306
+// unicorn face_service:app --reload 

@@ -79,6 +79,7 @@ function RegisterStudent({ onClose }) {
 
   const handleScan = async () => {
     try {
+  
       setIsScanning(true);
       setScanError(false);
   
@@ -90,15 +91,26 @@ function RegisterStudent({ onClose }) {
         return;
       }
   
-      await axios.post("http://localhost:5000/api/validate-face", {
-        images: validImages
-      });
+      const response = await axios.post(
+        "http://localhost:5000/api/validate-face",
+        { images: validImages }
+      );
+  
+      console.log("Validation result:", response.data);
   
       setScanComplete(true);
   
     } catch (error) {
+  
       console.error(error);
+  
+      alert(
+        error.response?.data?.error ||
+        "Face validation failed"
+      );
+  
       setScanError(true);
+  
     } finally {
       setIsScanning(false);
     }

@@ -123,7 +123,7 @@ function RegisterStudentCam({
       canvas.height = video.videoHeight;
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
       
-      const photoDataUrl = canvas.toDataURL('image/png');
+      const photoDataUrl = canvas.toDataURL("mage/jpeg", 0.9);
       onCapture(photoDataUrl);
     }
   };
