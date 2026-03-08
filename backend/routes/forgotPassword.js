@@ -1,13 +1,20 @@
+require('dotenv').config();
 const express = require('express');
+const mysql = require('mysql2/promise');
 const nodemailer = require('nodemailer');
-const bcrypt = require("bcryptjs");
-const db = require("../src/db");
+const bcrypt = require('bcrypt');
 
 const router = express.Router();
 
-// ===============================
-// 📧 Gmail Transporter
-// ===============================
+// Create MySQL pool using .env
+const pool = mysql.createPool({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME
+});
+
+// Email transporter using .env
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
@@ -16,23 +23,21 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-// ===============================
-// 🔢 Generate 6-digit OTP
-// ===============================
+// Generate random 6-digit code
 const generateCode = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
 
 
-// =====================================================
-// 1️⃣ SEND VERIFICATION CODE
-// =====================================================
+// ===============================
+// 1️⃣ Send OTP Code
+// ===============================
 router.post('/forgot-password/send-code', async (req, res) => {
   try {
     const { email } = req.body;
 
-    const [rows] = await db.query(
+    const [rows] = await pool.query(
       'SELECT * FROM admins WHERE email = ?',
       [email]
     );
@@ -46,9 +51,9 @@ router.post('/forgot-password/send-code', async (req, res) => {
 
     const user = rows[0];
     const resetCode = generateCode();
-    const codeExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+    const codeExpiry = new Date(Date.now() + 15 * 60000); // 15 mins
 
-    await db.query(
+    await pool.query(
       'UPDATE admins SET reset_code = ?, code_expiry = ? WHERE admin_id = ?',
       [resetCode, codeExpiry, user.admin_id]
     );
@@ -58,8 +63,8 @@ router.post('/forgot-password/send-code', async (req, res) => {
       to: email,
       subject: 'Password Reset Code - EEMS',
       html: `
-        <h2>Password Reset Request</h2>
-        <p>Hello ${user.fullname || "User"},</p>
+        <h2>Password Reset</h2>
+        <p>Hello ${user.fullname || 'User'},</p>
         <p>Your verification code is:</p>
         <h1>${resetCode}</h1>
         <p>This code expires in 15 minutes.</p>
@@ -72,44 +77,32 @@ router.post('/forgot-password/send-code', async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Send Code Error:", error);
+    console.error(error);
     res.status(500).json({
       success: false,
-      message: 'Failed to send verification code'
+      message: 'Failed to send code'
     });
   }
 });
 
 
 
-// =====================================================
-// 2️⃣ VERIFY CODE
-// =====================================================
+// ===============================
+// 2️⃣ Verify Code
+// ===============================
 router.post('/forgot-password/verify-code', async (req, res) => {
   try {
     const { email, code } = req.body;
 
-    const [rows] = await db.query(
-      'SELECT * FROM admins WHERE email = ? AND reset_code = ?',
+    const [rows] = await pool.query(
+      'SELECT * FROM admins WHERE email = ? AND reset_code = ? AND code_expiry > NOW()',
       [email, code]
     );
 
     if (rows.length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid code'
-      });
-    }
-
-    const user = rows[0];
-
-    const now = new Date();
-    const expiry = new Date(user.code_expiry);
-
-    if (now > expiry) {
-      return res.status(400).json({
-        success: false,
-        message: 'Code expired'
+        message: 'Invalid or expired code'
       });
     }
 
@@ -119,7 +112,6 @@ router.post('/forgot-password/verify-code', async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Verify Code Error:", error);
     res.status(500).json({
       success: false,
       message: 'Verification failed'
@@ -129,40 +121,30 @@ router.post('/forgot-password/verify-code', async (req, res) => {
 
 
 
-// =====================================================
-// 3️⃣ RESET PASSWORD
-// =====================================================
+// ===============================
+// 3️⃣ Reset Password
+// ===============================
 router.post('/forgot-password/reset', async (req, res) => {
   try {
     const { email, code, newPassword } = req.body;
 
-    const [rows] = await db.query(
-      'SELECT * FROM admins WHERE email = ? AND reset_code = ?',
+    const [rows] = await pool.query(
+      'SELECT * FROM admins WHERE email = ? AND reset_code = ? AND code_expiry > NOW()',
       [email, code]
     );
 
     if (rows.length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid code'
+        message: 'Invalid or expired code'
       });
     }
 
-    const user = rows[0];
-
-    if (new Date() > new Date(user.code_expiry)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Code expired'
-      });
-    }
-
+    // 🔐 Hash password before saving
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    await db.query(
-      `UPDATE admins 
-       SET password = ?, reset_code = NULL, code_expiry = NULL 
-       WHERE email = ?`,
+    await pool.query(
+      'UPDATE admins SET password = ?, reset_code = NULL, code_expiry = NULL WHERE email = ?',
       [hashedPassword, email]
     );
 
@@ -172,7 +154,6 @@ router.post('/forgot-password/reset', async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Reset Password Error:", error);
     res.status(500).json({
       success: false,
       message: 'Failed to reset password'

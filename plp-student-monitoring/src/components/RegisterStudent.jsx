@@ -16,7 +16,6 @@ import {
   MdClose as MdDeleteIcon
 } from "react-icons/md";
 import RegisterStudentCam from './RegisterStudentCam';
-import axios from "axios";
 
 function RegisterStudent({ onClose }) {
   const [currentStep, setCurrentStep] = useState(1);
@@ -27,12 +26,6 @@ function RegisterStudent({ onClose }) {
   const [photoPreviews, setPhotoPreviews] = useState(Array(5).fill(null));
   const [captureStep, setCaptureStep] = useState(0);
   const [showCamera, setShowCamera] = useState(false);
-  const [studentId, setStudentId] = useState("");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [middleName, setMiddleName] = useState("");
-  const [yearLevel, setYearLevel] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const maxPhotos = 5;
 
   const captureSteps = [
@@ -160,48 +153,6 @@ function RegisterStudent({ onClose }) {
   const [status, setStatus] = useState("");
   const [college, setCollege] = useState("");
 
-
-  const handleRegister = async () => {
-    try {
-      if (!studentId || !firstName || !lastName || !college || !yearLevel || !status) {
-        alert("Please complete all fields.");
-        return;
-      }
-  
-      const validImages = photoPreviews.filter(img => img !== null);
-  
-      if (validImages.length !== 5) {
-        alert("Please capture all 5 photos.");
-        return;
-      }
-  
-      setIsSubmitting(true);
-  
-      const response = await axios.post("http://localhost:5000/api/register", {
-        student_id: studentId,
-        first_name: firstName,
-        last_name: lastName,
-        middle_name: middleName,
-        college_department: college,
-        year_level: yearLevel,
-        status: status,
-        images: validImages
-      });
-  
-      alert("Student registered successfully!");
-      onClose();
-  
-    } catch (error) {
-      console.error(error);
-      alert(
-        "Registration failed: " +
-        (error.response?.data?.error || error.message)
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   return (
     <div className="register-container">
       <div className="register-header">
@@ -218,12 +169,7 @@ function RegisterStudent({ onClose }) {
           <div className="form-row">
             <div className="input-group">
               <label>Student ID</label>
-              <input 
-                type="text" 
-                placeholder="e.g 23-00001"
-                value={studentId}
-                onChange={(e) => setStudentId(e.target.value)}
-              />
+              <input type="text" placeholder="e.g 23-00001" />
             </div>
             <div className="input-group">
               <label>College Department</label>
@@ -247,33 +193,18 @@ function RegisterStudent({ onClose }) {
           <div className="form-row">
             <div className="input-group">
               <label>Last Name</label>
-              <input 
-                type="text" 
-                placeholder="e.g. Dela Cruz"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-              />
+              <input type="text" placeholder="e.g. Dela Cruz" />
             </div>
             <div className="input-group">
               <label>Year Level</label>
-              <input 
-                type="text" 
-                placeholder="e.g 3rd"
-                value={yearLevel}
-                onChange={(e) => setYearLevel(e.target.value)}
-              />
+              <input type="text" placeholder="e.g 3rd" />
             </div>
           </div>
 
           <div className="form-row">
             <div className="input-group">
               <label>First Name</label>
-              <input 
-                type="text" 
-                placeholder="e.g Juan"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-              />
+              <input type="text" placeholder="e.g Juan" />
             </div>
             <div className="input-group">
               <label>Status</label>
@@ -288,12 +219,7 @@ function RegisterStudent({ onClose }) {
           <div className="form-row">
             <div className="input-group">
               <label>Middle Name</label>
-              <input 
-                type="text" 
-                placeholder="e.g Smith"
-                value={middleName}
-                onChange={(e) => setMiddleName(e.target.value)}
-              />
+              <input type="text" placeholder="e.g Smith" />
             </div>
             <div className="input-group" />
           </div>
@@ -417,10 +343,10 @@ function RegisterStudent({ onClose }) {
             </button>
             <button 
               className="btn register" 
-              disabled={!scanComplete || isSubmitting}
-              onClick={handleRegister}
+              disabled={!scanComplete}
+              onClick={onClose}
             >
-              {isSubmitting ? "Registering..." : "Register"}
+              Register
             </button>
           </div>
         </div>

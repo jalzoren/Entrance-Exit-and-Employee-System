@@ -1,9 +1,26 @@
+require('dotenv').config();
 const express = require('express');
-const bcrypt = require("bcryptjs");
-const pool = require("../src/db");
+const mysql = require('mysql2/promise');
+const bcrypt = require('bcrypt');
 
 const router = express.Router();
 
+// Create DB pool using .env
+const pool = mysql.createPool({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  port: process.env.DB_PORT || 3306,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
+});
+
+
+// ============================
+// 🔐 Secure Login Endpoint
+// ============================
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -15,6 +32,7 @@ router.post('/login', async (req, res) => {
       });
     }
 
+    // 1️⃣ Get user by email only
     const [rows] = await pool.query(
       'SELECT * FROM admins WHERE email = ?',
       [email]
@@ -29,6 +47,7 @@ router.post('/login', async (req, res) => {
 
     const user = rows[0];
 
+    // 2️⃣ Compare hashed password
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
@@ -38,6 +57,7 @@ router.post('/login', async (req, res) => {
       });
     }
 
+    // 3️⃣ Remove password before sending response
     const { password: _, ...userWithoutPassword } = user;
 
     res.json({
