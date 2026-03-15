@@ -296,56 +296,6 @@ function AdminDashboard({ onLogout }) {
             </span>
           ))}
         </div>
-      
-              <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-                {departmentData.map((dept, i) => {
-                  const present = dept.present || 0;
-                  const absent  = dept.absent  || 0;
-                  const presentPx = Math.round((present / maxPresent) * 300);
-                  const absentPx  = absent > 0 ? Math.max(Math.round((absent  / maxPresent) * 300), 28) : 0;
-                  return (
-                    <div key={i} style={{ display:'flex', alignItems:'center', gap:10 }}>
-                      <span style={{ fontSize:12, color:'#555', fontWeight:500, width:175, textAlign:'right', flexShrink:0, lineHeight:1.3 }}>
-                        {dept.department_name}
-                      </span>
-                      <div style={{ display:'flex', gap:3, alignItems:'center' }}>
-                        {present > 0 && (
-                          <div style={{
-                            width: presentPx, height:26,
-                            background:'#28a745',
-                            borderRadius: absent === 0 ? 6 : '6px 0 0 6px',
-                            display:'flex', alignItems:'center', justifyContent:'center',
-                            color:'#fff', fontSize:12, fontWeight:700,
-                          }}>
-                            {present}
-                          </div>
-                        )}
-                        {absent > 0 && (
-                          <div style={{
-                            width: absentPx, height:26,
-                            background:'#dc3545',
-                            borderRadius: present === 0 ? 6 : '0 6px 6px 0',
-                            display:'flex', alignItems:'center', justifyContent:'center',
-                            color:'#fff', fontSize:12, fontWeight:700,
-                          }}>
-                            {absent}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Legend */}
-              <div style={{ display:'flex', gap:20, marginTop:16, paddingTop:12, borderTop:'1px solid #f0f0f0' }}>
-                {[['#28a745','Present'],['#dc3545','Absent']].map(([color, label]) => (
-                  <span key={label} style={{ display:'flex', alignItems:'center', gap:6, fontSize:13, color:'#555' }}>
-                    <span style={{ width:12, height:12, borderRadius:2, background:color, display:'inline-block' }} />
-                    {label}
-                  </span>
-                ))}
-              </div>
             </Card.Body>
           </Card>
         </Col>
