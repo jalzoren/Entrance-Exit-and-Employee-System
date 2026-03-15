@@ -1,91 +1,277 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './ccs/settings.css';
 
-export default function Settings() {
+export default function Settingspage() {
+
+  const [activeTab, setActiveTab] = useState("branding");
+
   return (
-      <div className="content-overlay">
-        <div className="dashboard-container">
+    <div className="settings-page">
 
-          <div className="dashboard-header">
-            <h1 className="dashboard-title">Settings</h1>
-            <p className="section-title">Administration</p>
-          </div>
+      <div className="settings-card-main">
 
-          <div className="settings-grid">
+        <h1 className="settings-title">Settings</h1>
 
-            {/* Left: Branding / Institution */}
-            <section className="settings-card" aria-labelledby="branding-title">
-              <div>
-                <h2 id="branding-title" className="card-title">Branding</h2>
-                <p className="card-subtitle">Logo and institution name</p>
+        {/* Tabs */}
+        <div className="settings-tabs">
 
-                <div className="settings-branding">
-                  <div className="settings-logo-preview" aria-hidden>
-                    <img src="/placeholder-logo.png" alt="Logo preview" />
-                  </div>
+          <button
+            className={activeTab === "branding" ? "tab active" : "tab"}
+            onClick={() => setActiveTab("branding")}
+          >
+            Branding
+          </button>
 
-                  <div className="settings-actions">
-                    <div className="settings-field">
-                      <label htmlFor="logoUpload">Site logo</label>
-                      <input id="logoUpload" className="settings-input" type="file" disabled aria-disabled="true" />
-                      <small className="stat-sublabel">Upload control will be enabled when logic is wired.</small>
-                    </div>
+          <button
+            className={activeTab === "departments" ? "tab active" : "tab"}
+            onClick={() => setActiveTab("departments")}
+          >
+            Departments
+          </button>
 
-                    <div className="settings-field">
-                      <label htmlFor="institutionName">Institution name</label>
-                      <input id="institutionName" className="settings-input" type="text" defaultValue="College / Institution Name" readOnly aria-readonly="true" />
-                      <div className="settings-row">
-                        <button className="settings-btn settings-primary" type="button">Edit name</button>
-                      </div>
-                    </div>
+          <button
+            className={activeTab === "positions" ? "tab active" : "tab"}
+            onClick={() => setActiveTab("positions")}
+          >
+            Positions
+          </button>
 
-                  </div>
+          <button
+            className={activeTab === "locations" ? "tab active" : "tab"}
+            onClick={() => setActiveTab("locations")}
+          >
+            Locations
+          </button>
+
+        </div>
+
+
+        <div className="settings-content">
+
+        {/* TAB 1 — BRANDING */}
+
+        {activeTab === "branding" && (
+
+          <div className="branding-section">
+
+            <div className="logo-preview">
+              <img src="/placeholder-logo.png" alt="logo preview" />
+            </div>
+
+            <div className="branding-controls">
+
+              <div className="settings-field">
+                <label>Upload Logo</label>
+                <input type="file" className="settings-input" />
+              </div>
+
+              <div className="settings-field">
+                <label>Institution Name</label>
+
+                <div className="inline-row">
+                  <input
+                    type="text"
+                    className="settings-input"
+                    defaultValue="College / Institution Name"
+                  />
+
+                  <button className="btn-primary">
+                    Edit
+                  </button>
                 </div>
 
               </div>
-            </section>
 
-            {/* Right: Departments */}
-            <section className="settings-card" aria-labelledby="departments-title">
-  <div>
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-      <h2 id="departments-title" className="card-title">Departments</h2>
-      <button className="settings-btn settings-primary" type="button">Add department</button>
-    </div>
-
-    <p className="card-subtitle">Manage departments (delete / add)</p>
-
-    <div className="settings-dept-list">
-
-      <div className="dept-item">
-        <div className="dept-info">
-          <div className="dept-title">Department of Computer Science</div>
-          <div className="dept-meta">Short code: CS</div>
-        </div>
-        <div className="dept-actions">
-          <button className="settings-btn settings-danger" type="button" disabled aria-disabled="true">Delete</button>
-        </div>
-      </div>
-
-      <div className="dept-item">
-        <div className="dept-info">
-          <div className="dept-title">Department of Mathematics</div>
-          <div className="dept-meta">Short code: MATH</div>
-        </div>
-        <div className="dept-actions">
-          <button className="settings-btn settings-danger" type="button" disabled aria-disabled="true">Delete</button>
-        </div>
-      </div>
-
-    </div>
-  </div>
-</section>
+            </div>
 
           </div>
 
-          <div className="settings-footer-spacer" />
+        )}
+
+
+
+        {/* TAB 2 — DEPARTMENTS */}
+
+        {activeTab === "departments" && (
+
+          <div>
+
+            <div className="list-toolbar">
+
+              <input
+                type="text"
+                className="settings-input search"
+                placeholder="Search departments..."
+              />
+
+              <button className="btn-primary">
+                Add
+              </button>
+
+            </div>
+
+            <div className="list-items">
+
+              <div className="list-item">
+                <span>Department of Computer Science</span>
+
+                <div className="actions">
+                  <button className="btn-edit">Edit</button>
+                  <button className="btn-remove">Remove</button>
+                </div>
+              </div>
+
+              <div className="list-item">
+                <span>Department of Mathematics</span>
+
+                <div className="actions">
+                  <button className="btn-edit">Edit</button>
+                  <button className="btn-remove">Remove</button>
+                </div>
+              </div>
+
+              <div className="list-item">
+                <span>Department of Engineering</span>
+
+                <div className="actions">
+                  <button className="btn-edit">Edit</button>
+                  <button className="btn-remove">Remove</button>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+        )}
+
+
+
+        {/* TAB 3 — POSITIONS */}
+
+        {activeTab === "positions" && (
+
+          <div>
+
+            <div className="list-toolbar">
+
+              <input
+                type="text"
+                className="settings-input search"
+                placeholder="Search positions..."
+              />
+
+              <button className="btn-primary">
+                Add
+              </button>
+
+            </div>
+
+            <div className="list-items">
+
+              <div className="list-item">
+                <span>Professor</span>
+
+                <div className="actions">
+                  <button className="btn-edit">Edit</button>
+                  <button className="btn-remove">Remove</button>
+                </div>
+              </div>
+
+              <div className="list-item">
+                <span>Assistant Professor</span>
+
+                <div className="actions">
+                  <button className="btn-edit">Edit</button>
+                  <button className="btn-remove">Remove</button>
+                </div>
+              </div>
+
+              <div className="list-item">
+                <span>Instructor</span>
+
+                <div className="actions">
+                  <button className="btn-edit">Edit</button>
+                  <button className="btn-remove">Remove</button>
+                </div>
+              </div>
+
+              <div className="list-item">
+                <span>Dean</span>
+
+                <div className="actions">
+                  <button className="btn-edit">Edit</button>
+                  <button className="btn-remove">Remove</button>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+        )}
+
+
+
+        {/* TAB 4 — LOCATIONS */}
+
+        {activeTab === "locations" && (
+
+          <div>
+
+            <div className="list-toolbar">
+
+              <input
+                type="text"
+                className="settings-input search"
+                placeholder="Search locations..."
+              />
+
+              <button className="btn-primary">
+                Add
+              </button>
+
+            </div>
+
+            <div className="list-items">
+
+              <div className="list-item">
+                <span>Campus Facade</span>
+
+                <div className="actions">
+                  <button className="btn-edit">Edit</button>
+                  <button className="btn-remove">Remove</button>
+                </div>
+              </div>
+
+              <div className="list-item">
+                <span>Auditorium</span>
+
+                <div className="actions">
+                  <button className="btn-edit">Edit</button>
+                  <button className="btn-remove">Remove</button>
+                </div>
+              </div>
+
+              <div className="list-item">
+                <span>Gymnasium</span>
+
+                <div className="actions">
+                  <button className="btn-edit">Edit</button>
+                  <button className="btn-remove">Remove</button>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+        )}
 
         </div>
+
       </div>
+
+    </div>
   );
 }
