@@ -378,12 +378,7 @@ function Students() {
                           >
                             Edit
                           </button>
-                          <button 
-                            className="action-text-btn photo-text-btn" 
-                            onClick={() => handleViewPhoto(student.student_id)}
-                          >
-                            View Photo
-                          </button>
+                          
                           <button 
                             className={`action-text-btn ${student.status === 'Regular' ? 'deactivate-text-btn' : 'activate-text-btn'}`}
                             onClick={() => handleStatusChange(student.student_id, student.status)}
