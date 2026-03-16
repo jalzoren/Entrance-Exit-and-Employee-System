@@ -2,6 +2,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
 import DashboardLayout from './components/DashboardLayout'; // contains Sidebar
+import SuperDashboardlayout from './components/SuperDashboardLayout'
 import Login from './pages/Login';
 import Dashboard from './adminpages/Dashboard';
 import Monitor from './adminpages/Monitor';
@@ -14,6 +15,7 @@ import Users from './superadminpages/Users';
 import Forgot from './pages/ForgotPass';
 import Forgot2 from './pages/ForgotPass2';
 import RegisterStudent from './components/RegisterStudent';
+
 function App() {
   return (
     <BrowserRouter>
@@ -31,8 +33,14 @@ function App() {
             <Route path="/monitor" element={<Monitor />} />
             <Route path="/records" element={<Records />} />
             <Route path="/students" element={<Students />} />
-            <Route path="/users" element={<Users />} /> 
             <Route path="/analytics" element={<Analytics />} />
+          </Route>
+        </Route>
+
+           <Route>
+          <Route element={<SuperDashboardlayout />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/users" element={<Users />} />
           </Route>
         </Route>
 
