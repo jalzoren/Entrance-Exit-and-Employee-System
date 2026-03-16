@@ -130,6 +130,7 @@
   align-items: flex-start;
   gap: 30px;
   flex-wrap: wrap;
+  overflow-y: auto;
 }
 
 .import-directions h3 {
@@ -535,7 +536,7 @@
   white-space: nowrap;
 }
 
-/* Cancel button - RED style matching your RegisterStudent component */
+/* Cancel button*/
 .btn-cancel {
   background-color: var(--color-red);
   color: white;
@@ -545,9 +546,6 @@
 
 .btn-cancel:hover {
   background-color: #b30000;
-}
-
-.btn-cancel:active {
 }
 
 .btn-upload {
@@ -569,6 +567,114 @@
   opacity: 0.5;
   cursor: not-allowed;
   background-color: #cccccc;
+}
+
+
+/* ── Error List ── */
+.error-list-container {
+  background: #fff5f5;
+  border: 1px solid #fed7d7;
+  border-radius: 8px;
+  padding: 12px 16px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.error-list-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #c53030;
+  margin-bottom: 8px;
+}
+
+.error-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.error-list-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: #742a2a;
+  line-height: 1.4;
+}
+
+.error-list-item svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: #e53e3e;
+}
+
+/* ── Success Summary ── */
+.success-summary {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: #f0fff4;
+  border: 1px solid #9ae6b4;
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+
+.success-summary .success-icon {
+  color: #276749;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.success-main {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #276749;
+  margin: 0 0 4px 0;
+}
+
+.success-sub {
+  font-size: 0.8rem;
+  color: #744210;
+  margin: 0;
+}
+
+/* ── Uploading state ── */
+.btn-upload:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Notification box update ── */
+.notification_box {
+  margin: 0 0 16px 0;
+  background-color: #fffbeb;
+  border-left: 4px solid #d97706;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+}
+
+.notification_box .notification_wrapper {
+  display: flex;
+  gap: 12px;
+  padding: 14px 20px;
+  align-items: flex-start;
+}
+
+.notification_box h3 {
+  font-size: 1.5rem;
+  color: #d97706;
+  margin: 0;
+  line-height: 1;
+}
+
+.notification-content p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #92400e;
+  line-height: 1.5;
 }
 
 /* Responsive */

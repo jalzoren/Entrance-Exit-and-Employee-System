@@ -1,4 +1,4 @@
-/* Students.css - Updated with Records.css variables and applicable styles */
+/* Students.css */
 
 :root {
   --color-bg-main: #fcfbf4;
@@ -42,6 +42,43 @@
   margin: 15px 0;
   border: none;
   border-top: 1px solid #eee;
+}
+
+/* Notification Section */
+.notification {
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: center;
+  margin: 0 20px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px var(--color-shadow-soft);
+
+}
+
+.notification_wrapper {
+  display: flex;
+  gap: 15px;
+  padding: 15px 20px;
+}
+
+.notification_wrapper h3 {
+  font-size: 1.3rem;
+  color: var(--color-primary-dark);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.notification h3 svg {
+  font-size: 24px;
+  color: var(--color-primary);
+}
+
+.notification_content {
+  color: var(--color-text-black);
 }
 
 /* Controls Section */
