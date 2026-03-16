@@ -82,11 +82,15 @@ if ($method === 'POST') {
 
         $currentTime = date("Y-m-d H:i:s");
 
-        // Check existing record
+        // Debug log (can be checked in PHP error log)
+        // error_log("Attendance Request: EmpID=$employee_id, EvID=$event_id, Type=$attendance_type");
+
+        // Check for any existing record for this employee and event
         $checkQuery = "
             SELECT attendance_ID, time_in, time_out
             FROM attendance
             WHERE employee_ID = ? AND event_ID = ?
+            ORDER BY time_in DESC LIMIT 1
         ";
 
         $stmt = $conn->prepare($checkQuery);
@@ -100,30 +104,70 @@ if ($method === 'POST') {
         if ($attendance_type === "Check In") {
 
             if ($existing) {
-                echo json_encode([
-                    "error" => true,
-                    "message" => "Already checked in"
-                ]);
+                $isCheckOutEmpty = empty($existing["time_out"]) || $existing["time_out"] === '0000-00-00 00:00:00';
+                
+                if (!$isCheckOutEmpty) {
+                    echo json_encode([
+                        "error" => true,
+                        "message" => "Attendance completed for today (Already Checked Out)"
+                    ]);
+                } else {
+                    echo json_encode([
+                        "error" => true,
+                        "message" => "Already checked in for this event"
+                    ]);
+                }
                 exit;
             }
 
-            $insertQuery = "
-                INSERT INTO attendance
-                (employee_ID, event_ID, time_in, status)
-                VALUES (?, ?, ?, ?)
-            ";
+            // --- Calculate Status dynamically based on Event Time ---
+            $status = "On Time";
+            try {
+                $evStmt = $conn->prepare("SELECT event_time, time FROM events WHERE event_ID = ?");
+                $evStmt->execute([$event_id]);
+                $ev = $evStmt->fetch(PDO::FETCH_ASSOC);
+                
+                $schedTimeStr = $ev["event_time"] ?? ($ev["time"] ?? null);
+                if ($schedTimeStr) {
+                    $schedTs = strtotime(date("Y-m-d ") . $schedTimeStr);
+                    $currTs  = strtotime($currentTime);
+                    // If more than 15 minutes late
+                    if ($currTs > ($schedTs + 900)) {
+                        $status = "Late";
+                    }
+                }
+            } catch (Exception $e_ev) {
+                // fallback to "On Time"
+            }
 
-            $stmt = $conn->prepare($insertQuery);
-            $stmt->execute([
-                $employee_id,
-                $event_id,
-                $currentTime,
-                "On Time"
-            ]);
+            // Primary Attempt: status column
+            try {
+                $insertQuery = "
+                    INSERT INTO attendance
+                    (employee_ID, event_ID, time_in, status)
+                    VALUES (?, ?, ?, ?)
+                ";
+                $stmt = $conn->prepare($insertQuery);
+                $stmt->execute([ $employee_id, $event_id, $currentTime, $status ]);
+            } catch (Exception $e1) {
+                // Fallback Attempt: attendance_status column
+                try {
+                    $insertQuery = "
+                        INSERT INTO attendance
+                        (employee_ID, event_ID, time_in, attendance_status)
+                        VALUES (?, ?, ?, ?)
+                    ";
+                    $stmt = $conn->prepare($insertQuery);
+                    $stmt->execute([ $employee_id, $event_id, $currentTime, $status ]);
+                } catch (Exception $e2) {
+                    throw new Exception("Could not insert attendance: " . $e1->getMessage());
+                }
+            }
 
             echo json_encode([
                 "success" => true,
-                "message" => "Checked in successfully"
+                "message" => "Checked in successfully as " . $status,
+                "status"  => $status
             ]);
             exit;
         }

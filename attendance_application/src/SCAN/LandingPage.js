@@ -125,7 +125,7 @@ function EmployeePage({ onBack, onNavigateAdmin }) {
         setDataError('');
 
         const [eventsData, employeesData] = await Promise.all([
-          getEvents(),
+          getEvents({ archived: 0 }),
           getEmployees(),
         ]);
 
@@ -245,24 +245,27 @@ function EmployeePage({ onBack, onNavigateAdmin }) {
       return;
     }
 
-    setAttendanceType(type);
-    setShowConfirmation(true);
-
     try {
-      await markAttendance({
+      const response = await markAttendance({
         employee_id: recognizedUser.employeeId || recognizedUser.id,
         event_id: selectedEvent,
         attendance_type: type,
       });
 
-      setTimeout(() => {
-        setShowConfirmation(false);
-        resetToInitialState();
-      }, 2000);
+      if (response && (response.success || !response.error)) {
+        setAttendanceType(type);
+        setShowConfirmation(true);
+        setTimeout(() => {
+          setShowConfirmation(false);
+          resetToInitialState();
+        }, 2000);
+      } else {
+        // Show the error message from the server (e.g. "Already checked in")
+        alert(response?.message || `Failed to ${type.toLowerCase()}. Please try again.`);
+      }
     } catch (error) {
       console.error('Failed to record attendance:', error);
-      setShowConfirmation(false);
-      alert(error.message || 'Failed to record attendance.');
+      alert(error.message || 'Server error. Please check your connection.');
     }
   };
 

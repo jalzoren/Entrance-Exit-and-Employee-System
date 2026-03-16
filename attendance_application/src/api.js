@@ -153,9 +153,9 @@ export const markAttendance = async ({
 // EVENT ENDPOINTS
 // ====================================
 
-export const getEvents = async () => {
+export const getEvents = async (params = {}) => {
   try {
-    const { data } = await api.get("/events.php");
+    const { data } = await api.get("/events.php", { params });
     return data;
   } catch (error) {
     handleError(error);
@@ -174,6 +174,15 @@ export const createEvent = async (eventData) => {
 export const deleteEvent = async (id) => {
   try {
     const { data } = await api.delete(`/events.php?id=${id}`);
+    return data;
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+export const restoreEvent = async (id) => {
+  try {
+    const { data } = await api.put(`/events.php?id=${id}`, { restore: true });
     return data;
   } catch (error) {
     handleError(error);

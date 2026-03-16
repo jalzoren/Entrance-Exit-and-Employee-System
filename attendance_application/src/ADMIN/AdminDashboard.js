@@ -113,7 +113,7 @@ function AdminDashboard({ onLogout }) {
   };
 
   // ── Dept Bars ──────────────────────────────────────────────────────────────
-  const maxPresent = Math.max(...departmentData.map(d => d.present || 0), 1);
+  const maxDeptTotal = Math.max(...departmentData.map(d => (d.present || 0) + (d.absent || 0)), 1);
 
   const renderDashboard = () => (
     <div className="dashboard-container">
@@ -249,34 +249,38 @@ function AdminDashboard({ onLogout }) {
           {departmentData.map((dept, i) => {
             const present = dept.present || 0;
             const absent  = dept.absent  || 0;
-            const presentPx = Math.round((present / maxPresent) * 300);
-            const absentPx  = absent > 0 ? Math.max(Math.round((absent  / maxPresent) * 300), 28) : 0;
+            const BAR_BASE_WIDTH = 220; // Maximum combined width for bars
+            const presentPx = Math.round((present / maxDeptTotal) * BAR_BASE_WIDTH);
+            const absentPx  = Math.round((absent  / maxDeptTotal) * BAR_BASE_WIDTH);
+            
             return (
               <div key={i} style={{ display:'flex', alignItems:'center', gap:10 }}>
                 {/* Label */}
-                <span style={{ fontSize:12, color:'#555', fontWeight:500, width:175, textAlign:'right', flexShrink:0, lineHeight:1.3 }}>
+                <span style={{ fontSize:11, color:'#555', fontWeight:500, width:150, textAlign:'left', flexShrink:0, lineHeight:1.2 }}>
                   {dept.department_name}
                 </span>
                 {/* Bars */}
-                <div style={{ display:'flex', gap:3, alignItems:'center' }}>
+                <div style={{ display:'flex', gap:2, alignItems:'center', flexGrow:1 }}>
                   {present > 0 && (
                     <div style={{
-                      width: presentPx, height:26,
+                      width: Math.max(presentPx, 20), height:24,
                       background:'#28a745',
-                      borderRadius: absent === 0 ? 6 : '6px 0 0 6px',
+                      borderRadius: absent === 0 ? 4 : '4px 0 0 4px',
                       display:'flex', alignItems:'center', justifyContent:'center',
-                      color:'#fff', fontSize:12, fontWeight:700,
+                      color:'#fff', fontSize:11, fontWeight:700,
+                      minWidth: 'fit-content', padding: '0 5px'
                     }}>
                       {present}
                     </div>
                   )}
                   {absent > 0 && (
                     <div style={{
-                      width: absentPx, height:26,
+                      width: Math.max(absentPx, 20), height:24,
                       background:'#dc3545',
-                      borderRadius: present === 0 ? 6 : '0 6px 6px 0',
+                      borderRadius: present === 0 ? 4 : '0 4px 4px 0',
                       display:'flex', alignItems:'center', justifyContent:'center',
-                      color:'#fff', fontSize:12, fontWeight:700,
+                      color:'#fff', fontSize:11, fontWeight:700,
+                      minWidth: 'fit-content', padding: '0 5px'
                     }}>
                       {absent}
                     </div>

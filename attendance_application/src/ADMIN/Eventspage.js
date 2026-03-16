@@ -51,7 +51,7 @@ function EventsPage({ onNavigate }) {
   const loadEvents = async () => {
     try {
       setLoadError('');
-      const data = await getEvents();
+      const data = await getEvents({ archived: 0 });
       const list = Array.isArray(data) ? data : (data?.data ?? []);
       setEvents(list);
     } catch (err) {
@@ -154,14 +154,14 @@ function EventsPage({ onNavigate }) {
 
   const handleDeleteEvent = async (ev, e) => {
     e.stopPropagation();
-    if (!window.confirm('Delete this event?')) return;
+    if (!window.confirm('Archive this event?')) return;
     try {
       const res = await deleteEvent(ev.event_ID);
       await loadEvents();
-      setCreateSuccess(res?.message || 'Event deleted successfully');
+      setCreateSuccess(res?.message || 'Event archived successfully');
       setTimeout(() => setCreateSuccess(''), 4000);
     } catch (err) {
-      const msg = err?.message || 'Failed to delete event.';
+      const msg = err?.message || 'Failed to archive event.';
       setCreateError(msg);
       setTimeout(() => setCreateError(''), 5000);
     }
@@ -366,7 +366,7 @@ function EventsPage({ onNavigate }) {
                       size="sm"
                       onClick={(e) => handleDeleteEvent(event, e)}
                     >
-                      Delete
+                      Archive
                     </Button>
                   </div>
 

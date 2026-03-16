@@ -20,6 +20,24 @@ if ($method === 'OPTIONS') {
 // ======================================================
 if ($method === 'GET') {
 
+    // --- Check for is_archived column existence once ---
+    static $hasArchivedCol = null;
+    if ($hasArchivedCol === null) {
+        try {
+            $conn->query("SELECT is_archived FROM events LIMIT 1");
+            $hasArchivedCol = true;
+        } catch (Exception $e) {
+            $hasArchivedCol = false;
+        }
+    }
+
+    $whereClause = "";
+    if ($hasArchivedCol) {
+        // If archived=1 is passed, show ONLY archived. Otherwise show ONLY active.
+        $showArchived = (isset($_GET['archived']) && $_GET['archived'] == '1') ? 1 : 0;
+        $whereClause = " WHERE ev.is_archived = $showArchived ";
+    }
+
     try {
         // 1) event_date/event_time/description + eventtype_name/location_name
         $q1 = "
@@ -29,6 +47,8 @@ if ($method === 'GET') {
                 ev.event_date,
                 ev.event_time,
                 ev.description,
+                ev.eventtype_ID,
+                ev.location_ID,
                 et.eventtype_name AS eventtype_name,
                 l.location_name   AS location_name,
                 COUNT(a.attendance_ID) AS attended_count
@@ -36,7 +56,8 @@ if ($method === 'GET') {
             LEFT JOIN eventtype et ON ev.eventtype_ID = et.eventtype_ID
             LEFT JOIN location   l ON ev.location_ID   = l.location_ID
             LEFT JOIN attendance a ON ev.event_ID      = a.event_ID
-            GROUP BY ev.event_ID, ev.event_name, ev.event_date, ev.event_time, ev.description, et.eventtype_name, l.location_name
+            $whereClause
+            GROUP BY ev.event_ID, ev.event_name, ev.event_date, ev.event_time, ev.description, ev.eventtype_ID, ev.location_ID, et.eventtype_name, l.location_name
             ORDER BY ev.event_date DESC, ev.event_time DESC
         ";
         $stmt = $conn->prepare($q1);
@@ -52,6 +73,8 @@ if ($method === 'GET') {
                     ev.event_date,
                     ev.event_time,
                     ev.description,
+                    ev.eventtype_ID,
+                    ev.location_ID,
                     et.eventtype     AS eventtype_name,
                     l.location       AS location_name,
                     COUNT(a.attendance_ID) AS attended_count
@@ -59,7 +82,8 @@ if ($method === 'GET') {
                 LEFT JOIN eventtype et ON ev.eventtype_ID = et.eventtype_ID
                 LEFT JOIN location   l ON ev.location_ID   = l.location_ID
                 LEFT JOIN attendance a ON ev.event_ID      = a.event_ID
-                GROUP BY ev.event_ID, ev.event_name, ev.event_date, ev.event_time, ev.description, et.eventtype, l.location
+                $whereClause
+                GROUP BY ev.event_ID, ev.event_name, ev.event_date, ev.event_time, ev.description, ev.eventtype_ID, ev.location_ID, et.eventtype, l.location
                 ORDER BY ev.event_date DESC, ev.event_time DESC
             ";
             $stmt = $conn->prepare($q2);
@@ -75,6 +99,8 @@ if ($method === 'GET') {
                         ev.date        AS event_date,
                         ev.time        AS event_time,
                         ev.event_desc  AS description,
+                        ev.eventtype_ID,
+                        ev.location_ID,
                         et.eventtype_name AS eventtype_name,
                         l.location_name   AS location_name,
                         COUNT(a.attendance_ID) AS attended_count
@@ -82,7 +108,8 @@ if ($method === 'GET') {
                     LEFT JOIN eventtype et ON ev.eventtype_ID = et.eventtype_ID
                     LEFT JOIN location   l ON ev.location_ID   = l.location_ID
                     LEFT JOIN attendance a ON ev.event_ID      = a.event_ID
-                    GROUP BY ev.event_ID, ev.event_name, event_date, event_time, description, et.eventtype_name, l.location_name
+                    $whereClause
+                    GROUP BY ev.event_ID, ev.event_name, event_date, event_time, description, ev.eventtype_ID, ev.location_ID, et.eventtype_name, l.location_name
                     ORDER BY event_date DESC, event_time DESC
                 ";
                 $stmt = $conn->prepare($q3);
@@ -98,6 +125,8 @@ if ($method === 'GET') {
                             ev.date        AS event_date,
                             ev.time        AS event_time,
                             ev.event_desc  AS description,
+                            ev.eventtype_ID,
+                            ev.location_ID,
                             et.eventtype   AS eventtype_name,
                             l.location     AS location_name,
                             COUNT(a.attendance_ID) AS attended_count
@@ -105,7 +134,8 @@ if ($method === 'GET') {
                         LEFT JOIN eventtype et ON ev.eventtype_ID = et.eventtype_ID
                         LEFT JOIN location   l ON ev.location_ID   = l.location_ID
                         LEFT JOIN attendance a ON ev.event_ID      = a.event_ID
-                        GROUP BY ev.event_ID, ev.event_name, event_date, event_time, description, et.eventtype, l.location
+                        $whereClause
+                        GROUP BY ev.event_ID, ev.event_name, event_date, event_time, description, ev.eventtype_ID, ev.location_ID, et.eventtype, l.location
                         ORDER BY event_date DESC, event_time DESC
                     ";
                     $stmt = $conn->prepare($q4);
@@ -228,6 +258,24 @@ if ($method === 'PUT') {
 
     $data = json_decode(file_get_contents("php://input"), true);
 
+    // --- RESTORE ACTION ---
+    if (isset($data["restore"]) && $data["restore"] === true) {
+        try {
+            $stmt = $conn->prepare("UPDATE events SET is_archived = 0 WHERE event_ID = ?");
+            $stmt->execute([$event_id]);
+            echo json_encode([
+                "success" => true,
+                "message" => "Event restored successfully"
+            ]);
+        } catch (Exception $e) {
+            echo json_encode([
+                "error" => true,
+                "message" => $e->getMessage()
+            ]);
+        }
+        exit;
+    }
+
     if (
         empty($data["event_name"]) ||
         empty($data["eventtype_ID"]) ||
@@ -323,7 +371,7 @@ if ($method === 'PUT') {
 }
 
 // ======================================================
-// DELETE EVENT
+// DELETE EVENT (ARCHIVE)
 // ======================================================
 if ($method === 'DELETE') {
 
@@ -338,18 +386,19 @@ if ($method === 'DELETE') {
     }
 
     try {
-        $stmt = $conn->prepare("DELETE FROM events WHERE event_ID = ?");
+        // Try soft delete (archive)
+        $stmt = $conn->prepare("UPDATE events SET is_archived = 1 WHERE event_ID = ?");
         $stmt->execute([$event_id]);
 
         if ($stmt->rowCount() > 0) {
             echo json_encode([
                 "success" => true,
-                "message" => "Event deleted successfully"
+                "message" => "Event moved to archive successfully"
             ]);
         } else {
             echo json_encode([
                 "error" => true,
-                "message" => "Event not found"
+                "message" => "Event not found or already archived"
             ]);
         }
     } catch (Exception $e) {
