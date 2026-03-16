@@ -1,20 +1,23 @@
 // src/App.tsx
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-import DashboardLayout from './components/DashboardLayout'; // contains Sidebar
-import SuperDashboardlayout from './components/SuperDashboardLayout'
-import Login from './pages/Login';
-import Dashboard from './adminpages/Dashboard';
-import Monitor from './adminpages/Monitor';
-import Records from './adminpages/Records';
-import Students from './adminpages/Students';
-import Analytics from './adminpages/Analytics';
-import FaceRecognition from './pages/FaceRecognition';
-import Users from './superadminpages/Users'; 
+import DashboardLayout from "./components/DashboardLayout"; // contains Sidebar
+import SuperDashboardlayout from "./components/SuperDashboardLayout";
+import Login from "./pages/Login";
+import Dashboard from "./adminpages/Dashboard";
+import Monitor from "./adminpages/Monitor";
+import Records from "./adminpages/Records";
+import Students from "./adminpages/Students";
+import Analytics from "./adminpages/Analytics";
+import FaceRecognition from "./pages/FaceRecognition";
+import Users from "./superadminpages/Users";
+import SystemSettings from "./superadminpages/SystemSettings";
+import SuperDashboard from "./superadminpages/SuperDashboard";
+import SuperStudents from "./superadminpages/SuperStudents";
 
-import Forgot from './pages/ForgotPass';
-import Forgot2 from './pages/ForgotPass2';
-import RegisterStudent from './components/RegisterStudent';
+import Forgot from "./pages/ForgotPass";
+import Forgot2 from "./pages/ForgotPass2";
+import RegisterStudent from "./components/RegisterStudent";
 
 function App() {
   return (
@@ -37,10 +40,13 @@ function App() {
           </Route>
         </Route>
 
-           <Route>
+        <Route>
           <Route element={<SuperDashboardlayout />}>
-            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/users" element={<Users />} />
+            <Route path="/systemsettings" element={<SystemSettings />} />
+            <Route path="/superdashboard" element={<SuperDashboard />} />
+            <Route path="/superstudents" element={<SuperStudents />} />
+
           </Route>
         </Route>
 

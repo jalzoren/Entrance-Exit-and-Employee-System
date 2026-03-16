@@ -26,10 +26,18 @@ export default function Sidebar() {
   const toggleSidebar = () => setIsOpen((prev) => !prev);
 
   const menuItems = [
-    { icon: <FiHome />, label: "Dashboard", path: "/dashboard" },
+    { icon: <FiHome />, label: "Dashboard", path: "/superdashboard" },
     { icon: <FiMonitor />, label: "User Management", path: "/users" },
-    { icon: <FiUsers />, label: "Student Management", path: "/studentm" },
-    { icon: <FiBarChart2 />, label: "System Settings", path: "/settings" },
+    { icon: <FiUsers />, label: "Student Management", path: "/superstudents" },
+    { icon: <FiBarChart2 />, label: "System Settings", path: "/systemsettings" },
+    {label: "Entrance and Exit Monitoring" },
+    { icon: <FiMonitor />, label: "Real-Time Monitor", path: "/monitor" },
+    { icon: <FiFileText />, label: "Entry-Exit Records", path: "/records" },
+    { icon: <FiBarChart2 />, label: "Analytics & Reports", path: "/analytics" },
+     {label: "Employee Attendance Monitoring" },
+     { icon: <FiBarChart2 />, label: "Lorem Ipsum", path: "/" },
+          { icon: <FiBarChart2 />, label: "Lorem Ipsum", path: "/" },
+
   ];
 
   // Get initials for avatar

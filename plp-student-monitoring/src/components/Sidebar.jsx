@@ -88,7 +88,7 @@ export default function Sidebar() {
           {isOpen && (
             <div className="user-details">
               <div className="user-name">{user.fullname || 'Admin User'}</div>
-              <div className="user-role">EEMS - {user.role || 'ADMIN'}</div>
+              <div className="user-role"> {user.role || 'ADMIN'}</div>
               <Link to="/" className="profile-link">
                 Logout
               </Link> 
