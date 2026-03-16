@@ -44,7 +44,6 @@ CREATE TABLE `admins` (
 
 INSERT INTO `admins` (`admin_id`, `email`, `fullname`, `role`, `password`, `reset_code`, `code_expiry`, `created`) VALUES
 (2300295, 'cassyrain03@gmail.com', 'Bianca Rain Castillon', 'Super Admin', '$2b$10$7nVNYypnlfwEyycnMSBHAe7OvSGTShED3w0W63C3pt9iZwEZZ4f3C', NULL, NULL, '2026-02-26 07:19:51');
-(2301234, 'tonystarkkk03@gmail.com', 'Tony Stark', 'Super Admin', 'SuperAdmin123', NULL, NULL, '2026-03-16 01:11:21');
 -- --------------------------------------------------------
 
 --

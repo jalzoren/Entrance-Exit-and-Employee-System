@@ -203,9 +203,8 @@ router.post("/import-students", upload.single("file"), async (req, res) => {
       try {
         await db.query(
           `INSERT INTO students
-            (student_id, first_name, last_name, middle_name, college_department, year_level, status, face_registered, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 0, NOW())`,
-          // face_registered = 0 (false) — they still need face registration!
+            (student_id, first_name, last_name, middle_name, college_department, year_level, status, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
           [studentId, firstName, middleName, lastName, collegeDepartment, yearLevel, status]
         );
         insertedStudents.push(studentId);
@@ -236,7 +235,10 @@ router.post("/import-students", upload.single("file"), async (req, res) => {
 router.get("/pending-face-registration", async (req, res) => {
   try {
     const [rows] = await db.query(
-      `SELECT COUNT(*) AS count FROM students WHERE face_registered = 0`
+      `SELECT COUNT(*) AS count FROM students 
+      WHERE student_id NOT IN (
+        SELECT DISTINCT student_id FROM student_face_embeddings
+      )`
     );
 
     const count = rows[0].count;
