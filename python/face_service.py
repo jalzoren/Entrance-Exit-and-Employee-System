@@ -39,7 +39,6 @@ async def load_models():
     except Exception as e:
         print("MODEL LOAD ERROR:", e)
 
-
 # ----------------------------------------------------
 # Request Models
 # ----------------------------------------------------
