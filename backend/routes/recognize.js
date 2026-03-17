@@ -1,18 +1,16 @@
-// routes/recognize.js
 const express = require("express");
 const router = express.Router();
 const axios = require("axios");
-const pool = require("../src/db"); // MySQL connection
-const { cosineSimilarity } = require("../src/utils"); // your similarity helper
+const pool = require("../src/db");
+const { cosineSimilarity } = require("../src/utils");
 
-// Similarity threshold (adjustable)
 const SIMILARITY_THRESHOLD = 0.55;
 
 router.post("/recognize", async (req, res) => {
   try {
     const { image } = req.body;
 
-    // Step 1: Send image to Python FastAPI for embedding
+    // Step 1: Send image to FastAPI for embedding
     const response = await axios.post("http://127.0.0.1:8000/generate-embedding", {
       images: [image],
     });
@@ -35,7 +33,6 @@ router.post("/recognize", async (req, res) => {
     console.log("Number of stored embeddings:", rows.length);
 
     let matchedStudent = null;
-    let matchedLogType = null;
     let maxSimilarity = 0;
 
     // Step 3: Compare embeddings
@@ -53,43 +50,61 @@ router.post("/recognize", async (req, res) => {
       }
     }
 
+    const authTime = new Date().toLocaleTimeString();
+
     if (!matchedStudent) {
-      console.log("No matching student found.");
+      // Step 4a: Record failed authentication
+      const [authResult] = await pool.query(
+        "INSERT INTO authentication (method, auth_status, accuracy, duration, timestamp) VALUES (?, ?, ?, ?, ?)",
+        ["Facial Recognition", "Failed", maxSimilarity, 0, authTime]
+      );
+
+      console.log("Authentication failed");
+
       return res.json({
         detected: true,
         authenticated: false,
-        time: new Date().toLocaleTimeString(),
+        time: authTime,
       });
     }
 
-    // Step 4: Determine Entrance/Exit
+    // Step 4b: Record successful authentication
+    const [authResult] = await pool.query(
+      "INSERT INTO authentication (student_id, method, auth_status, accuracy, duration, timestamp) VALUES (?, ?, ?, ?, ?, ?)",
+      [matchedStudent, "Facial Recognition", "Success", maxSimilarity, 0, authTime]
+    );
+
+    const auth_id = authResult.insertId;
+
+    // Step 5: Determine Entrance/Exit
     const [lastLogRows] = await pool.query(
-      "SELECT log_type FROM attendance_logs WHERE student_id = ? ORDER BY log_time DESC LIMIT 1",
+      "SELECT action FROM entry_exit_logs WHERE student_id = ? ORDER BY log_time DESC LIMIT 1",
       [matchedStudent]
     );
 
-    let logType = "Entrance"; // default
-    if (lastLogRows.length > 0 && lastLogRows[0].log_type === "Entrance") {
-      logType = "Exit";
+    let action = "Entrance"; // default
+    if (lastLogRows.length > 0 && lastLogRows[0].action === "Entrance") {
+      action = "Exit";
     }
 
-    // Step 5: Store attendance log
+    // Step 6: Store entry/exit log
     await pool.query(
-      "INSERT INTO attendance_logs (student_id, log_type) VALUES (?, ?)",
-      [matchedStudent, logType]
+      "INSERT INTO entry_exit_logs (student_id, auth_id, action, log_time) VALUES (?, ?, ?, ?)",
+      [matchedStudent, auth_id, action, authTime]
     );
 
-    console.log(`Student ${matchedStudent} authenticated. LogType: ${logType}`);
+    console.log(`Student ${matchedStudent} authenticated. Action: ${action}`);
 
-    // Step 6: Respond to React UI
+    // Step 7: Respond to React
     return res.json({
       detected: true,
       authenticated: true,
       name: matchedStudent,
-      department: "BSIT", // optional: fetch real department
-      time: new Date().toLocaleTimeString(),
-      log_type: logType,
+      department: "BSIT",
+      time: authTime,
+      log_type: action,
     });
+
   } catch (err) {
     console.error("Recognition Error:", err.message);
     return res.json({ detected: false, authenticated: false });

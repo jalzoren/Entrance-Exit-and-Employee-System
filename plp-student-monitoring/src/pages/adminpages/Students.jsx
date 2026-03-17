@@ -17,12 +17,10 @@ function Students() {
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [showImportModal, setShowImportModal]     = useState(false);
 
-  // From Version 2 — proper loading/error states
   const [students, setStudents]       = useState([]);
   const [loading, setLoading]         = useState(true);
   const [error, setError]             = useState(null);
 
-  // From Version 1 — notification box for pending face registration
   const [pendingFaceCount, setPendingFaceCount] = useState(0);
 
   const recordsPerPage = 5;
@@ -69,7 +67,7 @@ function Students() {
     fetchPendingFaceReg();
   }, []);
 
-  // Reset to page 1 whenever filters change
+
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, department, yearLevel, registrationDate]);
