@@ -4,7 +4,7 @@ const pool = require("../src/db");
 const router = express.Router();
 
 // ============================
-// 🔐 Secure Login Endpoint
+// 🔐 Secure Login Endpoint with Session
 // ============================
 router.post('/login', async (req, res) => {
   try {
@@ -45,10 +45,33 @@ router.post('/login', async (req, res) => {
     // 3️⃣ Remove password before sending response
     const { password: _, ...userWithoutPassword } = user;
 
-    res.json({
-      success: true,
-      message: 'Login successful',
-      user: userWithoutPassword
+    // 4️⃣ Store user in session
+    req.session.user = userWithoutPassword;
+    req.session.userEmail = user.email;
+    req.session.role = user.role;
+
+    // Save session explicitly
+    req.session.save((err) => {
+      if (err) {
+        console.error('Session save error:', err);
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to create session'
+        });
+      }
+
+      // Determine redirect based on role
+      let redirect = '/dashboard';
+      if (user.role === 'Super Admin') {
+        redirect = '/superdashboard';
+      }
+
+      res.json({
+        success: true,
+        message: 'Login successful',
+        user: userWithoutPassword,
+        redirect: redirect
+      });
     });
 
   } catch (error) {
@@ -58,6 +81,42 @@ router.post('/login', async (req, res) => {
       message: 'Server error'
     });
   }
+});
+
+// ============================
+// 🔍 Check Session Endpoint
+// ============================
+router.get('/check-session', (req, res) => {
+  if (req.session.user) {
+    res.json({
+      authenticated: true,
+      user: req.session.user,
+      role: req.session.role
+    });
+  } else {
+    res.json({ authenticated: false });
+  }
+});
+
+// ============================
+// 🚪 Logout Endpoint
+// ============================
+router.post('/logout', (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      console.error('Logout error:', err);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to logout'
+      });
+    }
+    
+    res.clearCookie('connect.sid'); // Clear the session cookie
+    res.json({
+      success: true,
+      message: 'Logged out successfully'
+    });
+  });
 });
 
 module.exports = router;

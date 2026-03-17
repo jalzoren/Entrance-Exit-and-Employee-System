@@ -1,5 +1,6 @@
 // src/App.jsx
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 
 // Layout
 import DashboardLayout from "./layouts/DashboardLayout";
@@ -25,37 +26,118 @@ import SuperStudents from "./pages/superadminpages/SuperStudents";
 
 // Components
 import RegisterStudent from "./components/RegisterStudent";
+import ProtectedRoute from "./components/ProtectedRoute";
+
+// Loading component
+const LoadingScreen = () => (
+  <div className="loading-screen">
+    <div className="spinner"></div>
+    <p>Loading...</p>
+  </div>
+);
+
+// Role-based redirect component
+const RoleBasedRedirect = () => {
+  const { user, authenticated, loading } = useAuth();
+  
+  if (loading) {
+    return <LoadingScreen />;
+  }
+  
+  if (!authenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  if (user?.role === 'Super Admin') {
+    return <Navigate to="/superdashboard" replace />;
+  } else {
+    return <Navigate to="/dashboard" replace />;
+  }
+};
+
+function AppRoutes() {
+  const { loading } = useAuth();
+
+  if (loading) {
+    return <LoadingScreen />;
+  }
+
+  return (
+    <Routes>
+      {/* Public Routes */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/forgotpass" element={<ForgotPass />} />
+      <Route path="/forgotpass2" element={<ForgotPass2 />} />
+      <Route path="/facerecog" element={<FaceRecognition />} />
+      <Route path="/registerstudent" element={<RegisterStudent />} />
+
+      {/* Root path - redirect based on role */}
+      <Route path="/" element={<RoleBasedRedirect />} />
+
+      {/* Protected Routes - Single Layout for all authenticated users */}
+      <Route element={<DashboardLayout />}>
+        {/* Admin Routes - Only accessible by EEMS/EAMS Admins */}
+        <Route path="/dashboard" element={
+          <ProtectedRoute allowedRoles={['EEMS Admin', 'EAMS Admin']}>
+            <Dashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/monitor" element={
+          <ProtectedRoute allowedRoles={['EEMS Admin', 'EAMS Admin']}>
+            <Monitor />
+          </ProtectedRoute>
+        } />
+        <Route path="/records" element={
+          <ProtectedRoute allowedRoles={['EEMS Admin', 'EAMS Admin']}>
+            <Records />
+          </ProtectedRoute>
+        } />
+        <Route path="/students" element={
+          <ProtectedRoute allowedRoles={['EEMS Admin', 'EAMS Admin']}>
+            <Students />
+          </ProtectedRoute>
+        } />
+        <Route path="/analytics" element={
+          <ProtectedRoute allowedRoles={['EEMS Admin', 'EAMS Admin']}>
+            <Analytics />
+          </ProtectedRoute>
+        } />
+
+        {/* Super Admin Routes - Only accessible by Super Admin */}
+        <Route path="/superdashboard" element={
+          <ProtectedRoute allowedRoles={['Super Admin']}>
+            <SuperDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/users" element={
+          <ProtectedRoute allowedRoles={['Super Admin']}>
+            <Users />
+          </ProtectedRoute>
+        } />
+        <Route path="/systemsettings" element={
+          <ProtectedRoute allowedRoles={['Super Admin']}>
+            <SystemSettings />
+          </ProtectedRoute>
+        } />
+        <Route path="/superstudents" element={
+          <ProtectedRoute allowedRoles={['Super Admin']}>
+            <SuperStudents />
+          </ProtectedRoute>
+        } />
+      </Route>
+
+      {/* 404 */}
+      <Route path="*" element={<div>404 - Not Found</div>} />
+    </Routes>
+  );
+}
 
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<Login />} />
-        <Route path="/forgotpass" element={<ForgotPass />} />
-        <Route path="/forgotpass2" element={<ForgotPass2 />} />
-        <Route path="/facerecog" element={<FaceRecognition />} />
-        <Route path="/registerstudent" element={<RegisterStudent />} />
-
-        {/* Protected Routes - Single Layout for all authenticated users */}
-        <Route element={<DashboardLayout />}>
-          {/* Admin Routes */}
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/monitor" element={<Monitor />} />
-          <Route path="/records" element={<Records />} />
-          <Route path="/students" element={<Students />} />
-          <Route path="/analytics" element={<Analytics />} />
-
-          {/* Super Admin Routes */}
-          <Route path="/users" element={<Users />} />
-          <Route path="/systemsettings" element={<SystemSettings />} />
-          <Route path="/superdashboard" element={<SuperDashboard />} />
-          <Route path="/superstudents" element={<SuperStudents />} />
-        </Route>
-
-        {/* 404 */}
-        <Route path="*" element={<div>404 - Not Found</div>} />
-      </Routes>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
     </BrowserRouter>
   );
 }

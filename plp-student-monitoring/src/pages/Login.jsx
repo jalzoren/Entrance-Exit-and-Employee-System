@@ -5,6 +5,7 @@ import { LuScanFace } from "react-icons/lu";
 import { useNavigate, Link } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import Swal from 'sweetalert2';
+import { useAuth } from "../context/AuthContext";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -13,6 +14,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const toggleShowPassword = () => setShowPassword((prev) => !prev);
 
@@ -20,48 +22,28 @@ export default function Login() {
     e.preventDefault();
     setLoading(true);
 
-    try {
-      const response = await fetch('http://localhost:5000/api/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          email: email,
-          password: password 
-        })
+    const result = await login(email, password);
+
+    if (result.success) {
+      await Swal.fire({
+        icon: 'success',
+        title: 'Login Successful!',
+        text: `Welcome back!`,
+        timer: 1500,
+        showConfirmButton: false
       });
-
-      const data = await response.json();
-
-      if (data.success) {
-        localStorage.setItem('user', JSON.stringify(data.user));
-        
-        await Swal.fire({
-          icon: 'success',
-          title: 'Login Successful!',
-          text: `Welcome back, ${data.user.fullname || data.user.email}!`,
-          timer: 1500,
-          showConfirmButton: false
-        });
-        
-        navigate("/dashboard");
-      } else {
-        Swal.fire({
-          icon: 'error',
-          title: 'Login Failed',
-          text: data.message || 'Invalid email or password',
-        });
-      }
-    } catch (error) {
+      
+      // Redirect based on role
+      navigate(result.redirect);
+    } else {
       Swal.fire({
         icon: 'error',
-        title: 'Connection Error',
-        text: 'Cannot connect to server. Please try again.',
+        title: 'Login Failed',
+        text: result.message || 'Invalid email or password',
       });
-    } finally {
-      setLoading(false);
     }
+    
+    setLoading(false);
   };
 
   return (

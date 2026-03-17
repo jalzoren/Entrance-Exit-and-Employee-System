@@ -1,25 +1,34 @@
 // src/layouts/DashboardLayout.jsx
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import Sidebar from '../layouts/Sidebar';
 import '../componentscss/DashboardLayout.css';
+import { useAuth } from '../context/AuthContext'; // Import useAuth
 
 export default function DashboardLayout() {
-  const [user, setUser] = useState(null);
+  const { user, loading, authenticated } = useAuth(); // Get auth state
   const navigate = useNavigate();
 
-  useEffect(() => {
-    // Check if user is logged in
-    const storedUser = localStorage.getItem('user');
-    if (!storedUser) {
-      navigate('/');
-      return;
+  // Redirect if not authenticated
+  React.useEffect(() => {
+    if (!loading && !authenticated) {
+      navigate('/login');
     }
-    setUser(JSON.parse(storedUser));
-  }, [navigate]);
+  }, [loading, authenticated, navigate]);
 
-  if (!user) {
-    return <div>Loading...</div>;
+  // Show loading while checking auth
+  if (loading) {
+    return (
+      <div className="loading-screen">
+        <div className="spinner"></div>
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
+  // Don't render if not authenticated (will redirect)
+  if (!authenticated || !user) {
+    return null;
   }
 
   return (

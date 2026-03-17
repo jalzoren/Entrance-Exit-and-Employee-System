@@ -1,10 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react"; // ✅ ONLY ONE React import at the top
 import "../../css/Users.css";
-import { FiPlus } from "react-icons/fi";
+import { FiPlus, FiEdit2, FiTrash2 } from "react-icons/fi";
 import AddUser from "../../components/AddUser";
+import EditUser from "../../components/EditUser";
 import Swal from 'sweetalert2';
+import { useAuth } from "../../context/AuthContext";
 
 function Users() {
+  const { user } = useAuth(); // Get the authenticated user
   const [showAddUser, setShowAddUser] = useState(false);
   const [showEditUser, setShowEditUser] = useState(false);
   const [selectedUserEmail, setSelectedUserEmail] = useState(null);
@@ -20,7 +23,9 @@ function Users() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:5000/api/users');
+      const response = await fetch('http://localhost:5000/api/users', {
+        credentials: 'include' // 👈 ADD THIS
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch users');
       }
@@ -195,6 +200,7 @@ function Users() {
       
       const response = await fetch(`http://localhost:5000/api/users/${encodeURIComponent(email)}`, {
         method: 'DELETE',
+        credentials: 'include' // 👈 ADD THIS
       });
       
       if (!response.ok) {
