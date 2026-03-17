@@ -18,7 +18,6 @@ app.use('/api', importStudentsRouter);
 // Start server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-  console.log("Forgot password endpoints ready");
 });
 // .env file content (for reference):
 // PORT=5000
