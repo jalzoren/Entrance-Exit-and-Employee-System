@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import '../css/SystemSettings.css'; // We'll create this CSS file
+import '../../css/SystemSettings.css'; // We'll create this CSS file
 
 function SystemSettings() {
   const [settings, setSettings] = useState({

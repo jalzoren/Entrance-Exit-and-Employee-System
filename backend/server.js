@@ -8,6 +8,7 @@ const forgotPasswordRouter = require("./routes/forgotPassword");
 const registrationRoutes = require("./routes/registration");
 const importStudentsRouter = require("./routes/importStudents");
 const addUserRouter = require("./routes/addUser");
+const recognizeRoute = require("./routes/recognize");
 
 const PORT = process.env.PORT || 5000;
 
@@ -16,6 +17,7 @@ app.use('/api', forgotPasswordRouter);
 app.use("/api", registrationRoutes);
 app.use('/api', importStudentsRouter);
 app.use('/api', addUserRouter); 
+app.use("/api", recognizeRoute);
 
 // Start server
 app.listen(PORT, () => {

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import '../css/Records.css'; // Create this CSS file for styling
-import GenerateReportFilter from '../components/GenerateReportFilter'; // Import the filter component
+import '../../css/Records.css'; // Create this CSS file for styling
+import GenerateReportFilter from '../../components/GenerateReportFilter'; // Import the filter component
 
 function Records() {
   // State for filter popup

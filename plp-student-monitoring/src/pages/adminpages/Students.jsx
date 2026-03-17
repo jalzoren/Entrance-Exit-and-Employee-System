@@ -1,8 +1,8 @@
 // frontend/src/adminpages/Students.jsx
 import React, { useState, useEffect } from "react";
-import "../css/Students.css";
-import RegisterStudent from "../components/RegisterStudent";
-import ImportStudent from "../components/ImportStudents";
+import "../../css/Students.css";
+import RegisterStudent from "../../components/RegisterStudent";
+import ImportStudent from "../../components/ImportStudents";
 import axios from "axios";
 import { FiDownload, FiPlus, FiFilter } from "react-icons/fi";
 import { IoMdArrowDropdown } from "react-icons/io";

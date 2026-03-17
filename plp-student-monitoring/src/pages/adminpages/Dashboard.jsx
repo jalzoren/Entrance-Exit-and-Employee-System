@@ -13,7 +13,7 @@ import {
   Cell,
   CartesianGrid,
 } from "recharts";
-import "../css/Dashboard.css";
+import "../../css/Dashboard.css";
 import { 
   FaBook, FaQuestionCircle, FaBolt, FaHeadset,
   FaPlusCircle, FaChartBar, FaDownload, FaCog,
@@ -123,7 +123,7 @@ static async fetchColleges() {
 // ─────────────────────────────────────────────────────────────────────────────
 // ROOT COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
-function SuperDashboard() {
+function Dashboard() {
   const [serverTime,   setServerTime]   = useState(null);
   const [metrics,      setMetrics]      = useState(null);
   const [trafficData,  setTrafficData]  = useState(null);
@@ -707,4 +707,4 @@ function CollegePieChart({ data }) {
   );
 }
 
-export default SuperDashboard;
+export default Dashboard;

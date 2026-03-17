@@ -3,7 +3,7 @@ import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
-import '../css/Analytics.css';
+import '../../css/Analytics.css';
 
 const INITIAL_METRICS = {
   totalStudents: 10000,

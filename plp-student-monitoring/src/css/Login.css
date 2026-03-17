@@ -1,3 +1,5 @@
+/* Login.css */
+
 /* Main full-screen container */
 .login-container {
   min-height: 100vh;
@@ -8,9 +10,9 @@
   background-repeat: no-repeat;
   display: flex;
   justify-content: center;
-  align-items: center;          /* ← changed to center vertically too */
+  align-items: center;
   position: relative;
-  padding: 10px;
+  padding: 20px;
   box-sizing: border-box;
 }
 
@@ -30,24 +32,29 @@
   color: #d99201;
 }
 
-/* Central content wrapper – helps with max-width on large screens */
+/* Central content wrapper */
 .login-wrapper {
   width: 100%;
   max-width: 480px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
+  margin: 0 auto;
 }
 
 /* Logo + title container */
 .login-header-container {
   text-align: center;
   margin-bottom: 1.5rem;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .login-icon {
-  max-width: 220px;           /* adjust based on your logo size */
+  max-width: 220px;
   height: auto;
   margin-bottom: 1.2rem;
   display: block;
@@ -63,14 +70,16 @@
     0 4px 12px rgba(0,0,0,0.65),
     0 2px 6px rgba(0,0,0,0.4);
   letter-spacing: 1px;
+  line-height: 1.2;
+  text-align: center;
 }
 
 /* Card-like form container */
 .login-card {
-  
   border-radius: 16px;
   padding: 2.5rem 2rem;
   width: 100%;
+  margin: 0 auto;
 }
 
 /* Form elements */
@@ -78,12 +87,14 @@
   display: flex;
   flex-direction: column;
   gap: 1.4rem;
+  width: 100%;
 }
 
 .input-group {
   display: flex;
   flex-direction: column;
   text-align: left;
+  width: 100%;
 }
 
 .input-group label {
@@ -91,6 +102,7 @@
   color: #1f4220;
   margin-bottom: 0.5rem;
   font-weight: 500;
+  text-align: left;
 }
 
 .login-form input {
@@ -101,6 +113,7 @@
   font-size: 1rem;
   background: #f9fafb;
   transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
 }
 
 .login-form input:focus {
@@ -109,9 +122,48 @@
   box-shadow: 0 0 0 3px rgba(43, 90, 43, 0.15);
 }
 
+.login-form input:disabled {
+  background-color: #e9ece9;
+  color: #6c757d;
+  cursor: not-allowed;
+}
 
+/* Password input wrapper */
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
 
-/* Button */
+.password-input-wrapper input {
+  padding-right: 3rem;
+  width: 100%;
+}
+
+/* Show password button */
+.show-password-btn {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #555;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  transition: color 0.2s;
+}
+
+.show-password-btn:hover {
+  color: #2b5a2b;
+}
+
+/* Login button */
 .login-button {
   margin-top: 1rem;
   padding: 1rem;
@@ -123,52 +175,94 @@
   font-weight: 600;
   cursor: pointer;
   transition: background 0.25s;
+  width: 100%;
 }
 
-.login-button:hover {
+.login-button:hover:not(:disabled) {
   background: #1f4220;
 }
 
-
-.show-password-btn {
-  position: absolute;
-  right: 10px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #555;
-  font-size: 1.1rem;
+.login-button:disabled {
+  background: #a8b9a8;
+  cursor: not-allowed;
 }
 
-/* Footer links & text */
+/* Footer section */
 .form-footer {
-  margin-top: 1.5rem;
+  margin-top: 2rem;
   text-align: center;
+  position: relative;
+  padding-bottom: 2rem;
+  width: 100%;
 }
 
-.forgot-password-button {
+/* Footer links container */
+.footer-links {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+/* Link styling */
+.forgot-password-link,
+.face-recognition-link {
+  color: #2563eb;
+  font-size: 0.95rem;
+  text-decoration: underline;
+  transition: color 0.2s;
   background: none;
   border: none;
-  color: #2563eb;
-  font-size: 0.9rem;
   cursor: pointer;
   padding: 0;
-  margin-bottom: 1.2rem;
 }
 
-.forgot-password-button a {
-  color: inherit;
-  text-decoration: underline;
+.forgot-password-link:hover,
+.face-recognition-link:hover {
+  color: #1e40af;
 }
 
+/* Footer text */
 .footer-text {
-  position: absolute;   
-  bottom: 1rem;          
-  left: 50%;          
-  transform: translateX(-50%); 
+  position: absolute;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
   font-size: 0.82rem;
   color: #555;
   opacity: 0.8;
-  text-align: center;  
-  width: 100%;          
+  text-align: center;
+  width: 100%;
+  white-space: nowrap;
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  .login-container {
+    padding: 15px;
+  }
+  
+  .login-wrapper {
+    max-width: 100%;
+  }
+  
+  .logintext {
+    font-size: 2.8rem;
+  }
+  
+  .login-card {
+    padding: 2rem 1.5rem;
+  }
+  
+  .footer-links {
+    gap: 1rem;
+    flex-direction: column;
+  }
+  
+  .footer-text {
+    font-size: 0.7rem;
+    white-space: normal;
+    padding: 0 10px;
+  }
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import "../css/RealTimeMonitor.css";
-import '../css/Monitor.css';
+import "../../css/RealTimeMonitor.css";
+import '../../css/Monitor.css';
 
 const initialLogs = [
   { id: 1, time: "07:59 AM", name: "BITANCOR, JERIMIAH A.",      studentId: "23-00198", action: "ENTRY", method: "FACE",      failed: false },
