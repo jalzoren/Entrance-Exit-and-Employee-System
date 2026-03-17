@@ -2,11 +2,6 @@ import React, { useState } from "react";
 import "../../css/Users.css";
 import { FiPlus } from "react-icons/fi";
 import AddUser from "../../components/AddUser";
-import React, { useState, useEffect } from "react";
-import "../css/Users.css";
-import { FiPlus, FiEdit2, FiTrash2 } from "react-icons/fi";
-import AddUser from "../components/AddUser";
-import EditUser from "../components/EditUser";
 import Swal from 'sweetalert2';
 
 function Users() {
