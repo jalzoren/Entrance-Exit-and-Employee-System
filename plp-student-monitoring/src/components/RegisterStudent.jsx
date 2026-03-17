@@ -213,8 +213,8 @@ function RegisterStudent({ onClose }) {
             <div className="input-group">
               <label>Student ID</label>
               <input
-                type="text"
-                placeholder="e.g 23-00001"
+                type="number"
+                placeholder="e.g 2300001"
                 value={studentId}
                 onChange={(e) => setStudentId(e.target.value)}
               />
@@ -251,7 +251,7 @@ function RegisterStudent({ onClose }) {
             <div className="input-group">
               <label>Year Level</label>
               <input
-                type="text"
+                type="number"
                 placeholder="e.g 3rd"
                 value={yearLevel}
                 onChange={(e) => setYearLevel(e.target.value)}
