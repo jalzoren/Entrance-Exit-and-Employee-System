@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom"; // Make sure these are imported
+import { useLocation, useNavigate } from "react-router-dom";
 import "../css/ForgotPass.css";
 import logo from "../assets/logo2.png";
 import { LuScanFace } from "react-icons/lu";
@@ -9,10 +9,7 @@ import Swal from 'sweetalert2';
 export default function ForgotPasswordStep2() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { email, code } = location.state || {}; // This gets the data from ForgotPass
-
-  // Add console log to debug
-  console.log('Received in ForgotPass2:', { email, code });
+  const { email, code } = location.state || {};
 
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -86,7 +83,6 @@ export default function ForgotPasswordStep2() {
 
   const toggleShowPassword = () => setShowPassword((prev) => !prev);
 
-  // Redirect if no email/code (accessed directly)
   if (!email || !code) {
     navigate('/forgotpass');
     return null;
@@ -100,15 +96,13 @@ export default function ForgotPasswordStep2() {
         onClick={() => navigate("/facerecog")}
       />
 
-      <div className="login-content">
-        <div className="logined">
+      <div className="login-wrapper">
+        <div className="login-header-container">
           <img src={logo} alt="System Logo" className="login-icon" />
-          <div className="login-header">
-            <h1 className="logintext">RESET PASSWORD</h1>
-          </div>
+          <h1 className="logintext">RESET PASSWORD</h1>
         </div>
 
-        <div className="login-box">
+        <div className="login-card">
           <form className="login-form" onSubmit={handleResetPassword}>
             <div className="input-group">
               <label htmlFor="email">Email</label>
@@ -127,7 +121,7 @@ export default function ForgotPasswordStep2() {
                 <input
                   id="newPassword"
                   type={showPassword ? "text" : "password"}
-                  placeholder="New password (min. 6 characters)"
+                  placeholder="•••••••• (min. 6 characters)"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   required
@@ -138,6 +132,7 @@ export default function ForgotPasswordStep2() {
                   type="button"
                   className="show-password-btn"
                   onClick={toggleShowPassword}
+                  tabIndex="-1"
                 >
                   {showPassword ? <FaEyeSlash /> : <FaEye />}
                 </button>
@@ -150,7 +145,7 @@ export default function ForgotPasswordStep2() {
                 <input
                   id="confirmPassword"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Confirm new password"
+                  placeholder="••••••••"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
@@ -161,6 +156,7 @@ export default function ForgotPasswordStep2() {
                   type="button"
                   className="show-password-btn"
                   onClick={toggleShowPassword}
+                  tabIndex="-1"
                 >
                   {showPassword ? <FaEyeSlash /> : <FaEye />}
                 </button>
@@ -170,15 +166,23 @@ export default function ForgotPasswordStep2() {
             <button 
               type="submit" 
               className="submit-button"
-              disabled={loading}
+              disabled={loading || !newPassword || !confirmPassword}
             >
               {loading ? 'RESETTING...' : 'RESET PASSWORD'}
             </button>
           </form>
 
-          <button type="button" className="back-to-home">
-            <a href="/">← Back to Login</a>
-          </button>
+        // Replace the footer section with:
+<div className="form-footer">
+  <div className="footer-links">
+    <button type="button" className="back-to-login-link">
+      <a href="/">← Back to Login</a>
+    </button>
+  </div>
+  <p className="footer-text">
+    ENTRANCE AND EXIT MONITORING SYSTEM
+  </p>
+</div>
         </div>
       </div>
     </div>

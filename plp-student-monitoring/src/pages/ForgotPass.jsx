@@ -70,7 +70,6 @@ export default function ForgotPassword() {
       const data = await response.json();
 
       if (data.success) {
-        // Show success alert FIRST and wait for it to complete before navigating
         await Swal.fire({
           icon: 'success',
           title: 'Code Verified!',
@@ -78,12 +77,10 @@ export default function ForgotPassword() {
           timer: 1500,
           showConfirmButton: false,
           willClose: () => {
-            // Navigate AFTER the alert closes
             navigate('/forgotpass2', { state: { email, code } });
           }
         });
       } else {
-        // Show error alert (this stays on the same page)
         Swal.fire({
           icon: 'error',
           title: 'Invalid Code',
@@ -110,75 +107,83 @@ export default function ForgotPassword() {
         onClick={() => navigate("/facerecog")}
       />
 
-      <div className="login-content">
-        <div className="logined">
-          <img src={logo} alt="Logo" className="login-icon" />
-          <div className="login-header">
-            <h1 className="logintext">FORGOT PASSWORD</h1>
-          </div>
+      <div className="login-wrapper">
+        <div className="login-header-container">
+          <img src={logo} alt="System Logo" className="login-icon" />
+          <h1 className="logintext">FORGOT PASSWORD</h1>
         </div>
 
-        <div className="login-box">
+        <div className="login-card">
           <form className="login-form" onSubmit={codeSent ? handleVerifyCode : handleSendCode}>
             <div className="input-group">
               <label htmlFor="email">Email</label>
               <div className="input-group-row">
                 <input
                   id="email"
-                  className="email-input"
                   type="email"
                   placeholder="example@gmail.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   disabled={codeSent || loading}
+                  className="email-input"
                 />
                 {!codeSent && (
                   <button
                     type="button"
                     className="send-code-button"
                     onClick={handleSendCode}
-                    disabled={loading}
+                    disabled={loading || !email}
                   >
-                    {loading ? 'Sending...' : 'Send'}
+                    {loading ? 'Sending...' : 'Send Code'}
                   </button>
                 )}
               </div>
             </div>
 
             {codeSent && (
-              <div className="input-group">
-                <label htmlFor="code">Verification Code</label>
-                <input
-                  id="code"
-                  type="text"
-                  placeholder="Enter 6-digit code"
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  required
-                  maxLength="6"
-                  disabled={loading}
-                />
-              </div>
+              <>
+                <div className="input-group">
+                  <label htmlFor="code">Verification Code</label>
+                  <input
+                    id="code"
+                    type="text"
+                    placeholder="Enter 6-digit code"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    required
+                    maxLength="6"
+                    disabled={loading}
+                  />
+                </div>
+                <p className="form-description">
+                  Enter the 6-digit code sent to your email
+                </p>
+              </>
             )}
 
             {codeSent && (
               <button 
                 type="submit" 
                 className="submit-button"
-                disabled={loading}
+                disabled={loading || code.length !== 6}
               >
-                {loading ? 'Verifying...' : 'VERIFY CODE'}
+                {loading ? 'VERIFYING...' : 'VERIFY CODE'}
               </button>
             )}
           </form>
 
-          <button type="button" className="back-to-home">
-            <a href="/">← Back to Login</a>
-          </button>
-          <p className="footer-text">
-            ENTRANCE AND EXIT MONITORING SYSTEM
-          </p>
+         // Replace the footer section with:
+<div className="form-footer">
+  <div className="footer-links">
+    <button type="button" className="back-to-login-link">
+      <a href="/">← Back to Login</a>
+    </button>
+  </div>
+  <p className="footer-text">
+    ENTRANCE AND EXIT MONITORING SYSTEM
+  </p>
+</div>
         </div>
       </div>
     </div>

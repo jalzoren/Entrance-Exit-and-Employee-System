@@ -1,56 +1,59 @@
-// src/App.tsx
+// src/App.jsx
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-import DashboardLayout from "./components/DashboardLayout"; // contains Sidebar
-import SuperDashboardlayout from "./components/SuperDashboardLayout";
-import Login from "./pages/Login";
-import Dashboard from "./adminpages/Dashboard";
-import Monitor from "./adminpages/Monitor";
-import Records from "./adminpages/Records";
-import Students from "./adminpages/Students";
-import Analytics from "./adminpages/Analytics";
-import FaceRecognition from "./pages/FaceRecognition";
-import Users from "./superadminpages/Users";
-import SystemSettings from "./superadminpages/SystemSettings";
-import SuperDashboard from "./superadminpages/SuperDashboard";
-import SuperStudents from "./superadminpages/SuperStudents";
+// Layout
+import DashboardLayout from "./layouts/DashboardLayout";
 
-import Forgot from "./pages/ForgotPass";
-import Forgot2 from "./pages/ForgotPass2";
+// Public Pages
+import Login from "./pages/Login";
+import ForgotPass from "./pages/ForgotPass";
+import ForgotPass2 from "./pages/ForgotPass2";
+import FaceRecognition from "./pages/FaceRecognition";
+
+// Admin Pages
+import Dashboard from "./pages/adminpages/Dashboard";
+import Monitor from "./pages/adminpages/Monitor";
+import Records from "./pages/adminpages/Records";
+import Students from "./pages/adminpages/Students";
+import Analytics from "./pages/adminpages/Analytics";
+
+// Super Admin Pages
+import Users from "./pages/superadminpages/Users";
+import SystemSettings from "./pages/superadminpages/SystemSettings";
+import SuperDashboard from "./pages/superadminpages/SuperDashboard";
+import SuperStudents from "./pages/superadminpages/SuperStudents";
+
+// Components
 import RegisterStudent from "./components/RegisterStudent";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public route */}
+        {/* Public Routes */}
         <Route path="/" element={<Login />} />
-        <Route path="/forgotpass" element={<Forgot />} />
-        <Route path="/forgotpass2" element={<Forgot2 />} />
+        <Route path="/forgotpass" element={<ForgotPass />} />
+        <Route path="/forgotpass2" element={<ForgotPass2 />} />
         <Route path="/facerecog" element={<FaceRecognition />} />
         <Route path="/registerstudent" element={<RegisterStudent />} />
-        {/* Protected routes */}
-        <Route>
-          <Route element={<DashboardLayout />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/monitor" element={<Monitor />} />
-            <Route path="/records" element={<Records />} />
-            <Route path="/students" element={<Students />} />
-            <Route path="/analytics" element={<Analytics />} />
-          </Route>
+
+        {/* Protected Routes - Single Layout for all authenticated users */}
+        <Route element={<DashboardLayout />}>
+          {/* Admin Routes */}
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/monitor" element={<Monitor />} />
+          <Route path="/records" element={<Records />} />
+          <Route path="/students" element={<Students />} />
+          <Route path="/analytics" element={<Analytics />} />
+
+          {/* Super Admin Routes */}
+          <Route path="/users" element={<Users />} />
+          <Route path="/systemsettings" element={<SystemSettings />} />
+          <Route path="/superdashboard" element={<SuperDashboard />} />
+          <Route path="/superstudents" element={<SuperStudents />} />
         </Route>
 
-        <Route>
-          <Route element={<SuperDashboardlayout />}>
-            <Route path="/users" element={<Users />} />
-            <Route path="/systemsettings" element={<SystemSettings />} />
-            <Route path="/superdashboard" element={<SuperDashboard />} />
-            <Route path="/superstudents" element={<SuperStudents />} />
-
-          </Route>
-        </Route>
-
-        {/* Optional 404 */}
+        {/* 404 */}
         <Route path="*" element={<div>404 - Not Found</div>} />
       </Routes>
     </BrowserRouter>

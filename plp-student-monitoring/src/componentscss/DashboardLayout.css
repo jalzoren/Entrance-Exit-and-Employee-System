@@ -60,3 +60,4 @@
 .sidebar.open + .main-content {
   margin-left: 260px;                /* shift right when open */
 }
+

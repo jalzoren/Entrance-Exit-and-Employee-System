@@ -3,18 +3,18 @@ import "../css/Login.css";
 import logo from "../assets/logo2.png";
 import { LuScanFace } from "react-icons/lu";
 import { useNavigate, Link } from "react-router-dom";
-import { FaEye, FaEyeSlash } from "react-icons/fa"; // Add this import
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 import Swal from 'sweetalert2';
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false); // Add this state
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
 
-  const toggleShowPassword = () => setShowPassword((prev) => !prev); // Add this function
+  const toggleShowPassword = () => setShowPassword((prev) => !prev);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -93,12 +93,12 @@ export default function Login() {
               />
             </div>
 
-            <div className="input-group password-container">
+            <div className="input-group">
               <label htmlFor="password">Password</label>
-              <div className="password-input-wrapper"> {/* Add wrapper div */}
+              <div className="password-input-wrapper">
                 <input
                   id="password"
-                  type={showPassword ? "text" : "password"} // Toggle type
+                  type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -109,6 +109,7 @@ export default function Login() {
                   type="button"
                   className="show-password-btn"
                   onClick={toggleShowPassword}
+                  tabIndex="-1"
                 >
                   {showPassword ? <FaEyeSlash /> : <FaEye />}
                 </button>
@@ -122,17 +123,17 @@ export default function Login() {
             >
               {loading ? 'LOGGING IN...' : 'LOGIN'}
             </button>
-          
           </form>
 
           <div className="form-footer">
-            <Link to="/forgotpass" className="forgot-password-link">
-              Forgot Password?
-            </Link>
-            <Link to="/facerecog" className="register-link">
-              Go to Face Recognition
-            </Link>
-            
+            <div className="footer-links">
+              <Link to="/forgotpass" className="forgot-password-link">
+                Forgot Password?
+              </Link>
+              <Link to="/facerecog" className="face-recognition-link">
+                Use Face Recognition
+              </Link>
+            </div>
             <p className="footer-text">
               ENTRANCE AND EXIT MONITORING SYSTEM
             </p>

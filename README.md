@@ -140,7 +140,7 @@ The system enhances campus security, automates attendance tracking, and supports
 
 
 
-```
+
 Entrance-and-Exit-Monitoring-PLP-Students
 ├─ backend
 │  ├─ .env
@@ -149,7 +149,9 @@ Entrance-and-Exit-Monitoring-PLP-Students
 │  ├─ package.json
 │  ├─ routes
 │  │  ├─ forgotPassword.js
-│  │  └─ login.js
+│  │  ├─ importStudents.js
+│  │  ├─ login.js
+│  │  └─ registration.js
 │  ├─ server.js
 │  └─ src
 │     ├─ app.js
@@ -167,12 +169,6 @@ Entrance-and-Exit-Monitoring-PLP-Students
 │  │  └─ vite.svg
 │  ├─ README.md
 │  ├─ src
-│  │  ├─ adminpages
-│  │  │  ├─ Analytics.jsx
-│  │  │  ├─ Dashboard.jsx
-│  │  │  ├─ Monitor.jsx
-│  │  │  ├─ Records.jsx
-│  │  │  └─ Students.jsx
 │  │  ├─ App.css
 │  │  ├─ App.jsx
 │  │  ├─ assets
@@ -180,12 +176,20 @@ Entrance-and-Exit-Monitoring-PLP-Students
 │  │  │  ├─ MAIN.png
 │  │  │  └─ react.svg
 │  │  ├─ components
+│  │  │  ├─ AddUser.jsx
 │  │  │  ├─ DashboardLayout.jsx
+│  │  │  ├─ GenerateReportFilter.jsx
+│  │  │  ├─ ImportStudents.jsx
 │  │  │  ├─ RegisterStudent.jsx
 │  │  │  ├─ RegisterStudentCam.jsx
-│  │  │  └─ Sidebar.jsx
+│  │  │  ├─ Sidebar.jsx
+│  │  │  ├─ SuperDashboardLayout.jsx
+│  │  │  └─ SuperSidebar.jsx
 │  │  ├─ componentscss
+│  │  │  ├─ AddUser.css
 │  │  │  ├─ DashboardLayout.css
+│  │  │  ├─ GenerateReportFilter.css
+│  │  │  ├─ ImportStudents.css
 │  │  │  ├─ RegisterStudent.css
 │  │  │  ├─ RegisterStudentCam.css
 │  │  │  └─ Sidebar.css
@@ -198,16 +202,29 @@ Entrance-and-Exit-Monitoring-PLP-Students
 │  │  │  ├─ Monitor.css
 │  │  │  ├─ RealTimeMonitor.css
 │  │  │  ├─ Records.css
-│  │  │  └─ Students.css
+│  │  │  ├─ Students.css
+│  │  │  ├─ SystemSettings.css
+│  │  │  └─ Users.css
 │  │  ├─ index.css
+│  │  ├─ layouts
 │  │  ├─ main.jsx
-│  │  └─ pages
-│  │     ├─ About.jsx
-│  │     ├─ FaceRecognition.jsx
-│  │     ├─ ForgotPass.jsx
-│  │     ├─ ForgotPass2.jsx
-│  │     └─ Login.jsx
+│  │  ├─ pages
+│  │  │  ├─ About.jsx
+│  │  │  ├─ adminpages
+│  │  │  │  ├─ Analytics.jsx
+│  │  │  │  ├─ Dashboard.jsx
+│  │  │  │  ├─ Monitor.jsx
+│  │  │  │  ├─ Records.jsx
+│  │  │  │  └─ Students.jsx
+│  │  │  ├─ FaceRecognition.jsx
+│  │  │  ├─ ForgotPass.jsx
+│  │  │  ├─ ForgotPass2.jsx
+│  │  │  ├─ Login.jsx
+│  │  │  └─ superadminpages
+│  │  │     ├─ SuperDashboard.jsx
+│  │  │     ├─ SuperStudents.jsx
+│  │  │     ├─ SystemSettings.jsx
+│  │  │     └─ Users.jsx
+│  │  └─ utils
 │  └─ vite.config.js
-└─ README.md
-
-```
+├

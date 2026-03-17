@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import "../css/Users.css";
+import "../../css/Users.css";
 import { FiPlus } from "react-icons/fi";
-import AddUser from "../components/AddUser";
+import AddUser from "../../components/AddUser";
 
 function Users() {
 
