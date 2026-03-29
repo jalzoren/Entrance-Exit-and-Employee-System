@@ -1,95 +1,37 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import '../../css/Records.css'; // Create this CSS file for styling
 import GenerateReportFilter from '../../components/GenerateReportFilter'; // Import the filter component
+import { useLogContext } from '../../context/LogContext';
 
 function Records() {
   // State for filter popup
   const [showFilterPopup, setShowFilterPopup] = useState(false);
+  
+  // Get logs from context
+  const { logs } = useLogContext();
 
-  // Sample data for demonstration
-  const allRecords = [
-    {
-      id: 1,
-      dateTime: "2024-01-15 08:30 AM",
-      studentId: "23-00123",
-      name: "Jerimiah Bitancor",
-      collegeDept: "College of Computer Studies",
-      yearLevel: "3rd Year",
-      action: "Entry",
-      method: "Facial Recognition"
-    },
-    {
-      id: 2,
-      dateTime: "2024-01-15 05:45 PM",
-      studentId: "23-00123",
-      name: "Jerimiah Bitancor",
-      collegeDept: "College of Computer Studies",
-      yearLevel: "3rd Year",
-      action: "Exit",
-      method: "Manual"
-    },
-    {
-      id: 3,
-      dateTime: "2024-01-15 09:15 AM",
-      studentId: "23-00456",
-      name: "Jerimiah Bitancor",
-      collegeDept: "College of Engineering",
-      yearLevel: "2nd Year",
-      action: "Entry",
-      method: "Facial Recognition"
-    },
-    {
-      id: 4,
-      dateTime: "2024-01-15 06:30 PM",
-      studentId: "23-00456",
-      name: "Jerimiah Bitancor",
-      collegeDept: "College of Engineering",
-      yearLevel: "2nd Year",
-      action: "Exit",
-      method: "Facial Recognition"
-    },
-    // Add more sample records to demonstrate pagination
-    {
-      id: 5,
-      dateTime: "2024-01-16 08:30 AM",
-      studentId: "23-00789",
-      name: "Jerimiah Bitancor",
-      collegeDept: "College of Business",
-      yearLevel: "4th Year",
-      action: "Entry",
-      method: "Facial Recognition"
-    },
-    {
-      id: 6,
-      dateTime: "2024-01-16 05:45 PM",
-      studentId: "23-00789",
-      name: "Jerimiah Bitancor",
-      collegeDept: "College of Business",
-      yearLevel: "4th Year",
-      action: "Exit",
-      method: "Manual"
-    },
-    {
-      id: 7,
-      dateTime: "2024-01-17 09:15 AM",
-      studentId: "23-00901",
-      name: "Jerimiah Bitancor",
-      collegeDept: "College of Nursing",
-      yearLevel: "1st Year",
-      action: "Entry",
-      method: "Facial Recognition"
-    },
-    {
-      id: 8,
-      dateTime: "2024-01-17 06:30 PM",
-      studentId: "23-00901",
-      name: "Jerimiah Bitancor",
-      collegeDept: "College of Nursing",
-      yearLevel: "1st Year",
-      action: "Exit",
-      method: "Facial Recognition"
-    }
-  ];
+  // Get successful logs only (exclude failed attempts)
+  const allRecords = useMemo(() => {
+    return logs
+      .filter(log => !log.failed)
+      .map((log, index) => ({
+        ...log,
+        dateTime: new Date(log.timestamp).toLocaleString('en-US', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: true
+        }),
+        collegeDept: 'BSIT', // Default or fetch from backend
+        yearLevel: '3rd Year', // Default or fetch from backend
+        action: log.action === 'ENTRY' ? 'Entry' : 'Exit',
+        method: log.method === 'FACE' ? 'Facial Recognition' : 'Manual'
+      }))
+      .reverse(); // Show newest first
+  }, [logs]);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -259,41 +201,48 @@ function Records() {
         </div>
 
         <div className="table-container">
-          <table className="records-table">
-            <thead>
-              <tr>
-                <th>No.</th>
-                <th>Date & Time</th>
-                <th>Student ID</th>
-                <th>Name</th>
-                <th>College Department</th>
-                <th>Year Level</th>
-                <th>Action</th>
-                <th>Method</th>
-              </tr>
-            </thead>
-            <tbody>
-              {currentRecords.map((record, index) => (
-                <tr key={record.id}>
-                  <td>{indexOfFirstRecord + index + 1}</td>
-                  <td>{record.dateTime}</td>
-                  <td>{record.studentId}</td>
-                  <td>{record.name}</td>
-                  <td>{record.collegeDept}</td>
-                  <td>{record.yearLevel}</td>
-                  <td>
-                    <span className={`action-badge ${record.action.toLowerCase()}`}>
-                      {record.action}
-                    </span>
-                  </td>
-                  <td>{record.method}</td>
+          {allRecords.length === 0 ? (
+            <div style={{ padding: '40px', textAlign: 'center', color: '#666' }}>
+              <p>No entry-exit records yet. Records will appear when face recognition is used.</p>
+            </div>
+          ) : (
+            <table className="records-table">
+              <thead>
+                <tr>
+                  <th>No.</th>
+                  <th>Date & Time</th>
+                  <th>Student ID</th>
+                  <th>Name</th>
+                  <th>College Department</th>
+                  <th>Year Level</th>
+                  <th>Action</th>
+                  <th>Method</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {currentRecords.map((record, index) => (
+                  <tr key={record.id || index}>
+                    <td>{indexOfFirstRecord + index + 1}</td>
+                    <td>{record.dateTime}</td>
+                    <td>{record.studentId}</td>
+                    <td>{record.name}</td>
+                    <td>{record.collegeDept}</td>
+                    <td>{record.yearLevel}</td>
+                    <td>
+                      <span className={`action-badge ${record.action.toLowerCase()}`}>
+                        {record.action}
+                      </span>
+                    </td>
+                    <td>{record.method}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
 
         {/* Pagination Section */}
+        {allRecords.length > 0 && (
         <div className="pagination-container">
           <div className="pagination-wrapper">
             <button 
@@ -329,6 +278,7 @@ function Records() {
             </button>
           </div>
         </div>
+        )}
       </div>
 
       {/* Generate Report Filter Popup */}

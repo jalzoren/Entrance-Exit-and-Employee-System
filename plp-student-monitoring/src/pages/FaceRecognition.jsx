@@ -1,18 +1,33 @@
 import { useRef, useEffect, useState, useCallback } from "react";
 import "../css/FaceRecognition.css";
 import { Link } from "react-router-dom";
+import { useLogContext } from "../context/LogContext";
+import Swal from "sweetalert2";
+import { FaArrowLeft } from "react-icons/fa";
 
 function FaceRecognition() {
   const videoRef = useRef(null);
+  const { addLog, addFailedLog } = useLogContext();
 
   const [isScanning, setIsScanning] = useState(true);
   const [logType, setLogType] = useState("");
+  const [showManualIdModal, setShowManualIdModal] = useState(false);
+  const [manualId, setManualId] = useState("");
+  const [manualIdLoading, setManualIdLoading] = useState(false);
 
   const [cameraStatus, setCameraStatus] = useState("neutral");
   const [authenticatedName, setAuthenticatedName] = useState("");
   const [department, setDepartment] = useState("");
   const [authTime, setAuthTime] = useState("");
   const [logs, setLogs] = useState([]);
+
+  // Clear input when modal closes
+  useEffect(() => {
+    if (!showManualIdModal) {
+      setManualId(""); // Clear input when modal is closed
+      setManualIdLoading(false); // Also reset loading state
+    }
+  }, [showManualIdModal]);
 
   // -----------------------------
   // START CAMERA
@@ -37,40 +52,50 @@ function FaceRecognition() {
   // CAPTURE + SEND
   // -----------------------------
   const captureAndSend = useCallback(async () => {
-    if (!videoRef.current || videoRef.current.videoWidth === 0 || !isScanning) return;
-  
+    if (!videoRef.current || videoRef.current.videoWidth === 0 || !isScanning)
+      return;
+
     setIsScanning(false);
-  
+
     const canvas = document.createElement("canvas");
     canvas.width = videoRef.current.videoWidth;
     canvas.height = videoRef.current.videoHeight;
     const ctx = canvas.getContext("2d");
     ctx.drawImage(videoRef.current, 0, 0);
-  
+
     const imageData = canvas.toDataURL("image/jpeg", 0.7);
-  
+
     try {
       const response = await fetch("http://localhost:5000/api/recognize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ image: imageData }),
       });
-  
+
       const result = await response.json();
-  
+
       // Add a log entry
-      setLogs(prev => [
+      setLogs((prev) => [
         `Time: ${new Date().toLocaleTimeString()} | Detected: ${result.detected} | Authenticated: ${result.authenticated} | Name: ${result.name || "N/A"} | LogType: ${result.log_type || "N/A"}`,
         ...prev.slice(0, 9), // keep last 10 logs
       ]);
-  
+
       if (result.detected && result.authenticated) {
         setCameraStatus("detected");
         setAuthenticatedName(result.name);
         setDepartment(result.department);
         setAuthTime(result.time);
         setLogType(result.log_type);
-  
+
+        // Add log to global context
+        addLog({
+          name: result.name,
+          studentId: result.student_id || result.name,
+          action: result.log_type === "Entrance" ? "ENTRY" : "EXIT",
+          method: "FACE",
+          time: result.time,
+        });
+
         // AUTO RESET UI
         setTimeout(() => {
           setCameraStatus("neutral");
@@ -85,6 +110,9 @@ function FaceRecognition() {
         setAuthenticatedName("");
         setDepartment("");
         setLogType("");
+
+        // Add failed log to global context
+        addFailedLog();
       } else {
         setCameraStatus("neutral");
         setAuthenticatedName("");
@@ -92,17 +120,15 @@ function FaceRecognition() {
         setAuthTime("");
         setLogType("");
       }
-  
     } catch (err) {
       console.error(err);
       setCameraStatus("neutral");
-      setLogs(prev => [`Error: ${err.message}`, ...prev.slice(0, 9)]);
+      setLogs((prev) => [`Error: ${err.message}`, ...prev.slice(0, 9)]);
     }
-  
+
     // COOLDOWN
     setTimeout(() => setIsScanning(true), 3000);
-  
-  }, [isScanning]);
+  }, [isScanning, addLog, addFailedLog]);
 
   // -----------------------------
   // AUTO SCAN LOOP
@@ -162,14 +188,16 @@ function FaceRecognition() {
   const greetings = [
     "Mabuhay! Ready to learn,",
     "Kamusta! Let's start the day,",
-    "Magandang Umaga,",
+    "Magandang Araw,",
     "Magandang Araw! Keep it up,",
     "Kumusta? Attendance check,",
     "Mabuhay! Salamat sa pagdating,",
     "Hi! Ready for class, ",
     "Maligayang pagdating! Let's go, ",
-    "Uy! Kamusta PLPian? Log in na, ",
+    "Uy! Kamusta? Log in na, ",
     "L E T apostrophe S  G O! LETSGO",
+        "Pasok na sa PLP! AnOh? tAraH?",
+
   ];
 
   const [greeting, setGreeting] = useState(greetings[0]);
@@ -192,31 +220,114 @@ function FaceRecognition() {
   }, []);
 
   // -----------------------------
+  // MANUAL ID HANDLER
+  // -----------------------------
+  const handleManualIdSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!manualId.trim()) {
+      Swal.fire({
+        icon: "warning",
+        title: "Invalid ID",
+        text: "Please enter a valid ID number",
+      });
+      return;
+    }
+
+    setManualIdLoading(true);
+
+    try {
+      // Send manual ID to backend for validation and logging
+      const response = await fetch(
+        "http://localhost:5000/api/manual-id-login",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({ studentId: manualId }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Determine if it's entry or exit based on existing logs
+        const action = result.action || "ENTRY";
+        
+        // Add log entry to context
+        addLog({
+          name: result.name,
+          studentId: manualId,
+          action: action,
+          method: "MANUAL ID",
+          time: new Date().toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+        });
+
+        await Swal.fire({
+          icon: "success",
+          title: "Success!",
+          text: `Welcome ${result.name}! ${action} recorded successfully.`,
+          timer: 1500,
+          showConfirmButton: false,
+        });
+
+        setShowManualIdModal(false);
+        setManualId("");
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: "Invalid ID",
+          text: result.message || "Student ID not found in the system",
+        });
+      }
+    } catch (error) {
+      console.error("Manual ID error:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Failed to process manual ID entry. Please try again.",
+      });
+    }
+
+    setManualIdLoading(false);
+  };
+
+  // -----------------------------
   // UI
   // -----------------------------
   return (
     <div className="dashboard">
-
       {/* LEFT SIDE CAMERA */}
-      <div className={`camera-side ${
-        cameraStatus === "neutral" ? "" :
-        cameraStatus === "detected" ? "green-border" :
-        cameraStatus === "unauthorized" ? "red-border" : ""
-      }`}>
-
+      <div
+        className={`camera-side ${
+          cameraStatus === "neutral"
+            ? ""
+            : cameraStatus === "detected"
+            ? "green-border"
+            : cameraStatus === "unauthorized"
+            ? "red-border"
+            : ""
+        }`}
+      >
         <video ref={videoRef} autoPlay playsInline className="camera-video" />
 
         <div className="camera-text">
-          {cameraStatus === "neutral" && "Please look at the camera and position your face..."}
-          {cameraStatus === "detected" && `Welcome, ${authenticatedName}! Face recognized.`}
-          {cameraStatus === "unauthorized" && "Face not recognized. Please look at the camera again."}
+          {cameraStatus === "neutral" &&
+            "Please look at the camera and position your face..."}
+          {cameraStatus === "detected" &&
+            `Welcome, ${authenticatedName}! Face recognized.`}
+          {cameraStatus === "unauthorized" &&
+            "Face not recognized. Please look at the camera again."}
         </div>
       </div>
 
       {/* RIGHT SIDE */}
       <div className="ui-side">
-        <Link to="/" className="logo-link">Back</Link>
-
         <div className="school-info">
           <img src="/logoplp.gif" alt="School Logo" className="school-logo" />
           <div className="school-text">
@@ -228,11 +339,14 @@ function FaceRecognition() {
 
         <div className="mabuhay-section">
           <div className="greet">
-            <h2 className={`${fade ? "fade-text fade-in" : "fade-text fade-out"}`}>
+            <h2
+              className={`${fade ? "fade-text fade-in" : "fade-text fade-out"}`}
+            >
               {greeting}
             </h2>
-            <p className="plpian"> PLPian!</p>
-          </div>
+<p className={`plpian ${fade ? "fade-in" : "fade-out"}`}>
+  {greeting !== greetings[greetings.length - 1] ? "PLPian!" : ""}
+</p>          </div>
 
           <div className="time-status-section">
             <div className="time-date">
@@ -246,39 +360,141 @@ function FaceRecognition() {
           </div>
 
           <div className="message-box">
-            {cameraStatus === "neutral" && "Welcome! Please scan your face for attendance."}
-            {cameraStatus === "detected" && `Welcome back, ${authenticatedName}! Department: ${department}.`}
-            {cameraStatus === "unauthorized" && "Face not recognized. Please try again."}
+            {cameraStatus === "neutral" &&
+              "Welcome! Please scan your face for attendance."}
+            {cameraStatus === "detected" &&
+              `Welcome back, ${authenticatedName}! Department: ${department}.`}
+            {cameraStatus === "unauthorized" &&
+              "Face not recognized. Please try again."}
           </div>
         </div>
+        <button
+          className="bottom-btn manual-id-btn"
+          onClick={() => setShowManualIdModal(true)}
+        >
+          Manual ID Entry
+        </button>
 
         <div className="status-box">
           {cameraStatus === "neutral" && (
             <>
-              <h2><strong>FACIAL AUTHENTICATION SYSTEM</strong></h2>
+              <h2>
+                <strong>FACIAL AUTHENTICATION SYSTEM</strong>
+              </h2>
               <p>Status updates will appear after scan.</p>
             </>
           )}
 
           {cameraStatus === "detected" && (
             <>
-              <h2><strong>AUTHENTICATION SUCCESSFUL!</strong></h2>
-              <p>Time: <span>{authTime}</span></p>
-              <p>Status: <span>{logType}</span></p>
-              <p>Method: <span>Facial Recognition</span></p>
+              <h2>
+                <strong>AUTHENTICATION SUCCESSFUL!</strong>
+              </h2>
+              <p>
+                Time: <span>{authTime}</span>
+              </p>
+              <p>
+                Status: <span>{logType}</span>
+              </p>
+              <p>
+                Method: <span>Facial Recognition</span>
+              </p>
             </>
           )}
 
           {cameraStatus === "unauthorized" && (
             <>
-              <h2><strong>AUTHENTICATION FAILED!</strong></h2>
-              <p>Time: <span>{authTime}</span></p>
-              <p>Status: <span>ACCESS DENIED</span></p>
-              <p>Method: <span>Facial Recognition</span></p>
+              <h2>
+                <strong>AUTHENTICATION FAILED!</strong>
+              </h2>
+              <p>
+                Time: <span>{authTime}</span>
+              </p>
+              <p>
+                Status: <span>ACCESS DENIED</span>
+              </p>
+              <p>
+                Method: <span>Facial Recognition</span>
+              </p>
             </>
           )}
         </div>
+
+        <div className="bottom-buttons-container">
+          <Link to="/" className="back-btn">
+            <FaArrowLeft style={{ marginRight: "8px" }} />
+            Back
+          </Link>
+        </div>
       </div>
+
+      {/* Manual ID Modal - Wider & Taller with More Content */}
+      {showManualIdModal && (
+        <div
+          className="fr-modal-overlay"
+          onClick={() => setShowManualIdModal(false)}
+        >
+          <div
+            className="fr-modal-container"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="fr-modal-header">
+              <h3>Manual ID Entry</h3>
+              <button
+                className="fr-modal-close"
+                onClick={() => setShowManualIdModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleManualIdSubmit} className="fr-modal-form">
+              {/* Info Box */}
+              <div className="fr-modal-info">
+                <p>
+                  Please use this option only if facial recognition is
+                  unavailable. Your attendance will be manually recorded.
+                </p>
+              </div>
+
+              <div className="fr-input-field">
+                <label htmlFor="fr-manual-id">Student ID Number</label>
+                <input
+                  id="fr-manual-id"
+                  type="text"
+                  placeholder="Enter your student ID (e.g., 23-00174)"
+                  value={manualId}
+                  onChange={(e) => setManualId(e.target.value)}
+                  required
+                  disabled={manualIdLoading}
+                  autoFocus
+                />
+                <div className="fr-input-hint">
+                  Enter your PLP student ID number as it appears on your school ID
+                </div>
+              </div>
+
+              <div className="fr-modal-buttons">
+                <button
+                  type="button"
+                  className="fr-btn-cancel"
+                  onClick={() => setShowManualIdModal(false)}
+                  disabled={manualIdLoading}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="fr-btn-submit"
+                  disabled={manualIdLoading}
+                >
+                  {manualIdLoading ? " Processing..." : "✓ Submit Entry"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

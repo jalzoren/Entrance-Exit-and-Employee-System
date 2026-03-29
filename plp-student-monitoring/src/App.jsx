@@ -1,6 +1,7 @@
 // src/App.jsx
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { LogProvider } from "./context/LogContext";
 
 // Layout
 import DashboardLayout from "./layouts/DashboardLayout";
@@ -135,7 +136,9 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <AppRoutes />
+        <LogProvider>
+          <AppRoutes />
+        </LogProvider>
       </AuthProvider>
     </BrowserRouter>
   );
