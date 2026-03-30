@@ -236,9 +236,12 @@ if (!empty($missing_fields)) {
             $position_ID
         ]);
 
+        $new_employee_id = $conn->lastInsertId();
+
         echo json_encode([
             "success" => true,
             "message" => "Employee added successfully",
+            "employee_ID" => $new_employee_id,
             "email_ID" => $email_ID
         ]);
 

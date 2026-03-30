@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import './ccs/settings.css';
 import {
   getDepartments, getPositions, getLocations,
@@ -15,7 +15,11 @@ const TAB_CONFIG = [
   { key: 'locations',   label: 'Locations',   icon: 'bi-geo-alt-fill' },
 ];
 
-export default function Settingspage() {
+// ── Key used for localStorage ──────────────────────────────────────────────
+const LOGO_KEY = 'institution_logo';
+const NAME_KEY = 'institution_name';
+
+export default function Settingspage({ onBrandingChange }) {
   const [activeTab, setActiveTab] = useState('branding');
   const [departments, setDepartments] = useState([]);
   const [positions,   setPositions]   = useState([]);
@@ -25,6 +29,13 @@ export default function Settingspage() {
   const [deptSearch, setDeptSearch] = useState('');
   const [posSearch,  setPosSearch]  = useState('');
   const [locSearch,  setLocSearch]  = useState('');
+
+  // ── Branding state ─────────────────────────────────────────────────────
+  const [previewUrl,       setPreviewUrl]       = useState(() => localStorage.getItem(LOGO_KEY) || null);
+  const [institutionName,  setInstitutionName]  = useState(() => localStorage.getItem(NAME_KEY) || 'College / Institution Name');
+  const [pendingFile,      setPendingFile]      = useState(null);   // File object not yet saved
+  const [saveSuccess,      setSaveSuccess]      = useState(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     (async () => {
@@ -36,6 +47,35 @@ export default function Settingspage() {
       } catch (e) { console.error('Failed to load settings data', e); }
     })();
   }, []);
+
+  // ── Logo file picker ───────────────────────────────────────────────────
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPendingFile(file);
+    const reader = new FileReader();
+    reader.onload = (ev) => setPreviewUrl(ev.target.result);   // instant preview
+    reader.readAsDataURL(file);
+  };
+
+  // Click on the preview box opens the file picker
+  const handlePreviewClick = () => fileInputRef.current?.click();
+
+  // ── Save branding ──────────────────────────────────────────────────────
+  const handleBrandingSave = () => {
+    // Persist logo (base64) and name to localStorage
+    if (previewUrl) localStorage.setItem(LOGO_KEY, previewUrl);
+    localStorage.setItem(NAME_KEY, institutionName);
+
+    // Notify parent (AdminDashboard) so sidebar updates immediately
+    if (onBrandingChange) {
+      onBrandingChange({ logo: previewUrl, name: institutionName });
+    }
+
+    // Flash success state
+    setSaveSuccess(true);
+    setTimeout(() => setSaveSuccess(false), 2000);
+  };
 
   // ── CRUD helpers ──
   const handleAdd = async (type) => {
@@ -171,37 +211,94 @@ export default function Settingspage() {
             {/* BRANDING */}
             {activeTab === 'branding' && (
               <div className="branding-grid">
+
+                {/* ── Logo preview box ── */}
                 <div className="logo-upload-box">
-                  <div className="logo-preview-circle">
-                    <i className="bi bi-building"></i>
-                    <span>Click to<br/>upload logo</span>
+                  <div
+                    className="logo-preview-circle"
+                    onClick={handlePreviewClick}
+                    title="Click to choose a logo"
+                    style={{ cursor: 'pointer', overflow: 'hidden', position: 'relative' }}
+                  >
+                    {previewUrl ? (
+                      <>
+                        <img
+                          src={previewUrl}
+                          alt="Logo preview"
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                            borderRadius: 'inherit',
+                            display: 'block',
+                          }}
+                        />
+                        {/* Hover overlay */}
+                        <div style={{
+                          position: 'absolute', inset: 0,
+                          background: 'rgba(0,0,0,0.45)',
+                          display: 'flex', flexDirection: 'column',
+                          alignItems: 'center', justifyContent: 'center',
+                          opacity: 0, transition: 'opacity .2s',
+                          borderRadius: 'inherit',
+                        }}
+                          className="logo-hover-overlay"
+                          onMouseEnter={e => e.currentTarget.style.opacity = 1}
+                          onMouseLeave={e => e.currentTarget.style.opacity = 0}
+                        >
+                          <i className="bi bi-camera" style={{ fontSize: 22, color: '#fff' }}></i>
+                          <span style={{ fontSize: 12, color: '#fff', marginTop: 4 }}>Change</span>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <i className="bi bi-building"></i>
+                        <span>Click to<br />upload logo</span>
+                      </>
+                    )}
                   </div>
-                  <p className="logo-upload-hint">PNG or JPG<br/>Max 2MB</p>
+                  <p className="logo-upload-hint">PNG or JPG<br />Max 2MB</p>
                 </div>
 
                 <div className="branding-fields">
+                  {/* ── File input (hidden, triggered by preview box or button) ── */}
                   <div className="settings-field-group">
                     <label className="settings-field-label">Upload Logo</label>
                     <div className="settings-file-input-wrapper">
-                      <label className="settings-file-label">
+                      <label className="settings-file-label" style={{ cursor: 'pointer' }}>
                         <i className="bi bi-cloud-upload"></i>
-                        Choose file to upload
-                        <input type="file" className="hidden-file-input" accept="image/*" />
+                        {pendingFile ? pendingFile.name : 'Choose file to upload'}
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          className="hidden-file-input"
+                          accept="image/*"
+                          onChange={handleFileChange}
+                        />
                       </label>
                     </div>
                     <p className="settings-field-hint">Supported formats: PNG, JPG, SVG</p>
                   </div>
 
+                  {/* ── Institution name ── */}
                   <div className="settings-field-group">
                     <label className="settings-field-label">Institution Name</label>
                     <div className="settings-input-row">
                       <input
                         type="text"
                         className="settings-text-input"
-                        defaultValue="College / Institution Name"
+                        value={institutionName}
+                        onChange={e => setInstitutionName(e.target.value)}
                       />
-                      <button className="btn-settings-primary">
-                        <i className="bi bi-check-lg"></i> Save
+                      <button
+                        className="btn-settings-primary"
+                        onClick={handleBrandingSave}
+                        style={saveSuccess ? { background: '#155724', borderColor: '#155724' } : {}}
+                      >
+                        {saveSuccess
+                          ? <><i className="bi bi-check2-all"></i> Saved!</>
+                          : <><i className="bi bi-check-lg"></i> Save</>
+                        }
                       </button>
                     </div>
                     <p className="settings-field-hint">This name appears in the sidebar and reports</p>

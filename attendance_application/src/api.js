@@ -118,6 +118,31 @@ export const updateEmployee = async (employeeData) => {
 };
 
 // ====================================
+// EMPLOYEE PHOTOS ENDPOINTS
+// ====================================
+
+export const getEmployeePhotos = async (employeeId) => {
+  try {
+    const { data } = await api.get(`/employee_photos.php?employee_id=${employeeId}`);
+    return data;
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+export const saveEmployeePhotos = async (employeeId, photos) => {
+  try {
+    const { data } = await api.post(`/employee_photos.php`, {
+      employee_id: employeeId,
+      photos,
+    });
+    return data;
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+// ====================================
 // ATTENDANCE ENDPOINTS
 // ====================================
 
@@ -135,7 +160,7 @@ export const getAttendance = async (filters = {}) => {
 export const markAttendance = async ({
   employee_id,
   event_id,
-  attendance_type, // "Check In" or "Check Out"
+  attendance_type,
 }) => {
   try {
     const { data } = await api.post("/attendance.php", {
@@ -329,6 +354,7 @@ export const getEmailsList = async () => {
     handleError(error);
   }
 };
+
 // ====================================
 // FACIAL RECOGNITION ENDPOINTS
 // ====================================
@@ -342,10 +368,7 @@ export const getFacialEncodings = async () => {
   }
 };
 
-export const registerFace = async ({
-  employee_id,
-  encoding,
-}) => {
+export const registerFace = async ({ employee_id, encoding }) => {
   try {
     const { data } = await api.post("/facial.php", {
       employee_id,
@@ -390,9 +413,7 @@ export const getEntryExitLogs = async () => {
 
 export const getEventAttendance = async (event_id) => {
   try {
-    const { data } = await api.get(
-      `/event_attendance.php?event_id=${event_id}`
-    );
+    const { data } = await api.get(`/event_attendance.php?event_id=${event_id}`);
     return data;
   } catch (error) {
     handleError(error);

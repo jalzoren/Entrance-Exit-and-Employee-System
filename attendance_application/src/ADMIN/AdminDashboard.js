@@ -12,6 +12,10 @@ import './ccs/dashboard.css';
 import LiveClock from "../components/LiveClock";
 import InfoTooltip from "../components/InfoTooltip";
 
+// ── Keys shared with Settingspage ──────────────────────────────────────────
+const LOGO_KEY = 'institution_logo';
+const NAME_KEY = 'institution_name';
+
 function AdminDashboard({ onLogout }) {
 
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -19,6 +23,16 @@ function AdminDashboard({ onLogout }) {
   const [currentPage, setCurrentPage] = useState({ page: 'dashboard', data: null });
   const [eventsDropdownOpen, setEventsDropdownOpen] = useState(false);
   const [archivesDropdownOpen, setArchivesDropdownOpen] = useState(false);
+
+  // ── Branding (logo + name) ─────────────────────────────────────────────
+  const [sidebarLogo, setSidebarLogo] = useState(() => localStorage.getItem(LOGO_KEY) || null);
+  const [sidebarName, setSidebarName] = useState(() => localStorage.getItem(NAME_KEY) || 'INSTITUTIONAL ADMIN SUPPORT');
+
+  // Called by Settingspage when user clicks Save
+  const handleBrandingChange = ({ logo, name }) => {
+    if (logo) setSidebarLogo(logo);
+    if (name) setSidebarName(name);
+  };
 
   const [stats, setStats] = useState({
     totalPresent: 0,
@@ -36,6 +50,11 @@ function AdminDashboard({ onLogout }) {
   }, []);
 
   useEffect(() => { loadDashboardData(); }, []);
+
+  // Re-fetch whenever the user navigates back to the dashboard
+  useEffect(() => {
+    if (currentPage.page === 'dashboard') loadDashboardData();
+  }, [currentPage.page]);
 
   const loadDashboardData = async () => {
     try {
@@ -57,16 +76,13 @@ function AdminDashboard({ onLogout }) {
     date.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' });
 
   const navigateToPage = (pageName, data = null) => {
-    // close dropdowns when user picks a page
     setEventsDropdownOpen(false);
     setArchivesDropdownOpen(false);
 
-    // Keep 'events' menu active for both events sub-pages
-    const eventsPages = ['events', 'eventDetails'];
-    // keep 'archive' menu active for any archive sub-page
+    const eventsPages  = ['events', 'eventDetails'];
     const archivePages = ['archiveEmployees', 'archiveEvents'];
     let menu = pageName;
-    if (eventsPages.includes(pageName)) menu = 'events';
+    if (eventsPages.includes(pageName))  menu = 'events';
     else if (archivePages.includes(pageName)) menu = 'archive';
     setActiveMenu(menu);
     setCurrentPage({ page: pageName, data });
@@ -120,186 +136,184 @@ function AdminDashboard({ onLogout }) {
       <h1 className="dashboard-title mb-4">Dashboard Overview</h1>
 
       {/* ── STAT CARDS ── */}
-<Row className="g-4 mb-4">
-  <Col md={6} lg={3}>
-    <Card className="stat-card">
-      <Card.Body>
-        <p className="stat-label">
-          Present Today
-          <InfoTooltip text="Number of employees marked present today" />
-        </p>
-        <h2 className="stat-value text-success">{stats.totalPresent}</h2>
-      </Card.Body>
-    </Card>
-  </Col>
+      <Row className="g-4 mb-4">
+        <Col md={6} lg={3}>
+          <Card className="stat-card">
+            <Card.Body>
+              <p className="stat-label">
+                Present Today
+                <InfoTooltip text="Number of employees marked present today" />
+              </p>
+              <h2 className="stat-value text-success">{stats.totalPresent}</h2>
+            </Card.Body>
+          </Card>
+        </Col>
 
-  <Col md={6} lg={3}>
-    <Card className="stat-card">
-      <Card.Body>
-        <p className="stat-label">
-          Late Today
-          <InfoTooltip text="Number of employees who were late today" />
-        </p>
-        <h2 className="stat-value text-warning">{stats.totalLate}</h2>
-      </Card.Body>
-    </Card>
-  </Col>
+        <Col md={6} lg={3}>
+          <Card className="stat-card">
+            <Card.Body>
+              <p className="stat-label">
+                Late Today
+                <InfoTooltip text="Number of employees who were late today" />
+              </p>
+              <h2 className="stat-value text-warning">{stats.totalLate}</h2>
+            </Card.Body>
+          </Card>
+        </Col>
 
-  <Col md={6} lg={3}>
-    <Card className="stat-card">
-      <Card.Body>
-        <p className="stat-label">
-          Absent Today
-          <InfoTooltip text="Number of employees absent today" />
-        </p>
-        <h2 className="stat-value text-danger">{stats.totalAbsent}</h2>
-      </Card.Body>
-    </Card>
-  </Col>
+        <Col md={6} lg={3}>
+          <Card className="stat-card">
+            <Card.Body>
+              <p className="stat-label">
+                Absent Today
+                <InfoTooltip text="Number of employees absent today" />
+              </p>
+              <h2 className="stat-value text-danger">{stats.totalAbsent}</h2>
+            </Card.Body>
+          </Card>
+        </Col>
 
-  <Col md={6} lg={3}>
-    <Card className="stat-card">
-      <Card.Body>
-        <p className="stat-label">
-          Total Employees
-          <InfoTooltip text="Total number of employees in the system" />
-        </p>
-        <h2 className="stat-value">{total}</h2>
-      </Card.Body>
-    </Card>
-  </Col>
-</Row>
+        <Col md={6} lg={3}>
+          <Card className="stat-card">
+            <Card.Body>
+              <p className="stat-label">
+                Total Employees
+                <InfoTooltip text="Total number of employees in the system" />
+              </p>
+              <h2 className="stat-value">{total}</h2>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
 
-{/* ── ENTRY / EXIT ── */}
-<Row className="g-4 mb-4">
-  <Col md={6}>
-    <Card className="gateway-card">
-      <Card.Body>
-        <h5>
-          Today's Entries
-          <InfoTooltip text="Number of employees who entered today" />
-        </h5>
-        <h2>{stats.todayEntries}</h2>
-      </Card.Body>
-    </Card>
-  </Col>
+      {/* ── ENTRY / EXIT ── */}
+      <Row className="g-4 mb-4">
+        <Col md={6}>
+          <Card className="gateway-card">
+            <Card.Body>
+              <h5>
+                Today's Entries
+                <InfoTooltip text="Number of employees who entered today" />
+              </h5>
+              <h2>{stats.todayEntries}</h2>
+            </Card.Body>
+          </Card>
+        </Col>
 
-  <Col md={6}>
-    <Card className="gateway-card">
-      <Card.Body>
-        <h5>
-          Today's Exits
-          <InfoTooltip text="Number of employees who exited today" />
-        </h5>
-        <h2>{stats.todayExits}</h2>
-      </Card.Body>
-    </Card>
-  </Col>
-</Row>
+        <Col md={6}>
+          <Card className="gateway-card">
+            <Card.Body>
+              <h5>
+                Today's Exits
+                <InfoTooltip text="Number of employees who exited today" />
+              </h5>
+              <h2>{stats.todayExits}</h2>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+
       {/* ── CHARTS ── */}
-<Row className="g-4">
+      <Row className="g-4">
 
-  {/* PIE */}
-  <Col lg={6}>
-    <Card className="analytics-card">
-      <Card.Body>
-        <h6 style={{ fontWeight:700, fontSize:15, marginBottom:2 }}>
-          Overall Status Distribution
-          <InfoTooltip text="Shows the percentage of employees Present, Late, and Absent today" />
-        </h6>
-        <p style={{ fontSize:12, color:'#aaa', marginBottom:20 }}>
-          Total attendance status breakdown
-        </p>
+        {/* PIE */}
+        <Col lg={6}>
+          <Card className="analytics-card">
+            <Card.Body>
+              <h6 style={{ fontWeight:700, fontSize:15, marginBottom:2 }}>
+                Overall Status Distribution
+                <InfoTooltip text="Shows the percentage of employees Present, Late, and Absent today" />
+              </h6>
+              <p style={{ fontSize:12, color:'#aaa', marginBottom:20 }}>
+                Total attendance status breakdown
+              </p>
 
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:36 }}>
-          <SvgDonut />
-          <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
-            {[
-              { label:'Present', value:stats.totalPresent, pct:presentPercent, color:'#28a745' },
-              { label:'Late',    value:stats.totalLate,    pct:latePercent,    color:'#ffc107' },
-              { label:'Absent',  value:stats.totalAbsent,  pct:absentPercent,  color:'#dc3545' },
-            ].map((d, i) => (
-              <div key={i} style={{ display:'flex', alignItems:'center', gap:10 }}>
-                <span style={{ width:14, height:14, borderRadius:'50%', background:d.color, flexShrink:0 }} />
-                <span style={{ fontSize:15, color:'#444' }}>
-                  {d.label}: <strong style={{ color:'#222' }}>{d.value}</strong>{' '}
-                  <span style={{ color:'#999', fontSize:13 }}>({d.pct.toFixed(0)}%)</span>
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </Card.Body>
-    </Card>
-  </Col>
-
-  {/* DEPT BARS */}
-  <Col lg={6}>
-    <Card className="analytics-card">
-      <Card.Body>
-        <h6 style={{ fontWeight:700, fontSize:15, marginBottom:2 }}>
-          Department-wise Attendance
-          <InfoTooltip text="Shows attendance for each department with Present and Absent counts" />
-        </h6>
-        <p style={{ fontSize:12, color:'#aaa', marginBottom:16 }}>
-          Attendance breakdown by department
-        </p>
-
-        <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-          {departmentData.map((dept, i) => {
-            const present = dept.present || 0;
-            const absent  = dept.absent  || 0;
-            const BAR_BASE_WIDTH = 220; // Maximum combined width for bars
-            const presentPx = Math.round((present / maxDeptTotal) * BAR_BASE_WIDTH);
-            const absentPx  = Math.round((absent  / maxDeptTotal) * BAR_BASE_WIDTH);
-            
-            return (
-              <div key={i} style={{ display:'flex', alignItems:'center', gap:10 }}>
-                {/* Label */}
-                <span style={{ fontSize:15, color:'#555', fontWeight:500, width:150, textAlign:'left', flexShrink:0, lineHeight:1.2 }}>
-                  {dept.department_name}
-                </span>
-                {/* Bars */}
-                <div style={{ display:'flex', gap:2, alignItems:'center', flexGrow:1 }}>
-                  {present > 0 && (
-                    <div style={{
-                      width: Math.max(presentPx, 20), height:24,
-                      background:'#28a745',
-                      borderRadius: absent === 0 ? 4 : '4px 0 0 4px',
-                      display:'flex', alignItems:'center', justifyContent:'center',
-                      color:'#fff', fontSize:11, fontWeight:700,
-                      minWidth: 'fit-content', padding: '0 5px'
-                    }}>
-                      {present}
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:36 }}>
+                <SvgDonut />
+                <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
+                  {[
+                    { label:'Present', value:stats.totalPresent, pct:presentPercent, color:'#28a745' },
+                    { label:'Late',    value:stats.totalLate,    pct:latePercent,    color:'#ffc107' },
+                    { label:'Absent',  value:stats.totalAbsent,  pct:absentPercent,  color:'#dc3545' },
+                  ].map((d, i) => (
+                    <div key={i} style={{ display:'flex', alignItems:'center', gap:10 }}>
+                      <span style={{ width:14, height:14, borderRadius:'50%', background:d.color, flexShrink:0 }} />
+                      <span style={{ fontSize:15, color:'#444' }}>
+                        {d.label}: <strong style={{ color:'#222' }}>{d.value}</strong>{' '}
+                        <span style={{ color:'#999', fontSize:13 }}>({d.pct.toFixed(0)}%)</span>
+                      </span>
                     </div>
-                  )}
-                  {absent > 0 && (
-                    <div style={{
-                      width: Math.max(absentPx, 20), height:24,
-                      background:'#dc3545',
-                      borderRadius: present === 0 ? 4 : '0 4px 4px 0',
-                      display:'flex', alignItems:'center', justifyContent:'center',
-                      color:'#fff', fontSize:11, fontWeight:700,
-                      minWidth: 'fit-content', padding: '0 5px'
-                    }}>
-                      {absent}
-                    </div>
-                  )}
+                  ))}
                 </div>
               </div>
-            );
-          })}
-        </div>
+            </Card.Body>
+          </Card>
+        </Col>
 
-        {/* Legend */}
-        <div style={{ display:'flex', gap:20, marginTop:16, paddingTop:12, borderTop:'1px solid #f0f0f0' }}>
-          {[['#28a745','Present'],['#dc3545','Absent']].map(([color, label]) => (
-            <span key={label} style={{ display:'flex', alignItems:'center', gap:6, fontSize:13, color:'#555' }}>
-              <span style={{ width:12, height:12, borderRadius:2, background:color, display:'inline-block' }} />
-              {label}
-            </span>
-          ))}
-        </div>
+        {/* DEPT BARS */}
+        <Col lg={6}>
+          <Card className="analytics-card">
+            <Card.Body>
+              <h6 style={{ fontWeight:700, fontSize:15, marginBottom:2 }}>
+                Department-wise Attendance
+                <InfoTooltip text="Shows attendance for each department with Present and Absent counts" />
+              </h6>
+              <p style={{ fontSize:12, color:'#aaa', marginBottom:16 }}>
+                Attendance breakdown by department
+              </p>
+
+              <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+                {departmentData.map((dept, i) => {
+                  const present = dept.present || 0;
+                  const absent  = dept.absent  || 0;
+                  const BAR_BASE_WIDTH = 220;
+                  const presentPx = Math.round((present / maxDeptTotal) * BAR_BASE_WIDTH);
+                  const absentPx  = Math.round((absent  / maxDeptTotal) * BAR_BASE_WIDTH);
+                  return (
+                    <div key={i} style={{ display:'flex', alignItems:'center', gap:10 }}>
+                      <span style={{ fontSize:15, color:'#555', fontWeight:500, width:150, textAlign:'left', flexShrink:0, lineHeight:1.2 }}>
+                        {dept.department_name}
+                      </span>
+                      <div style={{ display:'flex', gap:2, alignItems:'center', flexGrow:1 }}>
+                        {present > 0 && (
+                          <div style={{
+                            width: Math.max(presentPx, 20), height:24,
+                            background:'#28a745',
+                            borderRadius: absent === 0 ? 4 : '4px 0 0 4px',
+                            display:'flex', alignItems:'center', justifyContent:'center',
+                            color:'#fff', fontSize:11, fontWeight:700,
+                            minWidth: 'fit-content', padding: '0 5px'
+                          }}>
+                            {present}
+                          </div>
+                        )}
+                        {absent > 0 && (
+                          <div style={{
+                            width: Math.max(absentPx, 20), height:24,
+                            background:'#dc3545',
+                            borderRadius: present === 0 ? 4 : '0 4px 4px 0',
+                            display:'flex', alignItems:'center', justifyContent:'center',
+                            color:'#fff', fontSize:11, fontWeight:700,
+                            minWidth: 'fit-content', padding: '0 5px'
+                          }}>
+                            {absent}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Legend */}
+              <div style={{ display:'flex', gap:20, marginTop:16, paddingTop:12, borderTop:'1px solid #f0f0f0' }}>
+                {[['#28a745','Present'],['#dc3545','Absent']].map(([color, label]) => (
+                  <span key={label} style={{ display:'flex', alignItems:'center', gap:6, fontSize:13, color:'#555' }}>
+                    <span style={{ width:12, height:12, borderRadius:2, background:color, display:'inline-block' }} />
+                    {label}
+                  </span>
+                ))}
+              </div>
             </Card.Body>
           </Card>
         </Col>
@@ -312,10 +326,25 @@ function AdminDashboard({ onLogout }) {
     <div className="admin-dashboard">
       <aside className="sidebar">
         <div className="sidebar-header">
-          <div className="sidebar-logo-circle">
-            <i className="bi bi-building" style={{ fontSize:'28px', color:'white' }}></i>
+
+          {/* ── Logo: shows uploaded image or fallback building icon ── */}
+          <div className="sidebar-logo-circle" style={{ overflow: 'hidden', padding: sidebarLogo ? 0 : undefined }}>
+            {sidebarLogo ? (
+              <img
+                src={sidebarLogo}
+                alt="Institution logo"
+                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit' }}
+              />
+            ) : (
+              <i className="bi bi-building" style={{ fontSize:'28px', color:'white' }}></i>
+            )}
           </div>
-          <div className="sidebar-title"><h5>INSTITUTIONAL ADMIN SUPPORT</h5></div>
+
+          {/* ── Name: shows saved institution name ── */}
+          <div className="sidebar-title">
+            <h5>{sidebarName}</h5>
+          </div>
+
         </div>
 
         <nav className="sidebar-nav">
@@ -349,8 +378,6 @@ function AdminDashboard({ onLogout }) {
 
             {eventsDropdownOpen && (
               <div className="dropdown-menu-custom">
-
-                {/* Events Overview */}
                 <div
                   className={`dropdown-item-custom ${currentPage.page==='events' ? 'active' : ''}`}
                   onClick={e => { e.stopPropagation(); navigateToPage('events'); }}
@@ -358,8 +385,6 @@ function AdminDashboard({ onLogout }) {
                   <i className="bi bi-list-task me-2"></i>
                   <span>Events Overview</span>
                 </div>
-
-                {/* Event Attendance */}
                 <div
                   className={`dropdown-item-custom ${currentPage.page==='eventDetails' ? 'active' : ''}`}
                   onClick={e => { e.stopPropagation(); navigateToPage('events'); }}
@@ -367,8 +392,6 @@ function AdminDashboard({ onLogout }) {
                   <i className="bi bi-people-fill me-2"></i>
                   <span>Event Attendance</span>
                 </div>
-
-    
               </div>
             )}
           </div>
@@ -386,7 +409,6 @@ function AdminDashboard({ onLogout }) {
 
             {archivesDropdownOpen && (
               <div className="dropdown-menu-custom">
-                {/* Employees Archive */}
                 <div
                   className={`dropdown-item-custom ${currentPage.page==='archiveEmployees' ? 'active' : ''}`}
                   onClick={e => { e.stopPropagation(); navigateToPage('archiveEmployees'); }}
@@ -394,8 +416,6 @@ function AdminDashboard({ onLogout }) {
                   <i className="bi bi-person-lines-fill me-2"></i>
                   <span>Employees</span>
                 </div>
-
-                {/* Events Archive */}
                 <div
                   className={`dropdown-item-custom ${currentPage.page==='archiveEvents' ? 'active' : ''}`}
                   onClick={e => { e.stopPropagation(); navigateToPage('archiveEvents'); }}
@@ -414,7 +434,12 @@ function AdminDashboard({ onLogout }) {
           >
             <i className="bi bi-box-arrow-right"></i><span>Entry/Exit</span>
           </div>
-          <div className={`nav-item ${activeMenu==='settings'?'active':''}`} onClick={()=>navigateToPage('settings')}>
+
+          {/* Settings */}
+          <div
+            className={`nav-item ${activeMenu==='settings' ? 'active' : ''}`}
+            onClick={() => navigateToPage('settings')}
+          >
             <i className="bi bi-gear-fill"></i><span>Settings</span>
           </div>
 
@@ -428,18 +453,20 @@ function AdminDashboard({ onLogout }) {
       </aside>
 
       <div className="main-content-area">
-          <div className="status-bar">
+        <div className="status-bar">
           <span className="status-badge">Live Status</span>
           <LiveClock className="status-clock" />
-          </div>
+        </div>
         <div className="content-overlay">
-          {currentPage.page==='dashboard'    && renderDashboard()}
-          {currentPage.page==='employees'    && <EmployeesPage />}
-          {currentPage.page==='events'       && <EventsPage onNavigate={(page, data) => navigateToPage(page, data)} />}
-          {currentPage.page==='eventDetails' && <EventDetailsPage eventData={currentPage.data} onNavigate={page => navigateToPage(page)} />}
-          {currentPage.page==='entryExit'    && <EntryExitPage />}
-          {currentPage.page==='settings'     && <Settingspage />}
-          {currentPage.page==='archiveEvents' && <Eventsarchives onNavigate={(page, data) => navigateToPage(page, data)} />}
+          {currentPage.page==='dashboard'        && renderDashboard()}
+          {currentPage.page==='employees'        && <EmployeesPage />}
+          {currentPage.page==='events'           && <EventsPage onNavigate={(page, data) => navigateToPage(page, data)} />}
+          {currentPage.page==='eventDetails'     && <EventDetailsPage eventData={currentPage.data} onNavigate={page => navigateToPage(page)} />}
+          {currentPage.page==='entryExit'        && <EntryExitPage />}
+          {currentPage.page==='settings'         && (
+            <Settingspage onBrandingChange={handleBrandingChange} />
+          )}
+          {currentPage.page==='archiveEvents'    && <Eventsarchives onNavigate={(page, data) => navigateToPage(page, data)} />}
           {currentPage.page==='archiveEmployees' && <EmployeesArchive onNavigate={(page, data) => navigateToPage(page, data)} />}
         </div>
       </div>
