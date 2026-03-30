@@ -543,7 +543,6 @@
 
 .fr-btn-submit:hover:not(:disabled) {
   background: linear-gradient(105deg, #0a2817 0%, #143d28 100%);
-  transform: translateY(-2px);
   box-shadow: 0 6px 14px rgba(13, 51, 33, 0.4);
 }
 

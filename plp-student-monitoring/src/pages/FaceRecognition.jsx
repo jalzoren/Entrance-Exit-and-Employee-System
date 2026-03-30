@@ -2,12 +2,21 @@ import { useRef, useEffect, useState, useCallback } from "react";
 import "../css/FaceRecognition.css";
 import { Link } from "react-router-dom";
 import { useLogContext } from "../context/LogContext";
+import { useCameraContext } from "../context/CameraContext";
 import Swal from "sweetalert2";
 import { FaArrowLeft } from "react-icons/fa";
 
 function FaceRecognition() {
   const videoRef = useRef(null);
   const { addLog, addFailedLog } = useLogContext();
+  const { 
+    updateCameraFrame, 
+    updateCameraStatus, 
+    setActiveCameraState, 
+    setVideoStream,
+    cameraStatus: contextCameraStatus,
+    detectedFace: contextDetectedFace
+  } = useCameraContext();
 
   const [isScanning, setIsScanning] = useState(true);
   const [logType, setLogType] = useState("");
@@ -15,7 +24,7 @@ function FaceRecognition() {
   const [manualId, setManualId] = useState("");
   const [manualIdLoading, setManualIdLoading] = useState(false);
 
-  const [cameraStatus, setCameraStatus] = useState("neutral");
+  const [localCameraStatus, setLocalCameraStatus] = useState("neutral");
   const [authenticatedName, setAuthenticatedName] = useState("");
   const [department, setDepartment] = useState("");
   const [authTime, setAuthTime] = useState("");
@@ -24,10 +33,15 @@ function FaceRecognition() {
   // Clear input when modal closes
   useEffect(() => {
     if (!showManualIdModal) {
-      setManualId(""); // Clear input when modal is closed
-      setManualIdLoading(false); // Also reset loading state
+      setManualId("");
+      setManualIdLoading(false);
     }
   }, [showManualIdModal]);
+
+  // Sync local camera status with context status
+  useEffect(() => {
+    setLocalCameraStatus(contextCameraStatus);
+  }, [contextCameraStatus]);
 
   // -----------------------------
   // START CAMERA
@@ -36,20 +50,55 @@ function FaceRecognition() {
     async function startCamera() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
+          video: { width: { ideal: 1280 }, height: { ideal: 720 } }
         });
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
+          setActiveCameraState(true);
+          console.log("✅ Camera STARTED in FaceRecognition");
+          
+          // CRITICAL: Share the video stream with CameraContext for Monitor
+          setVideoStream(stream);
+          console.log("✅ Stream shared with CameraContext");
+          
+          // Start capturing frames for real-time display in Monitor
+          const frameInterval = setInterval(() => {
+            if (videoRef.current && videoRef.current.videoWidth > 0) {
+              try {
+                const canvas = document.createElement("canvas");
+                canvas.width = videoRef.current.videoWidth;
+                canvas.height = videoRef.current.videoHeight;
+                const ctx = canvas.getContext("2d");
+                ctx.drawImage(videoRef.current, 0, 0);
+                const frameData = canvas.toDataURL("image/jpeg", 0.7);
+                updateCameraFrame(frameData);
+              } catch (err) {
+                console.error("Error capturing frame:", err);
+              }
+            }
+          }, 100); // 10fps for real-time display
+          
+          // Store interval ID for cleanup
+          window.frameCaptureInterval = frameInterval;
         }
       } catch (err) {
         console.error("Error accessing camera:", err);
+        setActiveCameraState(false);
       }
     }
     startCamera();
-  }, []);
+
+    return () => {
+      setActiveCameraState(false);
+      if (window.frameCaptureInterval) {
+        clearInterval(window.frameCaptureInterval);
+      }
+      // Don't stop the stream here because Monitor might still be using it
+    };
+  }, [setActiveCameraState, setVideoStream, updateCameraFrame]);
 
   // -----------------------------
-  // CAPTURE + SEND
+  // CAPTURE + SEND FOR FACE RECOGNITION
   // -----------------------------
   const captureAndSend = useCallback(async () => {
     if (!videoRef.current || videoRef.current.videoWidth === 0 || !isScanning)
@@ -74,18 +123,26 @@ function FaceRecognition() {
 
       const result = await response.json();
 
-      // Add a log entry
+      // Add local log entry
       setLogs((prev) => [
         `Time: ${new Date().toLocaleTimeString()} | Detected: ${result.detected} | Authenticated: ${result.authenticated} | Name: ${result.name || "N/A"} | LogType: ${result.log_type || "N/A"}`,
-        ...prev.slice(0, 9), // keep last 10 logs
+        ...prev.slice(0, 9),
       ]);
 
       if (result.detected && result.authenticated) {
-        setCameraStatus("detected");
+        setLocalCameraStatus("detected");
         setAuthenticatedName(result.name);
         setDepartment(result.department);
         setAuthTime(result.time);
         setLogType(result.log_type);
+
+        // Update camera context with detected face info for Monitor
+        updateCameraStatus("detected", {
+          name: result.name,
+          department: result.department,
+          studentId: result.student_id || result.name,
+          logType: result.log_type,
+        });
 
         // Add log to global context
         addLog({
@@ -98,37 +155,49 @@ function FaceRecognition() {
 
         // AUTO RESET UI
         setTimeout(() => {
-          setCameraStatus("neutral");
+          setLocalCameraStatus("neutral");
           setAuthenticatedName("");
           setDepartment("");
           setAuthTime("");
           setLogType("");
+          updateCameraStatus("neutral");
         }, 4000);
       } else if (result.detected && !result.authenticated) {
-        setCameraStatus("unauthorized");
+        setLocalCameraStatus("unauthorized");
         setAuthTime(result.time);
         setAuthenticatedName("");
         setDepartment("");
         setLogType("");
 
+        // Update camera context for unauthorized face
+        updateCameraStatus("unauthorized");
+
         // Add failed log to global context
         addFailedLog();
+        
+        // AUTO RESET UI
+        setTimeout(() => {
+          setLocalCameraStatus("neutral");
+          updateCameraStatus("neutral");
+        }, 3000);
       } else {
-        setCameraStatus("neutral");
+        setLocalCameraStatus("neutral");
         setAuthenticatedName("");
         setDepartment("");
         setAuthTime("");
         setLogType("");
+        updateCameraStatus("neutral");
       }
     } catch (err) {
       console.error(err);
-      setCameraStatus("neutral");
+      setLocalCameraStatus("neutral");
       setLogs((prev) => [`Error: ${err.message}`, ...prev.slice(0, 9)]);
+      updateCameraStatus("neutral");
     }
 
     // COOLDOWN
     setTimeout(() => setIsScanning(true), 3000);
-  }, [isScanning, addLog, addFailedLog]);
+  }, [isScanning, addLog, addFailedLog, updateCameraFrame, updateCameraStatus]);
 
   // -----------------------------
   // AUTO SCAN LOOP
@@ -136,7 +205,7 @@ function FaceRecognition() {
   useEffect(() => {
     const interval = setInterval(() => {
       captureAndSend();
-    }, 2000);
+    }, 2000); // Scan every 2 seconds
 
     return () => clearInterval(interval);
   }, [captureAndSend]);
@@ -196,8 +265,7 @@ function FaceRecognition() {
     "Maligayang pagdating! Let's go, ",
     "Uy! Kamusta? Log in na, ",
     "L E T apostrophe S  G O! LETSGO",
-        "Pasok na sa PLP! AnOh? tAraH?",
-
+    "Pasok na sa PLP! AnOh? tAraH?",
   ];
 
   const [greeting, setGreeting] = useState(greetings[0]);
@@ -237,7 +305,6 @@ function FaceRecognition() {
     setManualIdLoading(true);
 
     try {
-      // Send manual ID to backend for validation and logging
       const response = await fetch(
         "http://localhost:5000/api/manual-id-login",
         {
@@ -253,10 +320,8 @@ function FaceRecognition() {
       const result = await response.json();
 
       if (result.success) {
-        // Determine if it's entry or exit based on existing logs
         const action = result.action || "ENTRY";
         
-        // Add log entry to context
         addLog({
           name: result.name,
           studentId: manualId,
@@ -305,11 +370,11 @@ function FaceRecognition() {
       {/* LEFT SIDE CAMERA */}
       <div
         className={`camera-side ${
-          cameraStatus === "neutral"
+          localCameraStatus === "neutral"
             ? ""
-            : cameraStatus === "detected"
+            : localCameraStatus === "detected"
             ? "green-border"
-            : cameraStatus === "unauthorized"
+            : localCameraStatus === "unauthorized"
             ? "red-border"
             : ""
         }`}
@@ -317,11 +382,11 @@ function FaceRecognition() {
         <video ref={videoRef} autoPlay playsInline className="camera-video" />
 
         <div className="camera-text">
-          {cameraStatus === "neutral" &&
+          {localCameraStatus === "neutral" &&
             "Please look at the camera and position your face..."}
-          {cameraStatus === "detected" &&
+          {localCameraStatus === "detected" &&
             `Welcome, ${authenticatedName}! Face recognized.`}
-          {cameraStatus === "unauthorized" &&
+          {localCameraStatus === "unauthorized" &&
             "Face not recognized. Please look at the camera again."}
         </div>
       </div>
@@ -344,9 +409,10 @@ function FaceRecognition() {
             >
               {greeting}
             </h2>
-<p className={`plpian ${fade ? "fade-in" : "fade-out"}`}>
-  {greeting !== greetings[greetings.length - 1] ? "PLPian!" : ""}
-</p>          </div>
+            <p className={`plpian ${fade ? "fade-in" : "fade-out"}`}>
+              {greeting !== greetings[greetings.length - 1] ? "PLPian!" : ""}
+            </p>
+          </div>
 
           <div className="time-status-section">
             <div className="time-date">
@@ -360,11 +426,11 @@ function FaceRecognition() {
           </div>
 
           <div className="message-box">
-            {cameraStatus === "neutral" &&
+            {localCameraStatus === "neutral" &&
               "Welcome! Please scan your face for attendance."}
-            {cameraStatus === "detected" &&
+            {localCameraStatus === "detected" &&
               `Welcome back, ${authenticatedName}! Department: ${department}.`}
-            {cameraStatus === "unauthorized" &&
+            {localCameraStatus === "unauthorized" &&
               "Face not recognized. Please try again."}
           </div>
         </div>
@@ -376,7 +442,7 @@ function FaceRecognition() {
         </button>
 
         <div className="status-box">
-          {cameraStatus === "neutral" && (
+          {localCameraStatus === "neutral" && (
             <>
               <h2>
                 <strong>FACIAL AUTHENTICATION SYSTEM</strong>
@@ -385,7 +451,7 @@ function FaceRecognition() {
             </>
           )}
 
-          {cameraStatus === "detected" && (
+          {localCameraStatus === "detected" && (
             <>
               <h2>
                 <strong>AUTHENTICATION SUCCESSFUL!</strong>
@@ -402,7 +468,7 @@ function FaceRecognition() {
             </>
           )}
 
-          {cameraStatus === "unauthorized" && (
+          {localCameraStatus === "unauthorized" && (
             <>
               <h2>
                 <strong>AUTHENTICATION FAILED!</strong>
@@ -428,7 +494,7 @@ function FaceRecognition() {
         </div>
       </div>
 
-      {/* Manual ID Modal - Wider & Taller with More Content */}
+      {/* Manual ID Modal */}
       {showManualIdModal && (
         <div
           className="fr-modal-overlay"
@@ -449,7 +515,6 @@ function FaceRecognition() {
             </div>
 
             <form onSubmit={handleManualIdSubmit} className="fr-modal-form">
-              {/* Info Box */}
               <div className="fr-modal-info">
                 <p>
                   Please use this option only if facial recognition is

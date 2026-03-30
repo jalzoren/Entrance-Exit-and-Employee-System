@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import "../../css/RealTimeMonitor.css";
 import '../../css/Monitor.css';
 import { useLogContext } from "../../context/LogContext";
+import { useCameraContext } from "../../context/CameraContext";
 
 function LogEntry({ log, animDelay }) {
   return (
@@ -26,42 +27,98 @@ function LogEntry({ log, animDelay }) {
 
 export default function Monitor() {
   const { logs: contextLogs, studentsInside } = useLogContext();
-  const [activeFilter, setActiveFilter] = useState('all'); // 'all', 'entrance', 'exit'
+  const { cameraFrame, cameraStatus, detectedFace, isCameraActive, videoStream } = useCameraContext();
+  const [activeFilter, setActiveFilter] = useState('all');
   const [filteredLogs, setFilteredLogs] = useState([]);
   const logRef = useRef(null);
+  const videoRef = useRef(null);
+  const [streamAttached, setStreamAttached] = useState(false);
+
+  // Effect to handle video stream from context with mirror effect
+  useEffect(() => {
+    if (videoRef.current && videoStream && !streamAttached) {
+      try {
+        console.log("✅ Monitor: Attaching video stream");
+        videoRef.current.srcObject = videoStream;
+        setStreamAttached(true);
+        
+        // Apply mirror effect via CSS transform
+        videoRef.current.style.transform = 'scaleX(-1)';
+        videoRef.current.style.webkitTransform = 'scaleX(-1)';
+        
+        // Try to play
+        const playPromise = videoRef.current.play();
+        if (playPromise !== undefined) {
+          playPromise.then(() => {
+            console.log("✅ Monitor: Video playing with mirror effect");
+          }).catch((err) => {
+            console.log("Video autoplay prevented:", err);
+          });
+        }
+      } catch (err) {
+        console.error("❌ Error attaching stream:", err);
+      }
+    }
+  }, [videoStream, streamAttached]);
 
   // Auto-scroll to bottom when new logs arrive
   useEffect(() => {
-    if (logRef.current) {
+    if (logRef.current && filteredLogs.length > 0) {
       logRef.current.scrollTop = logRef.current.scrollHeight;
     }
   }, [filteredLogs]);
 
-  // Apply filter whenever logs or activeFilter changes
+  // Apply filter and sort logs (oldest first, newest at bottom)
   useEffect(() => {
+    let filtered = [];
+    
     if (activeFilter === 'all') {
-      setFilteredLogs(contextLogs);
+      filtered = [...contextLogs];
     } else if (activeFilter === 'entrance') {
-      setFilteredLogs(contextLogs.filter(log => !log.failed && log.action === "ENTRY"));
+      filtered = contextLogs.filter(log => !log.failed && log.action === "ENTRY");
     } else if (activeFilter === 'exit') {
-      setFilteredLogs(contextLogs.filter(log => !log.failed && log.action === "EXIT"));
+      filtered = contextLogs.filter(log => !log.failed && log.action === "EXIT");
     }
+    
+    // Sort logs by timestamp to ensure chronological order (oldest first, newest at bottom)
+    const sortedLogs = [...filtered].sort((a, b) => {
+      const timeA = a.timestamp || new Date(a.time).getTime();
+      const timeB = b.timestamp || new Date(b.time).getTime();
+      return timeA - timeB;
+    });
+    
+    setFilteredLogs(sortedLogs);
   }, [contextLogs, activeFilter]);
 
   const handleFilterChange = (filter) => {
     setActiveFilter(filter);
-    
-    // Remove the active button highlight after 300ms
-    setTimeout(() => {
-      if (filter === 'all') {
-        setActiveFilter('all');
-      }
-    }, 300);
   };
 
   const handleResetFilter = () => {
     setActiveFilter('all');
   };
+
+  const getStatusText = () => {
+    if (!isCameraActive) return 'Camera offline - Go to Face Recognition';
+    if (cameraStatus === 'detected' && detectedFace) {
+      return `✓ RECOGNIZED\n${detectedFace.name}`;
+    }
+    if (cameraStatus === 'unauthorized') return '✗ UNAUTHORIZED';
+    if (videoStream && streamAttached) return '🎥 LIVE FEED ACTIVE';
+    return 'Waiting for camera...';
+  };
+
+  // Debug logging
+  useEffect(() => {
+    console.log("📊 Monitor Status:", {
+      isCameraActive,
+      hasVideoStream: !!videoStream,
+      streamAttached,
+      cameraStatus,
+      detectedFace: detectedFace?.name || 'none',
+      totalLogs: filteredLogs.length
+    });
+  }, [isCameraActive, videoStream, streamAttached, cameraStatus, detectedFace, filteredLogs.length]);
 
   return (
     <div>
@@ -71,19 +128,18 @@ export default function Monitor() {
       </header>
       <hr className="header-divider" />
 
-      {/* Monitor content */}
       <div className="rtm-wrapper">
         <div className="rtm-card">
-
-          {/* Student count and filter controls */}
           <div className="rtm-subheader">
-            <div className="rtm-student-count">Students Inside: <span className="rtm-student-count-num">{studentsInside.toLocaleString()}</span></div>
+            <div className="rtm-student-count">
+              Students Inside: <span className="rtm-student-count-num">{studentsInside.toLocaleString()}</span>
+            </div>
             <div className="rtm-filter-controls">
               <button
                 className={`rtm-filter-btn ${activeFilter === 'all' ? 'active' : ''}`}
                 onClick={handleResetFilter}
               >
-                All Logs
+                All Logs ({filteredLogs.length})
               </button>
               <button
                 className={`rtm-filter-btn ${activeFilter === 'entrance' ? 'active' : ''}`}
@@ -100,33 +156,94 @@ export default function Monitor() {
             </div>
           </div>
 
-          {/* Avatar panel (left) + log panel (right) */}
           <div className="rtm-body">
-
             <div className="rtm-left-panel">
               <div className="rtm-avatar-box">
+                {isCameraActive && videoStream ? (
+                  <>
+                    <video 
+                      ref={videoRef}
+                      autoPlay 
+                      playsInline
+                      muted
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        transform: 'scaleX(-1)',
+                        WebkitTransform: 'scaleX(-1)',
+                      }}
+                      onLoadedMetadata={() => console.log("✅ Monitor Video: Ready")}
+                      onError={(e) => console.error("❌ Monitor Video error:", e)}
+                    />
+                    {detectedFace && cameraStatus === "detected" && (
+                      <div style={{
+                        position: 'absolute',
+                        bottom: '10px',
+                        left: '10px',
+                        right: '10px',
+                        backgroundColor: 'rgba(13, 51, 33, 0.95)',
+                        color: '#00ff41',
+                        padding: '10px',
+                        borderRadius: '4px',
+                        fontSize: '13px',
+                        fontWeight: 'bold',
+                        textAlign: 'center',
+                        zIndex: 10,
+                        border: '1px solid #00ff41',
+                        animation: 'slideUp 0.3s ease-out'
+                      }}>
+                        ✓ {detectedFace.name}
+                      </div>
+                    )}
+                    {cameraStatus === "unauthorized" && (
+                      <div style={{
+                        position: 'absolute',
+                        bottom: '10px',
+                        left: '10px',
+                        right: '10px',
+                        backgroundColor: 'rgba(255, 0, 0, 0.95)',
+                        color: '#fff',
+                        padding: '10px',
+                        borderRadius: '4px',
+                        fontSize: '13px',
+                        fontWeight: 'bold',
+                        textAlign: 'center',
+                        zIndex: 10,
+                        border: '1px solid #ff0000',
+                        animation: 'slideUp 0.3s ease-out'
+                      }}>
+                        ✗ UNAUTHORIZED
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <svg viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="50" cy="38" r="24" stroke="#0d3321" strokeWidth="3" />
+                    <path
+                      d="M10 115c0-22 18-40 40-40s40 18 40 40"
+                      stroke="#0d3321"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                )}
+
                 <div className="rtm-corner tl" />
                 <div className="rtm-corner tr" />
                 <div className="rtm-corner bl" />
                 <div className="rtm-corner br" />
                 <div className="rtm-scan-line" />
-                <svg viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <circle cx="50" cy="38" r="24" stroke="#0d3321" strokeWidth="3" />
-                  <path
-                    d="M10 115c0-22 18-40 40-40s40 18 40 40"
-                    stroke="#0d3321"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                  />
-                </svg>
               </div>
-
+             
               <div className="rtm-status-text">
-                {activeFilter === 'all' ? 'Showing all logs' : 
-                 activeFilter === 'entrance' ? 'Showing only ENTRANCE logs' : 
-                 'Showing only EXIT logs'}
+                {getStatusText().split('\n').map((line, i) => (
+                  <span key={i}>
+                    {line}
+                    {i < getStatusText().split('\n').length - 1 && <br />}
+                  </span>
+                ))}
               </div>
-           
             </div>
 
             <div className="rtm-log-panel" ref={logRef}>
@@ -136,15 +253,15 @@ export default function Monitor() {
                 </div>
               ) : (
                 filteredLogs.map((log, i) => (
-                  <LogEntry key={log.id} log={log} animDelay={i < 7 ? i * 0.06 : 0} />
+                  <LogEntry key={log.id || i} log={log} animDelay={i < 7 ? i * 0.06 : 0} />
                 ))
               )}
             </div>
-
           </div>
         </div>
       </div>
 
+    
     </div>
   );
 }

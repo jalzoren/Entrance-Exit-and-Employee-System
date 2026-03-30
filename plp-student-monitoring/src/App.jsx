@@ -2,6 +2,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { LogProvider } from "./context/LogContext";
+import { CameraProvider } from "./context/CameraContext.jsx";
 
 // Layout
 import DashboardLayout from "./layouts/DashboardLayout";
@@ -136,9 +137,11 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <LogProvider>
-          <AppRoutes />
-        </LogProvider>
+        <CameraProvider>
+          <LogProvider>
+            <AppRoutes />
+          </LogProvider>
+        </CameraProvider>
       </AuthProvider>
     </BrowserRouter>
   );
