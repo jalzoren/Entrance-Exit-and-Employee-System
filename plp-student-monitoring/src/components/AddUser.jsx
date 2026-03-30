@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { MdClose, MdVisibility, MdVisibilityOff } from "react-icons/md";
 import "../componentscss/AddUser.css";
+import "../css/GlobalModal.css";
 import Swal from 'sweetalert2';
 
 function AddUser({ onClose, onUserAdded }) {
@@ -208,24 +209,25 @@ function AddUser({ onClose, onUserAdded }) {
   };
 
   return (
-    <div className="popup-overlay">
-      <div className="register-container">
-        <div className="register-header">
-          <div className="register-text">ADD USER</div>
-          <div className="register-close-btn" onClick={handleCancel}>
-            <MdClose />
-          </div>
+    <div className="modal-overlay" onClick={handleCancel}>
+      <div className="modal-container" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2 className="modal-title">ADD USER</h2>
+          <button className="modal-close" onClick={handleCancel}>✕</button>
         </div>
 
         <form onSubmit={handleSubmit}>
-          <div className="register-form">
-            <div className="form-note">* Required fields (All letters will be UPPERCASE)</div>
+          <div className="modal-body">
+            <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: '20px' }}>
+              * Required fields (All letters will be UPPERCASE)
+            </div>
 
             {/* ROW 1 */}
-            <div className="form-row">
-              <div className="input-group">
-                <label>Last Name <span className="required">*</span></label>
+            <div className="modal-grid-2">
+              <div className="modal-field">
+                <label className="modal-label">Last Name <span className="required">*</span></label>
                 <input
+                  className="modal-input"
                   type="text"
                   placeholder="e.g. DELA CRUZ"
                   value={lastName}
@@ -235,9 +237,10 @@ function AddUser({ onClose, onUserAdded }) {
                 />
               </div>
 
-              <div className="input-group">
-                <label>Email <span className="required">*</span></label>
+              <div className="modal-field">
+                <label className="modal-label">Email <span className="required">*</span></label>
                 <input
+                  className="modal-input"
                   type="email"
                   placeholder="e.g juandelacruz@plpasig.edu.ph"
                   value={email}
@@ -249,10 +252,11 @@ function AddUser({ onClose, onUserAdded }) {
             </div>
 
             {/* ROW 2 */}
-            <div className="form-row">
-              <div className="input-group">
-                <label>First Name <span className="required">*</span></label>
+            <div className="modal-grid-2">
+              <div className="modal-field">
+                <label className="modal-label">First Name <span className="required">*</span></label>
                 <input
+                  className="modal-input"
                   type="text"
                   placeholder="e.g JUAN"
                   value={firstName}
@@ -262,9 +266,10 @@ function AddUser({ onClose, onUserAdded }) {
                 />
               </div>
 
-              <div className="input-group">
-                <label>Role <span className="required">*</span></label>
+              <div className="modal-field">
+                <label className="modal-label">Role <span className="required">*</span></label>
                 <select
+                  className="modal-select"
                   value={role}
                   onChange={(e) => setRole(e.target.value)}
                   required
@@ -278,10 +283,11 @@ function AddUser({ onClose, onUserAdded }) {
             </div>
 
             {/* ROW 3 */}
-            <div className="form-row">
-              <div className="input-group">
-                <label>Middle Name</label>
+            <div className="modal-grid-2">
+              <div className="modal-field">
+                <label className="modal-label">Middle Name</label>
                 <input
+                  className="modal-input"
                   type="text"
                   placeholder="e.g. SMITH"
                   value={middleName}
@@ -290,9 +296,10 @@ function AddUser({ onClose, onUserAdded }) {
                 />
               </div>
 
-              <div className="input-group">
-                <label>Extension Name</label>
+              <div className="modal-field">
+                <label className="modal-label">Extension</label>
                 <input
+                  className="modal-input"
                   type="text"
                   placeholder="e.g. JR., SR., III"
                   value={extension}
@@ -303,11 +310,12 @@ function AddUser({ onClose, onUserAdded }) {
             </div>
 
             {/* Password fields */}
-            <div className="form-row">
-              <div className="input-group password-field">
-                <label>Password <span className="required">*</span></label>
-                <div className="password-input-wrapper">
+            <div className="modal-grid-2">
+              <div className="modal-field">
+                <label className="modal-label">Password <span className="required">*</span></label>
+                <div style={{ position: 'relative' }}>
                   <input
+                    className="modal-input"
                     type={showPassword ? "text" : "password"}
                     placeholder="Enter password"
                     value={password}
@@ -323,13 +331,16 @@ function AddUser({ onClose, onUserAdded }) {
                     {showPassword ? <MdVisibilityOff /> : <MdVisibility />}
                   </button>
                 </div>
-                <small className="password-hint">At least 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 special</small>
+                <small style={{ fontSize: '0.75rem', color: '#999', marginTop: '4px', display: 'block' }}>
+                  8+ chars, 1 uppercase, 1 lowercase, 1 number, 1 special
+                </small>
               </div>
 
-              <div className="input-group password-field">
-                <label>Confirm Password <span className="required">*</span></label>
-                <div className="password-input-wrapper">
+              <div className="modal-field">
+                <label className="modal-label">Confirm Password <span className="required">*</span></label>
+                <div style={{ position: 'relative' }}>
                   <input
+                    className="modal-input"
                     type={showConfirmPassword ? "text" : "password"}
                     placeholder="Confirm password"
                     value={confirmPassword}
@@ -347,26 +358,24 @@ function AddUser({ onClose, onUserAdded }) {
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* BUTTONS */}
-            <div className="form-actions">
-              <button
-                type="submit"
-                className="btn add"
-                disabled={loading}
-              >
-                {loading ? 'Adding...' : 'Add User'}
-              </button>
-
-              <button
-                type="button"
-                className="btn cancel"
-                onClick={handleCancel}
-                disabled={loading}
-              >
-                Cancel
-              </button>
-            </div>
+          <div className="modal-footer">
+            <button
+              type="button"
+              className="modal-btn modal-btn-cancel"
+              onClick={handleCancel}
+              disabled={loading}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="modal-btn modal-btn-save"
+              disabled={loading}
+            >
+              {loading ? 'Adding...' : 'Add User'}
+            </button>
           </div>
         </form>
       </div>

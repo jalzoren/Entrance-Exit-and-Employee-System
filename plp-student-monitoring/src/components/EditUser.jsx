@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { MdClose, MdVisibility, MdVisibilityOff } from "react-icons/md";
 import "../componentscss/AddUser.css";
+import "../css/GlobalModal.css";
 import Swal from 'sweetalert2';
 
 function EditUser({ onClose, onUserUpdated, userEmail }) {
@@ -324,15 +325,9 @@ function EditUser({ onClose, onUserUpdated, userEmail }) {
 
   if (showLoadingPopup) {
     return (
-      <div className="popup-overlay">
-        <div className="register-container" style={{ 
-          maxWidth: '400px', 
-          textAlign: 'center', 
-          padding: '40px 30px',
-          borderRadius: '12px',
-          boxShadow: '0 10px 30px rgba(0,0,0,0.2)'
-        }}>
-          <div className="loading-spinner">
+      <div className="modal-overlay">
+        <div className="modal-container" style={{ maxWidth: '400px', textAlign: 'center' }}>
+          <div className="modal-body" style={{ padding: '40px 30px' }}>
             <div style={{ 
               border: '5px solid #f3f3f3',
               borderTop: '5px solid #3085d6',
@@ -366,23 +361,24 @@ function EditUser({ onClose, onUserUpdated, userEmail }) {
   }
 
   return (
-    <div className="popup-overlay">
-      <div className="register-container">
-        <div className="register-header">
-          <div className="register-text">EDIT USER</div>
-          <div className="register-close-btn" onClick={handleCancel}>
-            <MdClose />
-          </div>
+    <div className="modal-overlay" onClick={handleCancel}>
+      <div className="modal-container" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2 className="modal-title">EDIT USER</h2>
+          <button className="modal-close" onClick={handleCancel}>✕</button>
         </div>
 
         <form onSubmit={handleSubmit}>
-          <div className="register-form">
-            <div className="form-note">* Required fields (All letters will be UPPERCASE)</div>
+          <div className="modal-body">
+            <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: '20px' }}>
+              * Required fields (All letters will be UPPERCASE)
+            </div>
 
-            <div className="form-row">
-              <div className="input-group">
-                <label>Last Name <span className="required">*</span></label>
+            <div className="modal-grid-2">
+              <div className="modal-field">
+                <label className="modal-label">Last Name <span className="required">*</span></label>
                 <input
+                  className="modal-input"
                   type="text"
                   placeholder="e.g. DELA CRUZ"
                   value={lastName}
@@ -392,22 +388,24 @@ function EditUser({ onClose, onUserUpdated, userEmail }) {
                 />
               </div>
 
-              <div className="input-group">
-                <label>Email <span className="required">*</span></label>
+              <div className="modal-field">
+                <label className="modal-label">Email <span className="required">*</span></label>
                 <input
+                  className="modal-input"
                   type="email"
                   placeholder="e.g juandelacruz@plpasig.edu.ph"
                   value={email}
                   disabled
-                  style={{ backgroundColor: '#f5f5f5', textTransform: 'lowercase' }}
+                  style={{ textTransform: 'lowercase', backgroundColor: '#f5f5f5', cursor: 'not-allowed' }}
                 />
               </div>
             </div>
 
-            <div className="form-row">
-              <div className="input-group">
-                <label>First Name <span className="required">*</span></label>
+            <div className="modal-grid-2">
+              <div className="modal-field">
+                <label className="modal-label">First Name <span className="required">*</span></label>
                 <input
+                  className="modal-input"
                   type="text"
                   placeholder="e.g JUAN"
                   value={firstName}
@@ -417,9 +415,10 @@ function EditUser({ onClose, onUserUpdated, userEmail }) {
                 />
               </div>
 
-              <div className="input-group">
-                <label>Role <span className="required">*</span></label>
+              <div className="modal-field">
+                <label className="modal-label">Role <span className="required">*</span></label>
                 <select
+                  className="modal-select"
                   value={role}
                   onChange={(e) => setRole(e.target.value)}
                   required
@@ -432,10 +431,11 @@ function EditUser({ onClose, onUserUpdated, userEmail }) {
               </div>
             </div>
 
-            <div className="form-row">
-              <div className="input-group">
-                <label>Middle Name</label>
+            <div className="modal-grid-2">
+              <div className="modal-field">
+                <label className="modal-label">Middle Name</label>
                 <input
+                  className="modal-input"
                   type="text"
                   placeholder="e.g SMITH"
                   value={middleName}
@@ -444,9 +444,10 @@ function EditUser({ onClose, onUserUpdated, userEmail }) {
                 />
               </div>
 
-              <div className="input-group">
-                <label>Extension Name</label>
+              <div className="modal-field">
+                <label className="modal-label">Extension</label>
                 <input
+                  className="modal-input"
                   type="text"
                   placeholder="e.g. JR., SR., III"
                   value={extension}
@@ -456,12 +457,13 @@ function EditUser({ onClose, onUserUpdated, userEmail }) {
               </div>
             </div>
 
-            {/* Password fields - only show if changing password */}
-            <div className="form-row">
-              <div className="input-group password-field">
-                <label>New Password <span className="optional">(Optional)</span></label>
-                <div className="password-input-wrapper">
+            {/* Password fields */}
+            <div className="modal-grid-2">
+              <div className="modal-field">
+                <label className="modal-label">New Password <span style={{ color: '#999', fontSize: '0.85rem', fontWeight: 'normal' }}>(Optional)</span></label>
+                <div style={{ position: 'relative' }}>
                   <input
+                    className="modal-input"
                     type={showPassword ? "text" : "password"}
                     placeholder="Leave empty to keep current"
                     value={password}
@@ -476,14 +478,17 @@ function EditUser({ onClose, onUserUpdated, userEmail }) {
                     {showPassword ? <MdVisibilityOff /> : <MdVisibility />}
                   </button>
                 </div>
-                <small className="password-hint">At least 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 special</small>
+                <small style={{ fontSize: '0.75rem', color: '#999', marginTop: '4px', display: 'block' }}>
+                  8+ chars, 1 uppercase, 1 lowercase, 1 number, 1 special
+                </small>
               </div>
 
               {password && (
-                <div className="input-group password-field">
-                  <label>Confirm Password <span className="required">*</span></label>
-                  <div className="password-input-wrapper">
+                <div className="modal-field">
+                  <label className="modal-label">Confirm Password <span className="required">*</span></label>
+                  <div style={{ position: 'relative' }}>
                     <input
+                      className="modal-input"
                       type={showConfirmPassword ? "text" : "password"}
                       placeholder="Confirm new password"
                       value={confirmPassword}
@@ -502,25 +507,24 @@ function EditUser({ onClose, onUserUpdated, userEmail }) {
                 </div>
               )}
             </div>
+          </div>
 
-            <div className="form-actions">
-              <button
-                type="submit"
-                className="btn add"
-                disabled={loading}
-              >
-                {loading ? 'Updating...' : 'Update User'}
-              </button>
-
-              <button
-                type="button"
-                className="btn cancel"
-                onClick={handleCancel}
-                disabled={loading}
-              >
-                Cancel
-              </button>
-            </div>
+          <div className="modal-footer">
+            <button
+              type="button"
+              className="modal-btn modal-btn-cancel"
+              onClick={handleCancel}
+              disabled={loading}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="modal-btn modal-btn-save"
+              disabled={loading}
+            >
+              {loading ? 'Updating...' : 'Update User'}
+            </button>
           </div>
         </form>
       </div>

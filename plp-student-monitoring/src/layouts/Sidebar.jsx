@@ -48,14 +48,16 @@ export default function Sidebar() {
       return [
         { icon: <FiHome />, label: "Super Dashboard", path: "/superdashboard" },
         { icon: <FiUsers />, label: "User Management", path: "/users" },
-        { icon: <FiUsers />, label: "Student Management (Super)", path: "/superstudents" },
+        { icon: <FiUsers />, label: "Student Management", path: "/superstudents" },
         { icon: <FiSettings />, label: "System Settings", path: "/systemsettings" },
-        { type: 'separator', label: 'Monitoring Features' },
+        { type: 'separator', label: 'Entrance and Exit Monitoring' },
         { icon: <FiMonitor />, label: "Real-Time Monitor", path: "/monitor" },
         { icon: <FiFileText />, label: "Entry-Exit Records", path: "/records" },
         { icon: <FiBarChart2 />, label: "Analytics & Reports", path: "/analytics" },
-        { icon: <FiUsers />, label: "Student Management", path: "/students" },
-        { icon: <FiHome />, label: "Dashboard", path: "/dashboard" },
+        { type: 'separator', label: 'Employee Attendance Monitoring' },
+        { icon: <FiHome />, label: "Attendance Dashboard", path: "/employee-dashboard" },
+        { icon: <FiFileText />, label: "Attendance Records", path: "/employee-records" },
+        { icon: <FiBarChart2 />, label: "Attendance Reports", path: "/employee-reports" },
       ];
     } 
     // Regular admins (EEMS/EAMS) get limited menu
@@ -63,7 +65,6 @@ export default function Sidebar() {
       return [
         { icon: <FiHome />, label: "Dashboard", path: "/dashboard" },
         { icon: <FiUsers />, label: "Student Management", path: "/students" },
-        { type: 'separator', label: 'Entrance and Exit Monitoring' },
         { icon: <FiMonitor />, label: "Real-Time Monitor", path: "/monitor" },
         { icon: <FiFileText />, label: "Entry-Exit Records", path: "/records" },
         { icon: <FiBarChart2 />, label: "Analytics & Reports", path: "/analytics" },

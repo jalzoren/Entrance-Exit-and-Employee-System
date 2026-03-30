@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import "../css/Login.css";
 import logo from "../assets/logo2.png";
 import { LuScanFace } from "react-icons/lu";
@@ -6,6 +6,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import Swal from 'sweetalert2';
 import { useAuth } from "../context/AuthContext";
+import { useLogContext } from "../context/LogContext";
 
 export default function Login() {
   const [email, setEmail] = useState("");

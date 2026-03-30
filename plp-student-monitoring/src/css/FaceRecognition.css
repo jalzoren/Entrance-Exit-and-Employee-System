@@ -1,4 +1,5 @@
-/* src/pages/Dashboard.css */
+/* src/css/FaceRecognition.css */
+
 :root {
   @import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Oswald:wght@200..700&display=swap");
   --color-bg-main: #fcfbf4;
@@ -8,15 +9,14 @@
   --color-accent-hover: #58761b;
   --color-text-dark: #01311d;
   --color-text-black: #0f0f0f;
-
   --color-text-light: #fafafa;
   --color-border-light: rgba(0, 0, 0, 0.08);
   --color-shadow-soft: rgba(0, 0, 0, 0.1);
-
   --sidebar-collapsed: 0px;
   --sidebar-open: 260px;
   --transition: 0.28s ease;
 }
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -37,22 +37,25 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  border: 5px solid white; 
+  border: 5px solid white;
   position: relative;
   overflow: hidden;
   transition: border-color 0.3s ease;
 }
+
 .camera-side {
   border: 5px solid white;
   transition: all 0.3s ease;
 }
 
-.camera-side.detected {
+.camera-side.detected,
+.camera-side.green-border {
   border-color: #16a34a;
   box-shadow: 0 0 25px #16a34a;
 }
 
-.camera-side.unauthorized {
+.camera-side.unauthorized,
+.camera-side.red-border {
   border-color: #dc2626;
   box-shadow: 0 0 25px #dc2626;
 }
@@ -78,19 +81,18 @@
   border: none;
   cursor: pointer;
 }
+
 .camera-video {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transform: scaleX(-1); 
+  transform: scaleX(-1);
 }
-
-
 
 .camera-text {
   position: absolute;
-  top: 20px; 
-  left: 50%; 
+  top: 20px;
+  left: 50%;
   transform: translateX(-50%);
   color: var(--color-text-light);
   opacity: 0.8;
@@ -100,8 +102,9 @@
   text-align: center;
   font-family: "Montserrat", sans-serif;
   text-shadow: #0f0f0f 0px 0px 4px;
-background-color: rgba(15, 15, 15, 0.6);
+  background-color: rgba(15, 15, 15, 0.6);
 }
+
 /* Right side: UI */
 .ui-side {
   width: 50%;
@@ -110,11 +113,10 @@ background-color: rgba(15, 15, 15, 0.6);
   padding: 20px;
   display: flex;
   flex-direction: column;
-  justify-content: space-evenly;
   align-items: center;
   gap: 5px;
   align-items: center;
-  
+  justify-content: space-around;
 }
 
 /* School Info stays at top */
@@ -123,6 +125,7 @@ background-color: rgba(15, 15, 15, 0.6);
   align-items: center;
   gap: 10px;
 }
+
 .school-logo {
   width: 60px;
   height: 60px;
@@ -173,7 +176,6 @@ background-color: rgba(15, 15, 15, 0.6);
   background-color: #f3f3f3;
   padding: 14px;
   border-radius: 8px;
-  margin-top: 5px;
   text-align: center;
   width: 80%;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -185,11 +187,10 @@ background-color: rgba(15, 15, 15, 0.6);
   font-stretch: condensed;
   letter-spacing: -1px;
   align-items: center;
-    margin-top: 20px;
-
+  margin-top: 10px;
 }
 
-.greet{
+.greet {
   gap: 0px;
 }
 
@@ -209,26 +210,26 @@ background-color: rgba(15, 15, 15, 0.6);
   text-shadow: 0 0 4px rgba(0, 0, 0, 1);
 }
 
-
 .date {
-  font-size:20px;
-  color: var(--color-text-light);
+  font-size: 15px;
+  color: var(--color-text-dark);
   font-weight: 800;
   font-stretch: condensed;
-    text-shadow: 0 0 5px rgba(0, 0, 0, 5);
-    font-family: "Oswald", sans-serif;
+    margin-top: 10px;
 
+  font-family: "Oswald", sans-serif;
 }
+
 .status-box {
-  background-color: var(--color-primary-dark); /* dark green */
+  background-color: var(--color-primary-dark);
   color: white;
   padding: 20px;
   border-radius: 8px;
   text-align: center;
   margin-top: 10px;
   width: 80%;
-        height : auto;
-        padding: 5px;
+  height: auto;
+  padding: 5px;
 }
 
 .status-box h2 {
@@ -236,11 +237,11 @@ background-color: rgba(15, 15, 15, 0.6);
   margin-bottom: 10px;
   font-family: "Oswald", sans-serif;
   font-stretch: condensed;
-  letter-spacing:-1px;
+  letter-spacing: -1px;
   font-weight: 500;
 }
 
-.plpian{
+.plpian {
   font-weight: 700;
   font-style: italic;
   font-family: "Oswald", sans-serif;
@@ -255,8 +256,8 @@ background-color: rgba(15, 15, 15, 0.6);
   margin: 5px 0;
   font-family: "Montserrat", sans-serif;
   font-weight: 600;
-  
 }
+
 .status-box span {
   font-weight: 200;
   font-family: "Montserrat", sans-serif;
@@ -281,4 +282,279 @@ background-color: rgba(15, 15, 15, 0.6);
 
 .fade-out {
   opacity: 0;
+}
+
+/* Bottom Buttons Container */
+.bottom-buttons-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.5rem;
+  width: 100%;
+  flex-direction: row-reverse;
+}
+
+.bottom-btn {
+  font-family: "Montserrat", sans-serif;
+  color: white;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #0d3321 0%, #1a4d33 100%);
+  border: 2px solid #0d3321;
+  cursor: pointer;
+  padding: 0.50rem 1.5rem;
+  border-radius: 6px;
+  display: inline-block;
+  text-align: center;
+}
+
+.bottom-btn:hover {
+  background: linear-gradient(135deg, #0a2817 0%, #152a28 100%);
+  box-shadow: 0 5px 15px rgba(13, 51, 33, 0.3);
+  color: #ffb700;
+}
+.back-btn:hover {
+  background: linear-gradient(135deg, #0a2817 0%, #152a28 100%);
+  box-shadow: 0 5px 15px rgba(13, 51, 33, 0.3);
+  color: #ffb700;
+}
+
+
+.back-btn {
+  display: flex; /* keep flex for icon + text alignment */
+  align-items: center;
+  gap: 8px;
+
+  font-family: "Montserrat", sans-serif;
+  color: white;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.75rem;
+  
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #0d3321 0%, #1a4d33 100%);
+  border: 2px solid #0d3321;
+  
+  cursor: pointer;
+  padding: 0.10rem 1rem;
+  border-radius: 6px;
+  
+  text-align: center; 
+}
+
+
+.manual-id-btn {
+  min-width: 150px;
+}
+/* ========== REDESIGNED MANUAL ID MODAL ========== */
+/* Overlay */
+.fr-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(3px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+/* Modal Container - Wider and Taller */
+.fr-modal-container {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.35);
+  width: 90%;
+  max-width: 480px;
+  overflow: hidden;
+  animation: frModalSlideIn 0.3s ease-out;
+}
+
+@keyframes frModalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Modal Header - Taller */
+.fr-modal-header {
+  background: linear-gradient(135deg, #0d3321 0%, #1a4d33 100%);
+  padding: 1.25rem 1.75rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.fr-modal-header h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: white;
+  font-family: "Montserrat", sans-serif;
+  letter-spacing: -0.5px;
+}
+
+.fr-modal-close {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: white;
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.fr-modal-close:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: rotate(90deg);
+}
+
+/* Form - More Padding for Height */
+.fr-modal-form {
+  padding: 2rem 1.75rem 2rem 1.75rem;
+}
+
+/* Info Text */
+.fr-modal-info {
+  background: #f0fdf4;
+  border-left: 4px solid #0d3321;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.5rem;
+  border-radius: 8px;
+}
+
+.fr-modal-info p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #166534;
+  font-family: "Montserrat", sans-serif;
+  line-height: 1.4;
+}
+
+/* Input Field - Larger */
+.fr-input-field {
+  margin-bottom: 1.5rem;
+}
+
+.fr-input-field label {
+  display: block;
+  margin-bottom: 0.6rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #1f2937;
+  font-family: "Montserrat", sans-serif;
+}
+
+.fr-input-field input {
+  width: 100%;
+  padding: 1rem 1.25rem;
+  font-size: 1.05rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 14px;
+  transition: all 0.2s;
+  font-family: "Montserrat", sans-serif;
+  background-color: #fafcff;
+}
+
+.fr-input-field input:focus {
+  outline: none;
+  border-color: #0d3321;
+  box-shadow: 0 0 0 4px rgba(13, 51, 33, 0.1);
+  background-color: white;
+}
+
+.fr-input-field input::placeholder {
+  color: #94a3b8;
+  font-size: 0.95rem;
+}
+
+.fr-input-field input:disabled {
+  background-color: #f1f5f9;
+  cursor: not-allowed;
+}
+
+/* Example hint */
+.fr-input-hint {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-family: "Montserrat", sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+
+
+/* Buttons - Larger */
+.fr-modal-buttons {
+  display: flex;
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+}
+
+.fr-btn-cancel,
+.fr-btn-submit {
+  flex: 1;
+  padding: 0.9rem 0.5rem;
+  border: none;
+  border-radius: 50px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s;
+  font-family: "Montserrat", sans-serif;
+}
+
+.fr-btn-cancel {
+  background-color: #f3f4f6;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+}
+
+.fr-btn-cancel:hover:not(:disabled) {
+  background-color: #e5e7eb;
+  transform: translateY(-2px);
+}
+
+.fr-btn-submit {
+  background: linear-gradient(105deg, #0d3321 0%, #1a4d33 100%);
+  color: white;
+  box-shadow: 0 4px 10px rgba(13, 51, 33, 0.3);
+}
+
+.fr-btn-submit:hover:not(:disabled) {
+  background: linear-gradient(105deg, #0a2817 0%, #143d28 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(13, 51, 33, 0.4);
+}
+
+.fr-btn-cancel:active:not(:disabled),
+.fr-btn-submit:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.fr-btn-cancel:disabled,
+.fr-btn-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
 }

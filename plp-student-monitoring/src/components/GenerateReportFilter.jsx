@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import '../componentscss/GenerateReportFilter.css';
+import '../css/GlobalModal.css';
 import { MdClose } from "react-icons/md";
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
@@ -101,24 +102,20 @@ function GenerateReportFilter({ onClose, onGenerate }) {
   ];
 
   return (
-    <div className="report-filter-overlay" onClick={handleOverlayClick}>
-      <div className="report-filter-container" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-overlay" onClick={handleOverlayClick}>
+      <div className="modal-container" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
-        <div className="report-filter-header">
-          <div className="report-filter-title">GENERATE REPORT FILTER</div>
-          <div className="report-filter-close">
-            <button className='report-filter-close-btn' onClick={onClose}>
-              <MdClose />
-            </button>
-          </div>
+        <div className="modal-header">
+          <h2 className="modal-title">GENERATE REPORT FILTER</h2>
+          <button className='modal-close' onClick={onClose}>✕</button>
         </div>
 
         {/* Filter Form */}
-        <div className="report-filter-form">
+        <div className="modal-body">
           {/* Date Range Row with DatePicker */}
-          <div className="report-filter-row">
-            <div className="report-filter-group">
-              <label className="report-filter-label">Date From</label>
+          <div className="modal-grid-2">
+            <div className="modal-field">
+              <label className="modal-label">Date From</label>
               <DatePicker
                 selected={filters.dateFrom}
                 onChange={(date) => handleDateChange(date, 'dateFrom')}
@@ -127,7 +124,7 @@ function GenerateReportFilter({ onClose, onGenerate }) {
                 endDate={filters.dateTo}
                 dateFormat="dd/MM/yyyy"
                 placeholderText="DD/MM/YYYY"
-                className="report-filter-field report-datepicker-field"
+                className="modal-input report-datepicker-field"
                 wrapperClassName="report-datepicker-wrapper"
                 isClearable
                 showMonthDropdown
@@ -136,8 +133,8 @@ function GenerateReportFilter({ onClose, onGenerate }) {
                 popperClassName="report-datepicker-popper"
               />
             </div>
-            <div className="report-filter-group">
-              <label className="report-filter-label">Date To</label>
+            <div className="modal-field">
+              <label className="modal-label">Date To</label>
               <DatePicker
                 selected={filters.dateTo}
                 onChange={(date) => handleDateChange(date, 'dateTo')}
@@ -147,7 +144,7 @@ function GenerateReportFilter({ onClose, onGenerate }) {
                 minDate={filters.dateFrom}
                 dateFormat="dd/MM/yyyy"
                 placeholderText="DD/MM/YYYY"
-                className="report-filter-field report-datepicker-field"
+                className="modal-input report-datepicker-field"
                 wrapperClassName="report-datepicker-wrapper"
                 isClearable
                 showMonthDropdown
@@ -159,31 +156,29 @@ function GenerateReportFilter({ onClose, onGenerate }) {
           </div>
 
           {/* College Department Row with Dropdown */}
-          <div className="report-filter-row">
-            <div className="report-filter-group report-full-width">
-              <label className="report-filter-label">College Department</label>
-              <select
-                value={filters.collegeDepartment}
-                onChange={(e) => handleInputChange(e, 'collegeDepartment')}
-                className="report-filter-select"
-              >
-                {departmentOptions.map(option => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+          <div className="modal-field modal-full-width">
+            <label className="modal-label">College Department</label>
+            <select
+              value={filters.collegeDepartment}
+              onChange={(e) => handleInputChange(e, 'collegeDepartment')}
+              className="modal-select"
+            >
+              {departmentOptions.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Status and Year Level Row */}
-          <div className="report-filter-row">
-            <div className="report-filter-group">
-              <label className="report-filter-label">Enrollment Status</label>
+          <div className="modal-grid-2">
+            <div className="modal-field">
+              <label className="modal-label">Enrollment Status</label>
               <select
                 value={filters.enrollmentStatus}
                 onChange={(e) => handleInputChange(e, 'enrollmentStatus')}
-                className="report-filter-select"
+                className="modal-select"
               >
                 {enrollmentStatusOptions.map(option => (
                   <option key={option.value} value={option.value}>
@@ -192,12 +187,12 @@ function GenerateReportFilter({ onClose, onGenerate }) {
                 ))}
               </select>
             </div>
-            <div className="report-filter-group">
-              <label className="report-filter-label">Year Level</label>
+            <div className="modal-field">
+              <label className="modal-label">Year Level</label>
               <select
                 value={filters.yearLevel}
                 onChange={(e) => handleInputChange(e, 'yearLevel')}
-                className="report-filter-select"
+                className="modal-select"
               >
                 {yearLevelOptions.map(option => (
                   <option key={option.value} value={option.value}>
@@ -207,24 +202,24 @@ function GenerateReportFilter({ onClose, onGenerate }) {
               </select>
             </div>
           </div>
+        </div>
 
-          {/* Form Actions */}
-          <div className="report-filter-actions">
-            <button 
-              className="report-filter-btn report-filter-btn-cancel" 
-              onClick={handleCancel}
-              type="button"
-            >
-              Cancel
-            </button>
-            <button 
-              className="report-filter-btn report-filter-btn-generate" 
-              onClick={handleGenerate}
-              type="button"
-            >
-              Generate
-            </button>
-          </div>
+        {/* Form Actions */}
+        <div className="modal-footer">
+          <button 
+            className="modal-btn modal-btn-cancel" 
+            onClick={handleCancel}
+            type="button"
+          >
+            Cancel
+          </button>
+          <button 
+            className="modal-btn modal-btn-save" 
+            onClick={handleGenerate}
+            type="button"
+          >
+            Generate
+          </button>
         </div>
       </div>
     </div>

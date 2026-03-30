@@ -250,13 +250,16 @@ function Users() {
   };
 
   return (
-    <div className="user-management">
+    <div>
+
+    
       <header className="header-card">
         <h1>USER MANAGEMENT</h1>
         <p className="subtitle">Dashboard / User Management</p>
       </header>
 
       <hr className="header-divider" />
+    <div className="user-management">
 
       <div className="controls">
         <select
@@ -399,6 +402,7 @@ function Users() {
           userEmail={selectedUserEmail}
         />
       )}
+    </div>
     </div>
   );
 }
