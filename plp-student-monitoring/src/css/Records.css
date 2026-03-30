@@ -74,7 +74,7 @@
 }
 
 .dept-group {
-  min-width: 250px; /* Increased width for department dropdown */
+  min-width: 250px;
   width: 250px;
 }
 
@@ -178,15 +178,18 @@
   background-color: white;
   border-radius: 8px;
   overflow-x: auto;
+  overflow-y: visible;
   box-shadow: 0 2px 4px var(--color-shadow-soft);
   margin-bottom: 20px;
+  width: 100%;
+  position: relative;
 }
 
 .records-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 14px;
-  min-width: 1000px;
+  table-layout: auto;
 }
 
 .records-table thead {
@@ -225,6 +228,7 @@
   font-size: 12px;
   font-weight: 500;
   text-align: center;
+  white-space: nowrap;
 }
 
 .action-badge.entry {
@@ -370,10 +374,14 @@
 }
 
 @media (max-width: 768px) {
+  .records-container {
+    padding: 15px;
+  }
+  
   .filters-wrapper {
     flex-direction: column;
     align-items: stretch;
-    gap: 15px;
+    gap: 12px;
   }
 
   .year-group,
@@ -385,19 +393,34 @@
     width: 100%;
     min-width: auto;
   }
+  
+  .filter-select,
+  .search-input,
+  .generate-report-btn {
+    width: 100%;
+  }
 
   .records-table {
-    font-size: 12px;
+    font-size: 13px;
+    min-width: 650px;
   }
   
   .records-table th,
   .records-table td {
-    padding: 8px 10px;
+    padding: 10px 12px;
+  }
+  
+  .records-table th {
+    font-size: 13px;
+  }
+  
+  .records-table td {
+    font-size: 13px;
   }
 
   .pagination-wrapper {
     flex-direction: column;
-    gap: 15px;
+    gap: 12px;
   }
 
   .pagination-arrow {
@@ -417,20 +440,41 @@
     padding: 10px;
   }
   
+  .header-card h1 {
+    font-size: 20px;
+  }
+  
+  .subtitle {
+    font-size: 12px;
+  }
+  
+  .filters-container {
+    padding: 12px 15px;
+  }
+  
   .filter-select,
   .search-input,
   .generate-report-btn {
     padding: 8px 10px;
-    font-size: 13px;
+    font-size: 12px;
   }
   
   .records-table {
-    font-size: 11px;
+    font-size: 12px;
+    min-width: 550px;
   }
   
   .records-table th,
   .records-table td {
-    padding: 6px 8px;
+    padding: 8px 10px;
+  }
+  
+  .records-table th {
+    font-size: 12px;
+  }
+  
+  .records-table td {
+    font-size: 12px;
   }
   
   .action-badge {
@@ -447,6 +491,23 @@
   .pagination-arrow {
     width: 100%;
     justify-content: center;
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+  
+  .arrow-icon {
+    font-size: 14px;
   }
 }
 
+/* For very small devices */
+@media (max-width: 380px) {
+  .records-table {
+    min-width: 480px;
+  }
+  
+  .records-table th,
+  .records-table td {
+    padding: 6px 8px;
+  }
+}

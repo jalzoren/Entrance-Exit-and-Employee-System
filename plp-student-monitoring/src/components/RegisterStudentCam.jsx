@@ -1,3 +1,4 @@
+// RegisterStudentCam.jsx
 import React, { useRef, useEffect, useState } from 'react';
 import { 
   MdClose, 
@@ -13,6 +14,7 @@ import {
   MdTimer
 } from "react-icons/md";
 import '../componentscss/RegisterStudentCam.css';
+import '../css/GlobalModal.css';
 
 function RegisterStudentCam({ 
   showCamera, 
@@ -137,16 +139,14 @@ function RegisterStudentCam({
   if (!showCamera) return null;
 
   return (
-    <div className="camera-modal">
-      <div className={`camera-modal-content ${isCapturing ? 'capturing' : ''}`}>
-        <div className="camera-header">
-          <h4>Capture {captureSteps[captureStep].text}</h4>
-          <button className="close-camera-btn" onClick={onClose}>
-            <MdClose />
-          </button>
+    <div className="modal-overlay">
+      <div className={`modal-container ${isCapturing ? 'capturing' : ''}`} style={{ display: 'flex', flexDirection: 'column', maxWidth: '380px' }}>
+        <div className="modal-header" style={{ flexShrink: 0 }}>
+          <h2 className="modal-title" style={{ fontSize: '1.1rem' }}>Capture {captureSteps[captureStep].text}</h2>
+          <button className="modal-close" onClick={onClose}>✕</button>
         </div>
         
-        <div className="camera-container">
+        <div className="camera-container" style={{ flex: 1, position: 'relative', background: '#1a1a1a', padding: '20px' }}>
           <video ref={videoRef} className="camera-preview" />
           <canvas ref={canvasRef} style={{ display: 'none' }} />
           

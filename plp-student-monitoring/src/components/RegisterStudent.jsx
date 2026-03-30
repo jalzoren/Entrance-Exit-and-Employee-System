@@ -356,7 +356,7 @@ function RegisterStudent({ onClose }) {
             ))}
           </div>
 
-           <div className="progress-container">
+          <div className="progress-container">
             <div className="progress-bar">
               <div 
                 className="progress-fill" 

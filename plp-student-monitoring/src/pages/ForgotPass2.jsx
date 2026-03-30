@@ -16,9 +16,36 @@ export default function ForgotPasswordStep2() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Password validation function
+  const validatePassword = (password) => {
+    const errors = [];
+    
+    if (password.length < 8) {
+      errors.push('at least 8 characters');
+    }
+    if (!/[A-Z]/.test(password)) {
+      errors.push('one uppercase letter');
+    }
+    if (!/[a-z]/.test(password)) {
+      errors.push('one lowercase letter');
+    }
+    if (!/[0-9]/.test(password)) {
+      errors.push('one number');
+    }
+    if (!/[@$!%*?&]/.test(password)) {
+      errors.push('one special character (@$!%*?&)');
+    }
+    
+    return {
+      isValid: errors.length === 0,
+      errors: errors
+    };
+  };
+
   const handleResetPassword = async (e) => {
     e.preventDefault();
 
+    // Check if passwords match
     if (newPassword !== confirmPassword) {
       Swal.fire({
         icon: 'error',
@@ -28,11 +55,14 @@ export default function ForgotPasswordStep2() {
       return;
     }
 
-    if (newPassword.length < 6) {
+    // Validate password strength
+    const validation = validatePassword(newPassword);
+    if (!validation.isValid) {
       Swal.fire({
         icon: 'error',
         title: 'Weak Password',
-        text: 'Password must be at least 6 characters'
+        html: `Password must contain:<br>• ${validation.errors.join('<br>• ')}`,
+        confirmButtonColor: '#3085d6'
       });
       return;
     }
@@ -121,11 +151,10 @@ export default function ForgotPasswordStep2() {
                 <input
                   id="newPassword"
                   type={showPassword ? "text" : "password"}
-                  placeholder="•••••••• (min. 6 characters)"
+                  placeholder="Enter new password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   required
-                  minLength="6"
                   disabled={loading}
                 />
                 <button
@@ -137,6 +166,9 @@ export default function ForgotPasswordStep2() {
                   {showPassword ? <FaEyeSlash /> : <FaEye />}
                 </button>
               </div>
+              <small className="password-hint">
+                Must contain: 8+ chars, uppercase, lowercase, number, and special char (@$!%*?&)
+              </small>
             </div>
 
             <div className="input-group">
@@ -145,11 +177,10 @@ export default function ForgotPasswordStep2() {
                 <input
                   id="confirmPassword"
                   type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
+                  placeholder="Confirm new password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
-                  minLength="6"
                   disabled={loading}
                 />
                 <button
@@ -172,17 +203,20 @@ export default function ForgotPasswordStep2() {
             </button>
           </form>
 
-        // Replace the footer section with:
-<div className="form-footer">
-  <div className="footer-links">
-    <button type="button" className="back-to-login-link">
-      <a href="/">← Back to Login</a>
-    </button>
-  </div>
-  <p className="footer-text">
-    ENTRANCE AND EXIT MONITORING SYSTEM
-  </p>
-</div>
+          <div className="form-footer">
+            <div className="footer-links">
+              <button 
+                type="button" 
+                className="back-to-login-link"
+                onClick={() => navigate('/')}
+              >
+                ← Back to Login
+              </button>
+            </div>
+            <p className="footer-text">
+              ENTRANCE AND EXIT MONITORING SYSTEM
+            </p>
+          </div>
         </div>
       </div>
     </div>

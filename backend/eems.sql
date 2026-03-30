@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 09, 2026 at 04:36 PM
+-- Generation Time: Mar 17, 2026 at 04:13 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -28,7 +28,6 @@ SET time_zone = "+00:00";
 --
 
 CREATE TABLE `admins` (
-  `admin_id` int(11) NOT NULL,
   `email` varchar(255) NOT NULL,
   `fullname` varchar(100) NOT NULL,
   `role` enum('Super Admin','EEMS Admin','EAMS Admin') NOT NULL,
@@ -42,8 +41,12 @@ CREATE TABLE `admins` (
 -- Dumping data for table `admins`
 --
 
-INSERT INTO `admins` (`admin_id`, `email`, `fullname`, `role`, `password`, `reset_code`, `code_expiry`, `created`) VALUES
-(2300295, 'cassyrain03@gmail.com', 'Bianca Rain Castillon', 'Super Admin', '$2b$10$7nVNYypnlfwEyycnMSBHAe7OvSGTShED3w0W63C3pt9iZwEZZ4f3C', NULL, NULL, '2026-02-26 07:19:51');
+INSERT INTO `admins` (`email`, `fullname`, `role`, `password`, `reset_code`, `code_expiry`, `created`) VALUES
+('flavier_laurencejames@plpasig.edu.ph', 'FLAVIER, LAURENCE JAMES LETANA', 'Super Admin', '$2b$10$zBivQJwueb.GXhU25.TzhONGZmbk4YGrOP0YUNHQDOAR3euwIrnbW', NULL, NULL, '2026-03-17 08:19:30'),
+('bitancor_jerimiah@plpasig.edu.ph', 'BITANCOR, JERIMIAH ZAMORA JR', 'EAMS Admin', '$2b$10$bnxYyIyjlPduFJZyImENcO7qu2pMPYMOVpRzEGE2Mz6s0P1zv/vxy', NULL, NULL, '2026-03-17 08:25:39'),
+('alpuerto_lynnczyla@plpasig.edu.ph', 'ALPUERTO, BIANCAKES MERCADO', 'Super Admin', '$2b$10$lL6mOc4v99mD3dU.9iyaiev1Te3UeTd4Mo3A9C9KlND1yCCK4P57q', NULL, NULL, '2026-03-17 09:49:12'),
+('cassyrain03@gmail.com', 'CASTILLON, BIANCA RAIN CAGURUNGAN', 'EEMS Admin', '$2b$10$wUw4zUe3J1yPpTGKXn91sO25hU/rKKekxyvaeldNYbhE5dBPbi0CK', NULL, NULL, '2026-03-17 14:45:43');
+
 -- --------------------------------------------------------
 
 --
@@ -136,12 +139,6 @@ INSERT INTO `student_face_embeddings` (`id`, `student_id`, `face_embedding`, `cr
 --
 
 --
--- Indexes for table `admins`
---
-ALTER TABLE `admins`
-  ADD PRIMARY KEY (`admin_id`);
-
---
 -- Indexes for table `authentication`
 --
 ALTER TABLE `authentication`
@@ -173,12 +170,6 @@ ALTER TABLE `student_face_embeddings`
 --
 -- AUTO_INCREMENT for dumped tables
 --
-
---
--- AUTO_INCREMENT for table `admins`
---
-ALTER TABLE `admins`
-  MODIFY `admin_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2300296;
 
 --
 -- AUTO_INCREMENT for table `authentication`

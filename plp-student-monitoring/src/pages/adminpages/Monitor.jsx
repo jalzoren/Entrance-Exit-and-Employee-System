@@ -1,31 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import "../../css/RealTimeMonitor.css";
 import '../../css/Monitor.css';
+import { useLogContext } from "../../context/LogContext";
 
-const initialLogs = [
-  { id: 1, time: "07:59 AM", name: "BITANCOR, JERIMIAH A.",      studentId: "23-00198", action: "ENTRY", method: "FACE",      failed: false },
-  { id: 2, time: "07:55 AM", name: "ALPUERTO, LYNN CZYLA M.",    studentId: "23-00170", action: "ENTRY", method: "MANUAL ID", failed: false },
-  { id: 3, time: "08:00 AM", failed: true },
-  { id: 4, time: "08:02 AM", name: "CASTILLON, BIANCA RAIN C.",  studentId: "23-00190", action: "ENTRY", method: "FACE",      failed: false },
-  { id: 5, time: "08:10 AM", name: "FLAVIER, LAURENCE JAMES L.", studentId: "23-00170", action: "ENTRY", method: "MANUAL ID", failed: false },
-  { id: 6, time: "08:11 AM", name: "ONRUBIA, NEIL ADRIAN N.",    studentId: "23-00170", action: "ENTRY", method: "MANUAL ID", failed: false },
-  { id: 7, time: "08:12 AM", failed: true },
-  { id: 8, time: "08:15 AM", name: "BITANCOR, JERIMIAH A.",      studentId: "23-00198", action: "EXIT", method: "FACE",      failed: false },
-  { id: 9, time: "08:20 AM", name: "ALPUERTO, LYNN CZYLA M.",    studentId: "23-00170", action: "EXIT", method: "MANUAL ID", failed: false },
-];
-
-// Student list from initial logs (excluding failed attempts)
-const STUDENTS = initialLogs
-  .filter(log => !log.failed)
-  .map(log => ({
-    name: log.name,
-    studentId: log.studentId
-  }));
-
-// Remove duplicates (in case same student appears multiple times)
-const UNIQUE_STUDENTS = STUDENTS.filter((student, index, self) =>
-  index === self.findIndex(s => s.studentId === student.studentId)
-);
 function LogEntry({ log, animDelay }) {
   return (
     <>
@@ -48,11 +25,9 @@ function LogEntry({ log, animDelay }) {
 }
 
 export default function Monitor() {
-  const [logs, setLogs] = useState(initialLogs);
-  const [filteredLogs, setFilteredLogs] = useState(initialLogs);
-  const [count, setCount] = useState(1000);
+  const { logs: contextLogs, studentsInside } = useLogContext();
   const [activeFilter, setActiveFilter] = useState('all'); // 'all', 'entrance', 'exit'
-  const [activeBtn, setActiveBtn] = useState(null);
+  const [filteredLogs, setFilteredLogs] = useState([]);
   const logRef = useRef(null);
 
   // Auto-scroll to bottom when new logs arrive
@@ -65,73 +40,27 @@ export default function Monitor() {
   // Apply filter whenever logs or activeFilter changes
   useEffect(() => {
     if (activeFilter === 'all') {
-      setFilteredLogs(logs);
+      setFilteredLogs(contextLogs);
     } else if (activeFilter === 'entrance') {
-      setFilteredLogs(logs.filter(log => !log.failed && log.action === "ENTRY"));
+      setFilteredLogs(contextLogs.filter(log => !log.failed && log.action === "ENTRY"));
     } else if (activeFilter === 'exit') {
-      setFilteredLogs(logs.filter(log => !log.failed && log.action === "EXIT"));
+      setFilteredLogs(contextLogs.filter(log => !log.failed && log.action === "EXIT"));
     }
-  }, [logs, activeFilter]);
-
-  // Automatically add new logs every 10 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      // 80% chance of success, 20% chance of failure
-      const isFailed = Math.random() < 0.2;
-      
-      if (isFailed) {
-        // Add failed attempt
-        const newLog = {
-          id: Date.now(),
-          time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
-          failed: true
-        };
-        setLogs((prev) => [...prev, newLog]);
-      } else {
-        // Randomly select a student from the unique students list
-        const randomStudent = UNIQUE_STUDENTS[Math.floor(Math.random() * UNIQUE_STUDENTS.length)];
-        
-        // Randomly determine if it's ENTRY or EXIT (50/50 chance)
-        const action = Math.random() > 0.5 ? "ENTRY" : "EXIT";
-        
-        // Random method (70% FACE, 30% MANUAL ID)
-        const method = Math.random() > 0.3 ? "FACE" : "MANUAL ID";
-        
-        const newLog = {
-          id: Date.now(),
-          time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
-          name: randomStudent.name,
-          studentId: randomStudent.studentId,
-          action: action,
-          method: method,
-          failed: false
-        };
-        
-        setLogs((prev) => [...prev, newLog]);
-        
-        // Update count based on action
-        setCount((c) => action === "ENTRY" ? c + 1 : Math.max(0, c - 1));
-      }
-    }, 10000); // Add new log every 10 seconds
-    
-    return () => clearInterval(interval);
-  }, []);
+  }, [contextLogs, activeFilter]);
 
   const handleFilterChange = (filter) => {
     setActiveFilter(filter);
-    setActiveBtn(filter === 'entrance' ? 'entrance' : filter === 'exit' ? 'exit' : null);
     
     // Remove the active button highlight after 300ms
     setTimeout(() => {
       if (filter === 'all') {
-        setActiveBtn(null);
+        setActiveFilter('all');
       }
     }, 300);
   };
 
   const handleResetFilter = () => {
     setActiveFilter('all');
-    setActiveBtn(null);
   };
 
   return (
@@ -148,7 +77,7 @@ export default function Monitor() {
 
           {/* Student count and filter controls */}
           <div className="rtm-subheader">
-            <div className="rtm-student-count">Students Inside: <span className="rtm-student-count-num">{count.toLocaleString()}</span></div>
+            <div className="rtm-student-count">Students Inside: <span className="rtm-student-count-num">{studentsInside.toLocaleString()}</span></div>
             <div className="rtm-filter-controls">
               <button
                 className={`rtm-filter-btn ${activeFilter === 'all' ? 'active' : ''}`}

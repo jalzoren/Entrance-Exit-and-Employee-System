@@ -10,6 +10,7 @@ import {
   IoDocumentTextOutline,
 } from 'react-icons/io5';
 import '../componentscss/ImportStudents.css';
+import '../css/GlobalModal.css';
 
 const ImportStudents = ({ isOpen, onClose, onSuccess }) => {
   const [file, setFile] = useState(null);
@@ -140,18 +141,16 @@ const ImportStudents = ({ isOpen, onClose, onSuccess }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="import-overlay">
-      <div className="import-container">
+    <div className="modal-overlay">
+      <div className="modal-container" onClick={(e) => e.stopPropagation()}>
 
         {/* Header */}
-        <div className="import-header">
-          <h2 className="import-title">IMPORT</h2>
-          <button className="import-close-btn" onClick={handleClose}>
-            <IoClose size={24} />
-          </button>
+        <div className="modal-header">
+          <h2 className="modal-title">IMPORT STUDENTS</h2>
+          <button className="modal-close" onClick={handleClose}>✕</button>
         </div>
 
-        <div className="import-content">
+        <div className="modal-body">
 
           {/* Directions */}
           <div className="import-directions">
@@ -260,29 +259,32 @@ const ImportStudents = ({ isOpen, onClose, onSuccess }) => {
               </div>
               <div className="preview-row">
                 <span className="preview-cell">24-00001</span>
-                <span className="preview-cell">Juan Dela Cruz</span>
+                <span className="preview-cell">Juan</span>
+                <span className="preview-cell">Dela</span>
+                <span className="preview-cell">Cruz</span>
                 <span className="preview-cell">College of Computer Studies</span>
-                <span className="preview-cell">3rd</span>
-                <span className="preview-cell">Active</span>
+                <span className="preview-cell">3rd Year</span>
+                <span className="preview-cell">Regular</span>
               </div>
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="import-actions">
-            <button className="btn-cancel" onClick={handleClose}>
-              Cancel
-            </button>
-            <button
-              className="btn btn-upload"
-              onClick={handleUpload}
-              disabled={!file || uploadStatus === 'error' || uploadStatus === 'uploading' || uploadStatus === 'done'}
-            >
-              {uploadStatus === 'uploading' ? 'Uploading...' : 'Upload'}
-            </button>
-          </div>
-
         </div>
+
+        {/* Actions - Footer */}
+        <div className="modal-footer">
+          <button className="modal-btn modal-btn-cancel" onClick={handleClose}>
+            Cancel
+          </button>
+          <button
+            className="modal-btn modal-btn-save"
+            onClick={handleUpload}
+            disabled={!file || uploadStatus === 'error' || uploadStatus === 'uploading' || uploadStatus === 'done'}
+          >
+            {uploadStatus === 'uploading' ? 'Uploading...' : 'Upload'}
+          </button>
+        </div>
+
       </div>
     </div>
   );

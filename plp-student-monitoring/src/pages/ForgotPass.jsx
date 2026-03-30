@@ -174,16 +174,20 @@ export default function ForgotPassword() {
           </form>
 
          // Replace the footer section with:
-<div className="form-footer">
-  <div className="footer-links">
-    <button type="button" className="back-to-login-link">
-      <a href="/">← Back to Login</a>
-    </button>
-  </div>
-  <p className="footer-text">
-    ENTRANCE AND EXIT MONITORING SYSTEM
-  </p>
-</div>
+        <div className="form-footer">
+          <div className="footer-links">
+            <button 
+              type="button" 
+              className="back-to-login-link"
+              onClick={() => navigate('/')}
+            >
+              ← Back to Login
+            </button>
+          </div>
+          <p className="footer-text">
+            ENTRANCE AND EXIT MONITORING SYSTEM
+          </p>
+        </div>
         </div>
       </div>
     </div>

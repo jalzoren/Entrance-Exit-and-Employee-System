@@ -44,7 +44,6 @@
 
 /* Keep user profile fixed at bottom */
 .sidebar-user {
-  padding: 16px 12px;
   border: 2px solid var(--color-primary-dark);
   display: flex;
   align-items: center;
@@ -277,6 +276,19 @@
   color: white;
 }
 
+/* Sidebar Separator */
+.sidebar-separator {
+  background:#CDDCD6;
+  color: var(--color-text-dark);
+  padding: 12px 16px;
+  margin: 16px 0 8px 0;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+}
+
 /* Scrollbar styling */
 .sidebar-nav::-webkit-scrollbar {
   width: 4px;
@@ -290,3 +302,4 @@
   background: var(--color-primary);
   border-radius: 4px;
 }
+
