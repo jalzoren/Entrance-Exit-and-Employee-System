@@ -1,18 +1,4 @@
 // RegisterStudentCam.jsx
-// ─────────────────────────────────────────────────────────────────────────────
-// Priority waterfall — only the top failing check is shown at a time.
-//
-//   Priority order:
-//     1. cameraOpen   — silent prerequisite
-//     2. faceDetected — "Move closer — no face found"
-//     3. brightness   — "Too dark / Too bright"         (local, 250ms)
-//     4. noMask       — "Remove face covering"
-//     5. faceSharp    — "Hold still — image too blurry" (NEW — from Python)
-//     6. correctPose  — "Look straight / turn left / etc."
-//     7. notMoving    — "Hold still…"                   (local, 250ms)
-//
-//   Glasses: soft warning badge only — never blocks capture.
-// ─────────────────────────────────────────────────────────────────────────────
 
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import {
@@ -24,7 +10,6 @@ import {
   MdWarningAmber,
 } from "react-icons/md";
 import '../componentscss/RegisterStudentCam.css';
-import '../css/GlobalModal.css';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CONFIGURATION
@@ -134,6 +119,7 @@ function RegisterStudentCam({
   const [showInstructions, setShowInstructions] = useState(true);
   const [raw,              setRaw]              = useState(INITIAL_RAW);
   const [countdown,        setCountdown]        = useState(null);
+  const [captureFlash,     setCaptureFlash]     = useState(false);
   const [glassesWarning,   setGlassesWarning]   = useState(false);
 
   const { allPassed, blockingKey, blockingMessage } = deriveStatus(raw);
@@ -368,6 +354,9 @@ function RegisterStudentCam({
 
     const photoDataUrl = canvas.toDataURL("image/jpeg", 0.92);
 
+    setCaptureFlash(true);
+    setTimeout(() => setCaptureFlash(false), 250);
+
     countdownActive.current = false;
     setCountdown(null);
     passingFrames.current = 0;
@@ -393,40 +382,73 @@ function RegisterStudentCam({
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="modal-overlay">
-      <div className={`modal-container ${isCapturing ? 'capturing' : ''}`} style={{ display: 'flex', flexDirection: 'column', maxWidth: '380px' }}>
-        <div className="modal-header" style={{ flexShrink: 0 }}>
-          <h2 className="modal-title" style={{ fontSize: '1.1rem' }}>Capture {captureSteps[captureStep].text}</h2>
-          <button className="modal-close" onClick={onClose}>✕</button>
+    <div className="camera-modal">
+      <div className={`camera-modal-content ${captureFlash ? 'capture-flash' : ''}`}>
+
+        <div className="camera-header">
+          <h4>
+            {captureSteps[captureStep]?.text}
+            <span className="step-badge"> — Step {captureStep + 1} of {captureSteps.length}</span>
+          </h4>
+          <button className="close-camera-btn" onClick={onClose}>
+            <MdClose />
+          </button>
         </div>
-        
-        <div className="camera-container" style={{ flex: 1, position: 'relative', background: '#1a1a1a', padding: '20px' }}>
-          <video ref={videoRef} className="camera-preview" />
-          <canvas ref={canvasRef} style={{ display: 'none' }} />
-          
-          {/* Instruction Popup */}
-          {showInstructions && (
-            <div className="instruction-popup">
-              <div className="instruction-content">
-                <div className="instruction-icon">
-                  <MdInfoOutline />
-                </div>
-                <h3>Photo Capture Instructions</h3>
-                <ul className="instruction-list">
-                  <li>Position your face within the oval frame</li>
-                  <li>Ensure good lighting on your face</li>
-                  <li>Remove glasses if they cause glare</li>
-                  <li>Look straight at the camera</li>
-                  <li>Stay still during capture</li>
-                </ul>
-                <div className="instruction-timer">
-                  <MdTimer className="timer-icon" />
-                  <span>Auto-start in {instructionTimer}s</span>
-                </div>
-                <div className="instruction-actions">
-                  <button className="btn instruction-btn" onClick={handleStartCapture}>
-                    Start Now
-                  </button>
+
+        <div className="camera-body">
+
+          {/* ── LEFT: video feed ── */}
+          <div className="camera-container">
+            <video ref={videoRef} className="camera-preview" autoPlay muted playsInline />
+            <canvas ref={canvasRef} style={{ display: 'none' }} />
+
+            {!showInstructions && (
+              <div className={`face-oval-ring ${allPassed ? 'ring-green' : 'ring-red'}`}>
+                {getDirectionIcon(captureStep)}
+              </div>
+            )}
+
+            {countdown !== null && !showInstructions && (
+              <div className="countdown-overlay">
+                <span className={`countdown-number ${countdown === 0 ? 'countdown-snap' : ''}`}>
+                  {countdown === 0 ? '📸' : countdown}
+                </span>
+              </div>
+            )}
+
+            {!showInstructions && (
+              <div className={`video-status-bar ${allPassed ? 'bar-green' : 'bar-scanning'}`}>
+                {allPassed
+                  ? (countdown !== null ? `Capturing in ${countdown}…` : 'All checks passed ✓')
+                  : blockingMessage
+                }
+              </div>
+            )}
+
+            {showInstructions && (
+              <div className="instruction-popup">
+                <div className="instruction-content">
+                  <div className="instruction-icon"><MdInfoOutline /></div>
+                  <h3>Photo Capture Instructions</h3>
+                  <ul className="instruction-list">
+                    <li>Position your face within the oval frame</li>
+                    <li>Ensure good lighting on your face</li>
+                    <li>Remove any face covering such glasses or mask</li>
+                    <li>Follow the direction shown for each shot</li>
+                    <li>Stay still — the camera captures automatically</li>
+                  </ul>
+                  <p className="instruction-note">
+                    The frame turns <strong>green</strong> when ready and captures automatically.
+                  </p>
+                  <p className="instruction-note" style={{ marginTop: '6px', opacity: 0.8 }}>
+                    If auto-detection struggles, an admin can use
+                    <strong> Manual Capture</strong> to override.
+                  </p>
+                  <div className="instruction-actions">
+                    <button className="btn instruction-btn" onClick={() => setShowInstructions(false)}>
+                      I Understand, Start
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
