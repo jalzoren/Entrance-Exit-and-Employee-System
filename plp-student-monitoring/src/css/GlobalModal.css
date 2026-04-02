@@ -254,17 +254,3 @@
   }
 }
 
-input:not([type="password"]):not([type="email"]),
-textarea,
-select {
-  text-transform: uppercase;
-}
-
-input[type="email"],
-input[type="password"] {
-  text-transform: none;
-}
-
-::placeholder {
-  text-transform: none;
-}
