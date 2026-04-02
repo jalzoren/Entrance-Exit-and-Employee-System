@@ -205,7 +205,7 @@ def get_embedding(face):
 
 
 # ----------------------------------------------------
-# Cosine Similarity
+# Cosine Similarityy
 # ----------------------------------------------------
 
 def cosine(a, b):
