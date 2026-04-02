@@ -96,7 +96,7 @@ function EditProgramTab() {
                   <td><span className={`type-badge ${prog.programType === 'Graduate' ? 'graduate' : 'undergrad'}`}>{prog.programType}</span></td>
                   <td><span className={`status-badge ${prog.programStatus === 'Active' ? 'active' : 'inactive'}`}>{prog.programStatus}</span></td>
                   <td>{prog.dateCreated}</td>
-                  <td><button className="ep-edit-btn" onClick={() => setEditingProgram(prog)}>Edit</button></td>
+                  <td><button className="ep-edit-btn" onClick={() => setEditingProgram(prog)}>Edit</button><button className="ep-archive-btn" onClick={() => handleArchive(prog)}>Archive</button></td>
                 </tr>
               ))
             ) : (
