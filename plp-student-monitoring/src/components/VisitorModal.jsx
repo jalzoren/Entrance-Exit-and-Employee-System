@@ -1,5 +1,7 @@
+// VisitorModal.jsx
 import { useState } from "react";
 import '../componentscss/VisitorModal.css';
+import '../css/GlobalModal.css';
 
 const REASONS = [
   'Meeting with Faculty',

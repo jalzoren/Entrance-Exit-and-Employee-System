@@ -9,6 +9,9 @@ const registrationRoutes = require("./routes/registration");
 const importStudentsRouter = require("./routes/importStudents");
 const addUserRouter = require("./routes/addUser");
 const recognizeRoute = require("./routes/recognize");
+const manualEntryRoute  = require('./routes/manualEntry');
+const qrScanRoute       = require('./routes/qrScan');
+const visitorRoute      = require('./routes/visitor');
 
 const PORT = process.env.PORT || 5000;
 
@@ -18,6 +21,10 @@ app.use("/api", registrationRoutes);
 app.use('/api', importStudentsRouter);
 app.use('/api', addUserRouter); 
 app.use("/api", recognizeRoute);
+
+app.use('/api/manualentry', manualEntryRoute);
+app.use('/api/qrscan', qrScanRoute);
+app.use('/api/visitor', visitorRoute);
 
 // Start server
 app.listen(PORT, () => {

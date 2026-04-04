@@ -1,3 +1,4 @@
+// ManualInputModal.jsx
 import { useState } from "react";
 import '../componentscss/ManualInputModal.css';
 
@@ -48,7 +49,7 @@ function ManualInputModal({ onClose }) {
           <label className="modal-label">Student ID Number</label>
           <input
             className="modal-input"
-            type="number"
+            type="text"
             placeholder="e.g. 23-00123"
             value={studentId}
             onChange={e => setStudentId(e.target.value)}

@@ -1,3 +1,4 @@
+// QRScanModal.jsx
 import { useEffect, useRef, useState } from "react";
 import jsQR from "jsqr";
 import '../componentscss/QRScanModal.css';

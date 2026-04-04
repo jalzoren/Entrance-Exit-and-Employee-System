@@ -1,3 +1,4 @@
+// MethodSelection.jsx
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import '../css/MethodSelection.css';
@@ -90,7 +91,7 @@ function MethodSelection() {
         </div>
 
         <div className="selections">
-          <p className="selections-prompt">Please select your preferred identification method for entry.</p>
+          <p className="selections-prompt">Please select your preferred identification method for <strong>entry</strong>.</p>
           <div className="selection-options">
             {methods.map(({ key, action, icon, label, description }) => (
               <div
@@ -125,4 +126,4 @@ function MethodSelection() {
   );
 }
 
-export default MethodSelection;
+export default EntryMethodSelection;
