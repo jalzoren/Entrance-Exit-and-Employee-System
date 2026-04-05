@@ -37,10 +37,17 @@ function EntranceMethodSelection() {
 
   useEffect(() => {
     const handleKeyDown = (e) => {
+      if (!e.key) return;
+  
+      if (
+        e.target.tagName === 'INPUT' ||
+        e.target.tagName === 'TEXTAREA'
+      ) return;
+  
       const key = e.key.toLowerCase();
-
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  
       const selected = methods.find(m => m.key === key);
+  
       if (selected) {
         e.preventDefault();
         setActiveKey(key);
@@ -48,6 +55,7 @@ function EntranceMethodSelection() {
         setTimeout(() => setActiveKey(null), 150);
       }
     };
+  
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [methods]);

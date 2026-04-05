@@ -5,7 +5,12 @@ import '../css/GlobalModal.css';
 
 
 function VisitorModal({ onClose }) {
-  const [form, setForm]       = useState({ fullName: '', reason: '', otherReason: '' });
+  const [form, setForm] = useState({
+    fullName: '',
+    email: '',
+    reason: '',
+    otherReason: ''
+  });
   const [status, setStatus]   = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -25,6 +30,9 @@ function VisitorModal({ onClose }) {
     if (!form.fullName.trim()) {
       setStatus({ type: 'error', message: 'Full name is required.' }); return;
     }
+    if (!form.email.trim()) {
+      setStatus({ type: 'error', message: 'Email is required.' }); return;
+    }
     if (!form.reason) {
       setStatus({ type: 'error', message: 'Please select a reason for visit.' }); return;
     }
@@ -41,6 +49,7 @@ function VisitorModal({ onClose }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           full_name:    form.fullName.trim(),
+          email: form.email.trim(),
           reason:       form.reason,
           other_reason: form.reason === 'Other' ? form.otherReason.trim() : '',
         }),
@@ -50,7 +59,7 @@ function VisitorModal({ onClose }) {
       if (!res.ok) throw new Error(data.message || 'Submission failed.');
 
       setStatus({ type: 'success', message: data.message || 'Visitor pass registered.' });
-      setForm({ fullName: '', reason: '', otherReason: '' });
+      setForm({ fullName: '', email: '', reason: '', otherReason: '' });
     } catch (err) {
       setStatus({ type: 'error', message: err.message });
     } finally {
@@ -82,6 +91,17 @@ function VisitorModal({ onClose }) {
             onChange={e => update('fullName', e.target.value)}
             disabled={loading}
             autoFocus
+            required
+          />
+
+          <label className="modal-label">Email</label>
+          <input
+            className="modal-input"
+            type="email"
+            placeholder="e.g. juan@email.com"
+            value={form.email}
+            onChange={e => update('email', e.target.value)}
+            disabled={loading}
             required
           />
 
