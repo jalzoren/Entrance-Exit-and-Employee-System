@@ -78,6 +78,7 @@ function EditStudent({ student, onClose }) {
   const [middleName,  setMiddleName]  = useState(student.middle_name       || "");
   const [extension,   setExtension]   = useState(student.extension_name    || "");
   const [college,     setCollege]     = useState(student.college_department|| "");
+  const [program,     setProgram]     = useState(student.program_name      || "");
   const [yearLevel,   setYearLevel]   = useState(student.year_level        || "");
   const [status,      setStatus]      = useState(student.status            || "");
   const [formErrors,  setFormErrors]  = useState({});
@@ -122,6 +123,7 @@ function EditStudent({ student, onClose }) {
           middle_name:        middleName.trim().toUpperCase(),
           extension_name:     extension,
           college_department: college,
+          program_name:       program,
           year_level:         yearLevel,
           status,
         }
@@ -383,6 +385,18 @@ function EditStudent({ student, onClose }) {
                   {COLLEGES.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
                 {formErrors.college && <span className="field-error">{formErrors.college}</span>}
+              </div>
+
+              <div className="input-group">
+                <label>Program</label>
+                <input 
+                  type="text" 
+                  placeholder="e.g., Bachelor of Science in Information Technology"
+                  value={program} 
+                  onChange={(e) => setProgram(e.target.value)}
+                  className={formErrors.program ? "input-error" : ""}
+                />
+                {formErrors.program && <span className="field-error">{formErrors.program}</span>}
               </div>
 
               <div className="input-group">

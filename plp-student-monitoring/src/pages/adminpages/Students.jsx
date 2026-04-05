@@ -86,6 +86,11 @@ function Students() {
   // ── Filtering ─────────────────────────────────────────────────────────────
 
   const filteredStudents = students.filter((student) => {
+    // Exclude inactive students from the Students page
+    if (student.status === 'Inactive') {
+      return false;
+    }
+
     const matchesSearch =
       searchQuery === "" ||
       student.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||

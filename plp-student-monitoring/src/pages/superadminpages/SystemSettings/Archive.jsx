@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import Swal from 'sweetalert2';
 import { MdRestore } from 'react-icons/md';
 import '../../../css/GlobalModal.css';
 import '../../../css/SystemSettings.css';
@@ -10,30 +12,9 @@ function Archive() {
   const [college, setCollege] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [archivedStudents, setArchivedStudents] = useState([
-    {
-      id: 1,
-      studentId: '20210001',
-      fullName: 'JUAN DELA CRUZ',
-      college: 'College of Computer Studies',
-      program: 'BS Information Technology',
-      yearLevel: 3,
-      status: 'Irregular',
-      archivedDate: '2024-03-15',
-      reason: 'Transferred to another school'
-    },
-    {
-      id: 2,
-      studentId: '20210002',
-      fullName: 'MARIA SANTOS',
-      college: 'College of Nursing',
-      program: 'BS Nursing',
-      yearLevel: 2,
-      status: 'Regular',
-      archivedDate: '2024-03-10',
-      reason: 'Academic probation'
-    }
-  ]);
+  const [archivedStudents, setArchivedStudents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [showRestoreModal, setShowRestoreModal] = useState(false);
   const [restoreReason, setRestoreReason] = useState('');
@@ -41,6 +22,27 @@ function Archive() {
   const [restoreProgram, setRestoreProgram] = useState('');
   const [restoreYearLevel, setRestoreYearLevel] = useState('');
   const [restoreStatus, setRestoreStatus] = useState('');
+  const [restoring, setRestoring] = useState(false);
+
+  // ── Fetch archived students on component mount ──────────────────────────
+  useEffect(() => {
+    fetchArchivedStudents();
+  }, []);
+
+  const fetchArchivedStudents = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get('http://localhost:5000/api/archived-students');
+      setArchivedStudents(Array.isArray(response.data) ? response.data : []);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching archived students:', err);
+      setError(err.response?.data?.message || 'Failed to load archived students');
+      setArchivedStudents([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSearchChange = (e) => {
     setSearch(e.target.value);
@@ -48,9 +50,10 @@ function Archive() {
   };
 
   const filtered = archivedStudents.filter((student) => {
-    const matchesSearch = [student.studentId, student.fullName, student.program, student.college]
+    const fullName = `${student.last_name || ''}, ${student.first_name || ''}`;
+    const matchesSearch = [student.student_id, fullName, student.college_department]
       .join(' ').toLowerCase().includes(search.toLowerCase());
-    const matchesCollege = college === '' || student.college === college;
+    const matchesCollege = college === '' || student.college_department === college;
     const matchesStatus = statusFilter === '' || student.status === statusFilter;
     return matchesSearch && matchesCollege && matchesStatus;
   });
@@ -63,38 +66,81 @@ function Archive() {
     setSelectedStudent(student);
     setShowRestoreModal(true);
     setRestoreReason('');
-    setRestoreCollege(student.college);
-    setRestoreProgram(student.program);
-    setRestoreYearLevel(student.yearLevel);
-    setRestoreStatus(student.status);
+    setRestoreCollege(student.college_department);
+    setRestoreProgram(student.program_name || '');
+    setRestoreYearLevel(student.year_level);
+    setRestoreStatus(student.status === 'Inactive' ? 'Regular' : student.status);
   };
 
-  const handleRestoreConfirm = () => {
-    if (!restoreReason.trim()) {
-      alert('Please provide a reason for restoration.');
-      return;
-    }
+  const handleRestoreConfirm = async () => {
     if (!restoreCollege) {
-      alert('Please select a college department.');
-      return;
-    }
-    if (!restoreProgram.trim()) {
-      alert('Please enter the program.');
+      Swal.fire({
+        title: 'Validation Error',
+        text: 'Please select a college department.',
+        icon: 'error',
+        confirmButtonText: 'OK'
+      });
       return;
     }
     if (!restoreYearLevel) {
-      alert('Please enter the year level.');
+      Swal.fire({
+        title: 'Validation Error',
+        text: 'Please enter the year level.',
+        icon: 'error',
+        confirmButtonText: 'OK'
+      });
       return;
     }
     if (!restoreStatus) {
-      alert('Please select a status.');
+      Swal.fire({
+        title: 'Validation Error',
+        text: 'Please select a status.',
+        icon: 'error',
+        confirmButtonText: 'OK'
+      });
       return;
     }
-    
-    setArchivedStudents((prev) => prev.filter((s) => s.id !== selectedStudent.id));
-    alert(`Student "${selectedStudent.fullName}" has been restored successfully!`);
-    setShowRestoreModal(false);
-    setSelectedStudent(null);
+
+    try {
+      setRestoring(true);
+      
+      // Send restore request to backend
+      await axios.put(`http://localhost:5000/api/students/${selectedStudent.student_id}`, {
+        first_name: selectedStudent.first_name,
+        last_name: selectedStudent.last_name,
+        middle_name: selectedStudent.middle_name || '',
+        extension_name: selectedStudent.extension_name || '',
+        college_department: restoreCollege,
+        program_name: restoreProgram,
+        year_level: restoreYearLevel,
+        status: restoreStatus
+      });
+
+      // Remove from archived list
+      setArchivedStudents((prev) => prev.filter((s) => s.student_id !== selectedStudent.student_id));
+      
+      Swal.fire({
+        title: 'Success',
+        html: `<p><strong>${selectedStudent.first_name} ${selectedStudent.last_name}</strong> has been restored successfully!</p>`,
+        icon: 'success',
+        confirmButtonText: 'Done'
+      });
+
+      setShowRestoreModal(false);
+      setSelectedStudent(null);
+      setRestoreReason('');
+      
+    } catch (err) {
+      console.error('Restore error:', err);
+      Swal.fire({
+        title: 'Restore Failed',
+        text: err.response?.data?.message || 'Something went wrong. Please try again.',
+        icon: 'error',
+        confirmButtonText: 'Try Again'
+      });
+    } finally {
+      setRestoring(false);
+    }
   };
 
   const getStatusBadgeClass = (status) => {
@@ -157,45 +203,55 @@ function Archive() {
               <th>Year Level</th>
               <th>Status</th>
               <th>Archived Date</th>
-              <th>Reason</th>
               <th>Action</th>
             </tr>
           </thead>
           <tbody>
-            {paginated.length > 0 ? (
-              paginated.map((student, idx) => (
-                <tr key={student.id}>
-                  <td>{(safePage - 1) * ROWS_PER_PAGE + idx + 1}</td>
-                  <td>{student.studentId}</td>
-                  <td>{student.fullName}</td>
-                  <td>{student.college}</td>
-                  <td>{student.program}</td>
-                  <td>{student.yearLevel}</td>
-                  <td>
-                    <span className={`status-badge ${getStatusBadgeClass(student.status)}`}>
-                      {student.status}
-                    </span>
-                  </td>
-                  <td>{student.archivedDate}</td>
-                  <td>
-                    <span className="reason-badge" title={student.reason}>
-                      {student.reason.length > 20 ? `${student.reason.substring(0, 20)}...` : student.reason}
-                    </span>
-                  </td>
-                  <td>
-                    <button
-                      className="btn-restore"
-                      onClick={() => handleRestoreClick(student)}
-                      title="Restore student"
-                    >
-                      <MdRestore /> Restore
-                    </button>
-                  </td>
-                </tr>
-              ))
+            {loading ? (
+              <tr>
+                <td colSpan={9} className="tab-empty">Loading archived students...</td>
+              </tr>
+            ) : error ? (
+              <tr>
+                <td colSpan={9} className="tab-empty" style={{ color: 'red' }}>Error: {error}</td>
+              </tr>
+            ) : paginated.length > 0 ? (
+              paginated.map((student, idx) => {
+                const fullName = `${student.last_name || ''}, ${student.first_name || ''}`.trim();
+                return (
+                  <tr key={student.student_id}>
+                    <td>{(safePage - 1) * ROWS_PER_PAGE + idx + 1}</td>
+                    <td>{student.student_id}</td>
+                    <td>{fullName}</td>
+                    <td>{student.college_department}</td>
+                    <td>
+                      <span title={student.program_name || 'No program'} style={{ cursor: 'pointer' }}>
+                        {student.program_name ? (student.program_name.length > 25 ? `${student.program_name.substring(0, 25)}...` : student.program_name) : 'N/A'}
+                      </span>
+                    </td>
+                    <td>{student.year_level}</td>
+                    <td>
+                      <span className={`status-badge ${getStatusBadgeClass(student.status)}`}>
+                        {student.status}
+                      </span>
+                    </td>
+                    <td>{student.updated_at ? new Date(student.updated_at).toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-') : 'N/A'}</td>
+                    <td>
+                      <button
+                        className="btn-restore"
+                        onClick={() => handleRestoreClick(student)}
+                        title="Restore student"
+                        disabled={restoring}
+                      >
+                        <MdRestore /> Restore
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })
             ) : (
               <tr>
-                <td colSpan={10} className="tab-empty">No archived students found.</td>
+                <td colSpan={9} className="tab-empty">No archived students found.</td>
               </tr>
             )}
           </tbody>
@@ -249,8 +305,8 @@ function Archive() {
                   fontWeight: '500',
                   color: '#333'
                 }}>
-                  <div><strong>ID:</strong> {selectedStudent.studentId}</div>
-                  <div><strong>Name:</strong> {selectedStudent.fullName}</div>
+                  <div><strong>ID:</strong> {selectedStudent.student_id}</div>
+                  <div><strong>Name:</strong> {selectedStudent.last_name}, {selectedStudent.first_name}</div>
                 </div>
               </div>
 
@@ -274,7 +330,7 @@ function Archive() {
               </div>
 
               <div className="modal-field modal-full-width">
-                <label className="modal-label">Program <span className="required">*</span></label>
+                <label className="modal-label">Program</label>
                 <input
                   type="text"
                   className="modal-input"
@@ -309,20 +365,8 @@ function Archive() {
                     <option value="">Select Status</option>
                     <option value="Regular">Regular</option>
                     <option value="Irregular">Irregular</option>
-                    <option value="Inactive">Inactive</option>
                   </select>
                 </div>
-              </div>
-
-              <div className="modal-field modal-full-width">
-                <label className="modal-label">Reason for Restoration <span className="required">*</span></label>
-                <textarea
-                  className="modal-input"
-                  placeholder="Enter reason for restoration..."
-                  value={restoreReason}
-                  onChange={(e) => setRestoreReason(e.target.value)}
-                  style={{ minHeight: '100px', resize: 'vertical' }}
-                />
               </div>
             </div>
 
@@ -330,14 +374,16 @@ function Archive() {
               <button
                 className="modal-btn modal-btn-cancel"
                 onClick={() => setShowRestoreModal(false)}
+                disabled={restoring}
               >
                 Cancel
               </button>
               <button
                 className="modal-btn modal-btn-save"
                 onClick={handleRestoreConfirm}
+                disabled={restoring}
               >
-                <MdRestore style={{ marginRight: '5px' }} /> Restore Student
+                {restoring ? 'Restoring...' : (<><MdRestore style={{ marginRight: '5px' }} /> Restore Student</>)}
               </button>
             </div>
           </div>
