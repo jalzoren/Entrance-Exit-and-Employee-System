@@ -18,11 +18,15 @@ function EmployeesArchive({ onNavigate }) {
   const [selectedDepartment, setSelectedDepartment] = useState('All Departments');
   const [selectedPosition, setSelectedPosition] = useState('All Positions');
 
-  const [viewMode, setViewMode] = useState('list'); // keep for future use
+  const [viewMode, setViewMode] = useState('list');
 
   const [loadError, setLoadError] = useState('');
   const [loading, setLoading] = useState(true);
   const [actionMessage, setActionMessage] = useState('');
+
+  // ── Confirmation modal state ──
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmTarget, setConfirmTarget] = useState(null); // employee object
 
   // =========================================
   // LOAD DATA
@@ -46,10 +50,8 @@ function EmployeesArchive({ onNavigate }) {
       const deptList = Array.isArray(deptData) ? deptData : (deptData?.data ?? []);
       const posList = Array.isArray(posData) ? posData : (posData?.data ?? []);
 
-      // Filter locally as a fallback in case the API doesn't support the param yet
-      // but the API update above handles it for the primary case.
       const archivedOnly = empList.filter(e => e.is_archived == 1 || e.is_archived === true);
-      
+
       setEmployees(archivedOnly.length > 0 ? archivedOnly : empList);
       setDepartments(deptList);
       setPositions(posList);
@@ -62,11 +64,18 @@ function EmployeesArchive({ onNavigate }) {
     }
   };
 
-  const handleRestore = async (employeeId) => {
-    if (!window.confirm('Restore this employee to active list?')) return;
+  // ── Open confirmation modal ──
+  const askRestore = (employee) => {
+    setConfirmTarget(employee);
+    setShowConfirmModal(true);
+  };
+
+  const confirmRestore = async () => {
+    if (!confirmTarget) return;
+    setShowConfirmModal(false);
     try {
       setActionMessage('');
-      await restoreEmployee(employeeId);
+      await restoreEmployee(confirmTarget.employee_ID);
       await loadAll();
       setActionMessage('Employee restored successfully.');
       setTimeout(() => setActionMessage(''), 4000);
@@ -74,7 +83,14 @@ function EmployeesArchive({ onNavigate }) {
       console.error('Failed to restore employee:', err);
       setActionMessage(err?.message || 'Failed to restore employee.');
       setTimeout(() => setActionMessage(''), 5000);
+    } finally {
+      setConfirmTarget(null);
     }
+  };
+
+  const cancelRestore = () => {
+    setShowConfirmModal(false);
+    setConfirmTarget(null);
   };
 
   // =========================================
@@ -195,7 +211,7 @@ function EmployeesArchive({ onNavigate }) {
                 onChange={e => setSelectedDepartment(e.target.value)}
               >
                 <option>All Departments</option>
-                {departmentCounts.map((d,i)=>(
+                {departmentCounts.map((d, i) => (
                   <option key={i} value={d.name}>{d.name}</option>
                 ))}
               </Form.Select>
@@ -206,7 +222,7 @@ function EmployeesArchive({ onNavigate }) {
                 onChange={e => setSelectedPosition(e.target.value)}
               >
                 <option>All Positions</option>
-                {[...new Set(employees.map(e=>e.position))].filter(Boolean).map((p,i)=>(
+                {[...new Set(employees.map(e => e.position))].filter(Boolean).map((p, i) => (
                   <option key={i} value={p}>{p}</option>
                 ))}
               </Form.Select>
@@ -217,7 +233,7 @@ function EmployeesArchive({ onNavigate }) {
           <hr style={{ margin: '0 0 16px', borderColor: '#f0f0f0' }} />
 
           {/* — Alerts — */}
-          {loadError    && <div className="alert alert-danger mb-3">{loadError}</div>}
+          {loadError     && <div className="alert alert-danger mb-3">{loadError}</div>}
           {actionMessage && <div className="alert alert-info mb-3">{actionMessage}</div>}
 
           {/* — Results count — */}
@@ -245,9 +261,9 @@ function EmployeesArchive({ onNavigate }) {
                   <td>{emp.position}</td>
                   <td>
                     <Button
-                      variant="success"
+                      className="btn-archive-restore"
                       size="sm"
-                      onClick={() => handleRestore(emp.employee_ID)}
+                      onClick={() => askRestore(emp)}
                     >
                       Restore
                     </Button>
@@ -266,6 +282,37 @@ function EmployeesArchive({ onNavigate }) {
 
         </Card.Body>
       </Card>
+
+      {/* ===== RESTORE CONFIRMATION MODAL ===== */}
+      <Modal
+        show={showConfirmModal}
+        onHide={cancelRestore}
+        centered
+        size="sm"
+        backdrop="static"
+      >
+        <Modal.Header closeButton className="archive-modal-header">
+          <Modal.Title style={{ fontSize: 16 }}>Restore Employee</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p style={{ margin: 0, fontSize: 14, color: '#374151' }}>
+            Are you sure you want to restore{' '}
+            <strong>
+              {confirmTarget?.employee_firstName} {confirmTarget?.employee_LastName}
+            </strong>{' '}
+            to the active employee list?
+          </p>
+        </Modal.Body>
+        <Modal.Footer className="archive-modal-footer">
+          <Button className="btn-modal-cancel" onClick={cancelRestore}>
+            Cancel
+          </Button>
+          <Button className="btn-archive-restore" onClick={confirmRestore}>
+            Yes, Restore
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
     </div>
   );
 }
