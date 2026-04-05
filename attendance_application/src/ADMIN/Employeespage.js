@@ -27,6 +27,11 @@ function EmployeesPage() {
   const [isEditing, setIsEditing]                   = useState(false);
   const [editingId, setEditingId]                   = useState(null);
 
+  // ── Archive confirmation modal ──
+  const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
+  const [archiveTargetId, setArchiveTargetId]       = useState(null);
+  const [archiveTargetName, setArchiveTargetName]   = useState('');
+
   const [formData, setFormData] = useState({
     employee_code:      '',
     employee_firstName: '',
@@ -233,15 +238,31 @@ function EmployeesPage() {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Archive this employee?')) return;
+  // ── Archive: open modal ──
+  const askArchive = (emp) => {
+    setArchiveTargetId(emp.employee_ID);
+    setArchiveTargetName(`${emp.employee_firstName} ${emp.employee_LastName}`);
+    setShowArchiveConfirm(true);
+  };
+
+  const confirmArchive = async () => {
+    setShowArchiveConfirm(false);
     try {
-      await deleteEmployee(id);
+      await deleteEmployee(archiveTargetId);
       showFeedback('success', 'Employee archived');
       loadEmployees();
     } catch (err) {
       showFeedback('danger', 'Failed to archive employee');
+    } finally {
+      setArchiveTargetId(null);
+      setArchiveTargetName('');
     }
+  };
+
+  const cancelArchive = () => {
+    setShowArchiveConfirm(false);
+    setArchiveTargetId(null);
+    setArchiveTargetName('');
   };
 
   const showFeedback = (type, message) => {
@@ -253,7 +274,7 @@ function EmployeesPage() {
     <div className="admin-page">
       <div className="page-header-section">
         <h1 className="page-title">Employee Management</h1>
-        <Button variant="success" onClick={openAddModal}>+ Add Employee</Button>
+        <Button className="create-event-btn" onClick={openAddModal}>+ Add Employee</Button>
       </div>
 
       <Card className="content-card">
@@ -290,7 +311,7 @@ function EmployeesPage() {
                 <th>Full Name</th>
                 <th>Department</th>
                 <th>Position</th>
-                <th style={{ width: 140 }}>Actions</th>
+                <th style={{ width: 160 }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -304,8 +325,22 @@ function EmployeesPage() {
                     <td>{emp.department_name || '—'}</td>
                     <td>{emp.position || '—'}</td>
                     <td>
-                      <Button variant="outline-primary" size="sm" className="me-2" onClick={() => openEditModal(emp)}>Edit</Button>
-                      <Button variant="outline-danger"  size="sm" onClick={() => handleDelete(emp.employee_ID)}>Archive</Button>
+                      <div className="action-btn-group">
+                        <Button
+                          className="btn-emp-edit"
+                          size="sm"
+                          onClick={() => openEditModal(emp)}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          className="btn-emp-archive"
+                          size="sm"
+                          onClick={() => askArchive(emp)}
+                        >
+                          Archive
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -316,9 +351,9 @@ function EmployeesPage() {
         </Card.Body>
       </Card>
 
-      {/* Employee Modal */}
+      {/* ── Employee Add/Edit Modal ── */}
       <Modal show={showModal} onHide={() => setShowModal(false)} centered size="lg">
-        <Modal.Header closeButton>
+        <Modal.Header closeButton className="modal-header">
           <Modal.Title>{isEditing ? 'Edit Employee' : 'Add New Employee'}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
@@ -432,8 +467,8 @@ function EmployeesPage() {
             </Form.Group>
 
             <div className="d-flex justify-content-end gap-2">
-              <Button variant="secondary" onClick={() => setShowModal(false)}>Cancel</Button>
-              <Button type="submit" variant={isEditing ? 'warning' : 'success'} disabled={saving}>
+              <Button className="btn-modal-cancel" onClick={() => setShowModal(false)}>Cancel</Button>
+              <Button className="btn-modal-save" type="submit" disabled={saving}>
                 {saving ? 'Saving...' : isEditing ? 'Update Employee' : 'Add Employee'}
               </Button>
             </div>
@@ -442,7 +477,24 @@ function EmployeesPage() {
         </Modal.Body>
       </Modal>
 
-      {/* Camera Modal */}
+      {/* ── Archive Confirmation Modal ── */}
+      <Modal show={showArchiveConfirm} onHide={cancelArchive} centered size="sm" backdrop="static">
+        <Modal.Header closeButton className="modal-header">
+          <Modal.Title style={{ fontSize: 16 }}>Archive Employee</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p style={{ margin: 0, fontSize: 14, color: '#374151' }}>
+            Are you sure you want to archive <strong>{archiveTargetName}</strong>?
+            They will be moved to the Employees Archive.
+          </p>
+        </Modal.Body>
+        <Modal.Footer style={{ border: '1px solid #f0f0f0', padding: '14px 24px', background: '#fafafa', display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+          <Button className="btn-modal-cancel" onClick={cancelArchive}>Cancel</Button>
+          <Button className="btn-emp-archive" onClick={confirmArchive}>Yes, Archive</Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* ── Camera Modal ── */}
       <Modal show={showCamera} onHide={closeCamera} centered size="md">
         <Modal.Header closeButton>
           <Modal.Title> Capture Photo — Slot {(cameraSlot ?? 0) + 1}</Modal.Title>
@@ -450,8 +502,8 @@ function EmployeesPage() {
         <Modal.Body style={{ textAlign: 'center' }}>
           <video ref={videoRef} autoPlay playsInline style={{ width: '100%', borderRadius: 8, background: '#000', maxHeight: 340 }} />
           <div style={{ marginTop: 16, display: 'flex', gap: 10, justifyContent: 'center' }}>
-            <Button variant="secondary" onClick={closeCamera}>Cancel</Button>
-            <Button variant="success" onClick={capturePhoto}>📸 Capture</Button>
+            <Button className="btn-modal-cancel" onClick={closeCamera}>Cancel</Button>
+            <Button className="btn-modal-save" onClick={capturePhoto}>📸 Capture</Button>
           </div>
         </Modal.Body>
       </Modal>
