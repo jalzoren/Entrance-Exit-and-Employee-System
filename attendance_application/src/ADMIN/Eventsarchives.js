@@ -23,6 +23,10 @@ function EventsArchive({ onNavigate }) {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
 
+  // ── Confirmation modal state ──
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmTarget, setConfirmTarget] = useState(null); // event object to restore
+
   const [loadError, setLoadError] = useState('');
   const [loading, setLoading] = useState(true);
   const [restoring, setRestoring] = useState(false);
@@ -59,13 +63,19 @@ function EventsArchive({ onNavigate }) {
     }
   };
 
-  const handleRestoreEvent = async (event, e) => {
+  // ── Open confirmation modal instead of window.confirm ──
+  const askRestore = (event, e) => {
     if (e) e.stopPropagation();
-    if (!window.confirm('Restore this event to active list?')) return;
-    
+    setConfirmTarget(event);
+    setShowConfirmModal(true);
+  };
+
+  const confirmRestore = async () => {
+    if (!confirmTarget) return;
+    setShowConfirmModal(false);
     setRestoring(true);
     try {
-      await restoreEvent(event.event_ID);
+      await restoreEvent(confirmTarget.event_ID);
       setActionSuccess('Event restored successfully!');
       setTimeout(() => setActionSuccess(''), 4000);
       loadAll();
@@ -75,7 +85,13 @@ function EventsArchive({ onNavigate }) {
       setLoadError('Failed to restore event. Please try again.');
     } finally {
       setRestoring(false);
+      setConfirmTarget(null);
     }
+  };
+
+  const cancelRestore = () => {
+    setShowConfirmModal(false);
+    setConfirmTarget(null);
   };
 
   // =========================================
@@ -326,7 +342,7 @@ function EventsArchive({ onNavigate }) {
         </Card.Body>
       </Card>
 
-      {/* ===== ERRORS ===== */}
+      {/* ===== ERRORS / SUCCESS ===== */}
       {loadError && (
         <div className="alert alert-danger mt-3" role="alert">{loadError}</div>
       )}
@@ -432,10 +448,10 @@ function EventsArchive({ onNavigate }) {
                         <div className="archive-view-arrow ms-2">›</div>
 
                         <div className="ms-3">
-                          <Button 
-                            variant="outline-success" 
+                          <Button
+                            className="btn-archive-restore"
                             size="sm"
-                            onClick={(e) => handleRestoreEvent(event, e)}
+                            onClick={(e) => askRestore(event, e)}
                             disabled={restoring}
                           >
                             Restore
@@ -472,10 +488,29 @@ function EventsArchive({ onNavigate }) {
                       {formatDate(event.event_date)}
                     </span>
                   </div>
+
                   <h6 className="archive-grid-name">{event.event_name}</h6>
+
                   {event.description && (
                     <p className="archive-grid-desc">{event.description}</p>
                   )}
+
+                  {/* ── Start & end time in grid ── */}
+                  {(event.event_time || event.event_end_time) && (
+                    <div className="archive-grid-time-row">
+                      {event.event_time && (
+                        <span className="archive-grid-time-chip">
+                          🕐 Start: {formatTime(event.event_time)}
+                        </span>
+                      )}
+                      {event.event_end_time && (
+                        <span className="archive-grid-time-chip">
+                          🕑 End: {formatTime(event.event_end_time)}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
                   <div className="archive-grid-footer">
                     <div className="archive-grid-location">
                       {event.location_name && <span>📍 {event.location_name}</span>}
@@ -485,11 +520,12 @@ function EventsArchive({ onNavigate }) {
                       <span className="archive-grid-att-lbl">attended</span>
                     </div>
                   </div>
+
                   <div className="mt-2 text-end">
-                    <Button 
-                      variant="outline-success" 
+                    <Button
+                      className="btn-archive-restore"
                       size="sm"
-                      onClick={(e) => handleRestoreEvent(event, e)}
+                      onClick={(e) => askRestore(event, e)}
                       disabled={restoring}
                     >
                       Restore
@@ -509,7 +545,7 @@ function EventsArchive({ onNavigate }) {
         size="lg"
         backdrop="static"
       >
-        <Modal.Header closeButton>
+        <Modal.Header closeButton className="archive-modal-header">
           <Modal.Title>
             {selectedEvent && (
               <div className="d-flex align-items-center gap-2">
@@ -532,9 +568,15 @@ function EventsArchive({ onNavigate }) {
                   <span className="archive-detail-value">{formatDate(selectedEvent.event_date)}</span>
                 </div>
                 <div className="archive-detail-item">
-                  <span className="archive-detail-label">🕐 Time</span>
+                  <span className="archive-detail-label">🕐 Start Time</span>
                   <span className="archive-detail-value">{formatTime(selectedEvent.event_time)}</span>
                 </div>
+                {selectedEvent.event_end_time && (
+                  <div className="archive-detail-item">
+                    <span className="archive-detail-label">🕑 End Time</span>
+                    <span className="archive-detail-value">{formatTime(selectedEvent.event_end_time)}</span>
+                  </div>
+                )}
                 <div className="archive-detail-item">
                   <span className="archive-detail-label">📍 Location</span>
                   <span className="archive-detail-value">{selectedEvent.location_name || '—'}</span>
@@ -579,9 +621,8 @@ function EventsArchive({ onNavigate }) {
           )}
         </Modal.Body>
 
-        <Modal.Footer>
+        <Modal.Footer className="archive-modal-footer">
           <Button
-            variant="secondary"
             className="btn-modal-cancel"
             onClick={() => setShowDetailModal(false)}
           >
@@ -590,8 +631,8 @@ function EventsArchive({ onNavigate }) {
           {selectedEvent && (
             <>
               <Button
-                variant="success"
-                onClick={(e) => handleRestoreEvent(selectedEvent, e)}
+                className="btn-archive-restore"
+                onClick={(e) => askRestore(selectedEvent, e)}
                 disabled={restoring}
               >
                 {restoring ? 'Restoring...' : 'Restore Event'}
@@ -607,6 +648,33 @@ function EventsArchive({ onNavigate }) {
               </Button>
             </>
           )}
+        </Modal.Footer>
+      </Modal>
+
+      {/* ===== RESTORE CONFIRMATION MODAL ===== */}
+      <Modal
+        show={showConfirmModal}
+        onHide={cancelRestore}
+        centered
+        size="sm"
+        backdrop="static"
+      >
+        <Modal.Header closeButton className="archive-modal-header">
+          <Modal.Title style={{ fontSize: 16 }}>Restore Event</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p style={{ margin: 0, fontSize: 14, color: '#374151' }}>
+            Are you sure you want to restore{' '}
+            <strong>{confirmTarget?.event_name}</strong> to the active events list?
+          </p>
+        </Modal.Body>
+        <Modal.Footer className="archive-modal-footer">
+          <Button className="btn-modal-cancel" onClick={cancelRestore}>
+            Cancel
+          </Button>
+          <Button className="btn-archive-restore" onClick={confirmRestore}>
+            Yes, Restore
+          </Button>
         </Modal.Footer>
       </Modal>
 
