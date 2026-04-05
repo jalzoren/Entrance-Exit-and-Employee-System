@@ -25,7 +25,6 @@ import {
   MdFace,
   MdOutlineFace,
   MdClose as MdDeleteIcon,
-  MdOpacity,
 } from "react-icons/md";
 import RegisterStudentCam from "./RegisterStudentCam";
 import "../componentscss/EditStudent.css";
@@ -300,6 +299,7 @@ function EditStudent({ student, onClose }) {
         {/* Tabs */}
         <div className="edit-tabs">
           <button
+            type="button"
             className={`edit-tab ${activeTab === "info" ? "edit-tab-active" : ""}`}
             onClick={() => setActiveTab("info")}
           >
@@ -309,6 +309,7 @@ function EditStudent({ student, onClose }) {
           {/* Face tab only shown when student has no face registered */}
           {!student.hasFace && (
             <button
+              type="button"
               className={`edit-tab edit-tab-face ${activeTab === "face" ? "edit-tab-active" : ""}`}
               onClick={() => setActiveTab("face")}
             >
@@ -435,8 +436,8 @@ function EditStudent({ student, onClose }) {
             </div>
 
             <div className="edit-form-actions">
-              <button className="btn cancel" onClick={handleClose}>Cancel</button>
-              <button className="btn save" onClick={handleSaveInfo} disabled={savingInfo}>
+              <button type="button" className="btn cancel" onClick={handleClose}>Cancel</button>
+              <button type="button" className="btn save" onClick={handleSaveInfo} disabled={savingInfo}>
                 {savingInfo ? "Saving…" : "Save Changes"}
               </button>
             </div>
@@ -478,6 +479,7 @@ function EditStudent({ student, onClose }) {
 
                     {photoPreviews[index] && (
                       <button
+                        type="button"
                         className="photo-delete-btn"
                         onClick={(e) => { e.stopPropagation(); handleDeletePhoto(index); }}
                         title="Delete photo"
@@ -529,6 +531,7 @@ function EditStudent({ student, onClose }) {
             )}
 
             <button
+              type="button"
               className="scan-button"
               onClick={handleScan}
               disabled={isScanning || uploadedPhotos === 0}
@@ -538,8 +541,9 @@ function EditStudent({ student, onClose }) {
             </button>
 
             <div className="edit-form-actions">
-              <button className="btn cancel" onClick={handleClose}>Cancel</button>
+              <button type="button" className="btn cancel" onClick={handleClose}>Cancel</button>
               <button
+                type="button"
                 className="btn register"
                 disabled={!scanComplete}
                 onClick={handleRegisterFace}

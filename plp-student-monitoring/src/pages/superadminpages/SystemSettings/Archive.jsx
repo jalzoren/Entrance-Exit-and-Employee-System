@@ -8,36 +8,65 @@ const ROWS_PER_PAGE = 10;
 function Archive() {
   const [search, setSearch] = useState('');
   const [college, setCollege] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [archivedPrograms, setArchivedPrograms] = useState([
-    
+  const [archivedStudents, setArchivedStudents] = useState([
+    {
+      id: 1,
+      studentId: '20210001',
+      fullName: 'JUAN DELA CRUZ',
+      college: 'College of Computer Studies',
+      program: 'BS Information Technology',
+      yearLevel: 3,
+      status: 'Irregular',
+      archivedDate: '2024-03-15',
+      reason: 'Transferred to another school'
+    },
+    {
+      id: 2,
+      studentId: '20210002',
+      fullName: 'MARIA SANTOS',
+      college: 'College of Nursing',
+      program: 'BS Nursing',
+      yearLevel: 2,
+      status: 'Regular',
+      archivedDate: '2024-03-10',
+      reason: 'Academic probation'
+    }
   ]);
-  const [selectedProgram, setSelectedProgram] = useState(null);
+  const [selectedStudent, setSelectedStudent] = useState(null);
   const [showRestoreModal, setShowRestoreModal] = useState(false);
   const [restoreReason, setRestoreReason] = useState('');
   const [restoreCollege, setRestoreCollege] = useState('');
+  const [restoreProgram, setRestoreProgram] = useState('');
+  const [restoreYearLevel, setRestoreYearLevel] = useState('');
+  const [restoreStatus, setRestoreStatus] = useState('');
 
   const handleSearchChange = (e) => {
     setSearch(e.target.value);
     setCurrentPage(1);
   };
 
-  const filtered = archivedPrograms.filter((p) => {
-    const matchesSearch = [p.programCode, p.programName, p.department]
+  const filtered = archivedStudents.filter((student) => {
+    const matchesSearch = [student.studentId, student.fullName, student.program, student.college]
       .join(' ').toLowerCase().includes(search.toLowerCase());
-    const matchesCollege = college === '' || p.department === college;
-    return matchesSearch && matchesCollege;
+    const matchesCollege = college === '' || student.college === college;
+    const matchesStatus = statusFilter === '' || student.status === statusFilter;
+    return matchesSearch && matchesCollege && matchesStatus;
   });
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / ROWS_PER_PAGE));
   const safePage = Math.min(currentPage, totalPages);
   const paginated = filtered.slice((safePage - 1) * ROWS_PER_PAGE, safePage * ROWS_PER_PAGE);
 
-  const handleRestoreClick = (program) => {
-    setSelectedProgram(program);
+  const handleRestoreClick = (student) => {
+    setSelectedStudent(student);
     setShowRestoreModal(true);
     setRestoreReason('');
-    setRestoreCollege('');
+    setRestoreCollege(student.college);
+    setRestoreProgram(student.program);
+    setRestoreYearLevel(student.yearLevel);
+    setRestoreStatus(student.status);
   };
 
   const handleRestoreConfirm = () => {
@@ -49,33 +78,51 @@ function Archive() {
       alert('Please select a college department.');
       return;
     }
-    setArchivedPrograms((prev) => prev.filter((p) => p.id !== selectedProgram.id));
-    alert(`Program "${selectedProgram.programName}" has been restored successfully!`);
+    if (!restoreProgram.trim()) {
+      alert('Please enter the program.');
+      return;
+    }
+    if (!restoreYearLevel) {
+      alert('Please enter the year level.');
+      return;
+    }
+    if (!restoreStatus) {
+      alert('Please select a status.');
+      return;
+    }
+    
+    setArchivedStudents((prev) => prev.filter((s) => s.id !== selectedStudent.id));
+    alert(`Student "${selectedStudent.fullName}" has been restored successfully!`);
     setShowRestoreModal(false);
-    setSelectedProgram(null);
+    setSelectedStudent(null);
   };
 
-  const handleDepartmentChange = (progId, newDepartment) => {
-    setArchivedPrograms((prev) =>
-      prev.map((p) =>
-        p.id === progId ? { ...p, department: newDepartment } : p
-      )
-    );
+  const getStatusBadgeClass = (status) => {
+    switch(status.toLowerCase()) {
+      case 'regular': return 'status-regular';
+      case 'irregular': return 'status-irregular';
+      case 'inactive': return 'status-inactive';
+      default: return '';
+    }
   };
 
   return (
     <div className="archive-tab">
-      {/* Search Bar */}
+      {/* Search and Filter Bar */}
       <div className="tab-topbar">
         <input
           type="text"
           className="tab-search"
-          placeholder="Search archived programs..."
+          placeholder="Search by Student ID, Name, Program..."
           value={search}
           onChange={handleSearchChange}
         />
-        <select value={college} onChange={(e) => setCollege(e.target.value)} style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '14px' }}>
-          <option value="">Select College Department</option>
+        <select 
+          value={college} 
+          onChange={(e) => setCollege(e.target.value)} 
+          style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '14px' }}
+        >
+          <option value="">All Colleges</option>
           <option value="College of Nursing">College of Nursing</option>
           <option value="College of Engineering">College of Engineering</option>
           <option value="College of Education">College of Education</option>
@@ -83,6 +130,16 @@ function Archive() {
           <option value="College of Arts and Science">College of Arts and Science</option>
           <option value="College of Business and Accountancy">College of Business and Accountancy</option>
           <option value="College of Hospitality Management">College of Hospitality Management</option>
+        </select>
+        <select 
+          value={statusFilter} 
+          onChange={(e) => setStatusFilter(e.target.value)} 
+          style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '14px' }}
+        >
+          <option value="">All Status</option>
+          <option value="Regular">Regular</option>
+          <option value="Irregular">Irregular</option>
+          <option value="Inactive">Inactive</option>
         </select>
         <span className="result-count">Total: {filtered.length}</span>
       </div>
@@ -93,9 +150,12 @@ function Archive() {
           <thead>
             <tr>
               <th>No.</th>
-              <th>Program Code</th>
-              <th>Program Name</th>
-              <th>Department</th>
+              <th>Student ID</th>
+              <th>Full Name</th>
+              <th>College/Department</th>
+              <th>Program</th>
+              <th>Year Level</th>
+              <th>Status</th>
               <th>Archived Date</th>
               <th>Reason</th>
               <th>Action</th>
@@ -103,34 +163,30 @@ function Archive() {
           </thead>
           <tbody>
             {paginated.length > 0 ? (
-              paginated.map((prog, idx) => (
-                <tr key={prog.id}>
+              paginated.map((student, idx) => (
+                <tr key={student.id}>
                   <td>{(safePage - 1) * ROWS_PER_PAGE + idx + 1}</td>
-                  <td>{prog.programCode}</td>
-                  <td>{prog.programName}</td>
+                  <td>{student.studentId}</td>
+                  <td>{student.fullName}</td>
+                  <td>{student.college}</td>
+                  <td>{student.program}</td>
+                  <td>{student.yearLevel}</td>
                   <td>
-                    <select
-                      value={prog.department}
-                      onChange={(e) => handleDepartmentChange(prog.id, e.target.value)}
-                      style={{ padding: '6px 8px', borderRadius: '4px', border: '1px solid #ccc', fontSize: '14px', width: '100%' }}
-                    >
-                      <option value="">Select College Department</option>
-                      <option value="College of Nursing">College of Nursing</option>
-                      <option value="College of Engineering">College of Engineering</option>
-                      <option value="College of Education">College of Education</option>
-                      <option value="College of Computer Studies">College of Computer Studies</option>
-                      <option value="College of Arts and Science">College of Arts and Science</option>
-                      <option value="College of Business and Accountancy">College of Business and Accountancy</option>
-                      <option value="College of Hospitality Management">College of Hospitality Management</option>
-                    </select>
+                    <span className={`status-badge ${getStatusBadgeClass(student.status)}`}>
+                      {student.status}
+                    </span>
                   </td>
-                  <td>{prog.archivedDate}</td>
-                  <td><span className="reason-badge">{prog.reason}</span></td>
+                  <td>{student.archivedDate}</td>
+                  <td>
+                    <span className="reason-badge" title={student.reason}>
+                      {student.reason.length > 20 ? `${student.reason.substring(0, 20)}...` : student.reason}
+                    </span>
+                  </td>
                   <td>
                     <button
                       className="btn-restore"
-                      onClick={() => handleRestoreClick(prog)}
-                      title="Restore program"
+                      onClick={() => handleRestoreClick(student)}
+                      title="Restore student"
                     >
                       <MdRestore /> Restore
                     </button>
@@ -139,7 +195,7 @@ function Archive() {
               ))
             ) : (
               <tr>
-                <td colSpan={7} className="tab-empty">No archived programs found.</td>
+                <td colSpan={10} className="tab-empty">No archived students found.</td>
               </tr>
             )}
           </tbody>
@@ -174,17 +230,17 @@ function Archive() {
       </div>
 
       {/* Restore Modal */}
-      {showRestoreModal && selectedProgram && (
+      {showRestoreModal && selectedStudent && (
         <div className="modal-overlay" onClick={() => setShowRestoreModal(false)}>
           <div className="modal-container" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2 className="modal-title">Restore Program</h2>
+              <h2 className="modal-title">Restore Student</h2>
               <button className="modal-close" onClick={() => setShowRestoreModal(false)}>✕</button>
             </div>
 
             <div className="modal-body">
               <div className="modal-field modal-full-width">
-                <label className="modal-label">Program to Restore</label>
+                <label className="modal-label">Student to Restore</label>
                 <div style={{
                   padding: '12px 14px',
                   background: '#f5f5f5',
@@ -193,7 +249,8 @@ function Archive() {
                   fontWeight: '500',
                   color: '#333'
                 }}>
-                  {selectedProgram.programCode} - {selectedProgram.programName}
+                  <div><strong>ID:</strong> {selectedStudent.studentId}</div>
+                  <div><strong>Name:</strong> {selectedStudent.fullName}</div>
                 </div>
               </div>
 
@@ -214,6 +271,47 @@ function Archive() {
                   <option value="College of Business and Accountancy">College of Business and Accountancy</option>
                   <option value="College of Hospitality Management">College of Hospitality Management</option>
                 </select>
+              </div>
+
+              <div className="modal-field modal-full-width">
+                <label className="modal-label">Program <span className="required">*</span></label>
+                <input
+                  type="text"
+                  className="modal-input"
+                  placeholder="e.g., Bachelor of Science in Information Technology"
+                  value={restoreProgram}
+                  onChange={(e) => setRestoreProgram(e.target.value)}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '15px', marginBottom: '15px' }}>
+                <div className="modal-field" style={{ flex: 1 }}>
+                  <label className="modal-label">Year Level <span className="required">*</span></label>
+                  <input
+                    type="number"
+                    className="modal-input"
+                    placeholder="1-4"
+                    value={restoreYearLevel}
+                    onChange={(e) => setRestoreYearLevel(e.target.value)}
+                    min="1"
+                    max="4"
+                  />
+                </div>
+
+                <div className="modal-field" style={{ flex: 1 }}>
+                  <label className="modal-label">Status <span className="required">*</span></label>
+                  <select
+                    value={restoreStatus}
+                    onChange={(e) => setRestoreStatus(e.target.value)}
+                    className="modal-input"
+                    style={{ height: 'auto', padding: '10px' }}
+                  >
+                    <option value="">Select Status</option>
+                    <option value="Regular">Regular</option>
+                    <option value="Irregular">Irregular</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </div>
               </div>
 
               <div className="modal-field modal-full-width">
@@ -239,7 +337,7 @@ function Archive() {
                 className="modal-btn modal-btn-save"
                 onClick={handleRestoreConfirm}
               >
-                Restore Program
+                <MdRestore style={{ marginRight: '5px' }} /> Restore Student
               </button>
             </div>
           </div>

@@ -27,48 +27,53 @@ function LogEntry({ log, animDelay }) {
 
 export default function Monitor() {
   const { logs: contextLogs, studentsInside } = useLogContext();
-  const { cameraFrame, cameraStatus, detectedFace, isCameraActive, videoStream } = useCameraContext();
+  const { 
+    cameraStatus, 
+    detectedFace, 
+    isCameraActive, 
+    videoStream,
+    videoRef: contextVideoRef
+  } = useCameraContext();
+  
   const [activeFilter, setActiveFilter] = useState('all');
   const [filteredLogs, setFilteredLogs] = useState([]);
   const logRef = useRef(null);
-  const videoRef = useRef(null);
+  const localVideoRef = useRef(null);
   const [streamAttached, setStreamAttached] = useState(false);
 
-  // Effect to handle video stream from context with mirror effect
+  // Calculate counts for each filter
+  const totalLogsCount = contextLogs.length;
+  const entranceCount = contextLogs.filter(log => !log.failed && log.action === "ENTRY").length;
+  const exitCount = contextLogs.filter(log => !log.failed && log.action === "EXIT").length;
+  const failedCount = contextLogs.filter(log => log.failed).length;
+
+  // Use the video stream from context
   useEffect(() => {
-    if (videoRef.current && videoStream && !streamAttached) {
+    if (localVideoRef.current && videoStream && !streamAttached) {
       try {
-        console.log("✅ Monitor: Attaching video stream");
-        videoRef.current.srcObject = videoStream;
+        console.log("Monitor: Attaching video stream from FaceRecognition");
+        localVideoRef.current.srcObject = videoStream;
         setStreamAttached(true);
         
-        // Apply mirror effect via CSS transform
-        videoRef.current.style.transform = 'scaleX(-1)';
-        videoRef.current.style.webkitTransform = 'scaleX(-1)';
+        // Apply mirror effect
+        localVideoRef.current.style.transform = 'scaleX(-1)';
+        localVideoRef.current.style.webkitTransform = 'scaleX(-1)';
         
-        // Try to play
-        const playPromise = videoRef.current.play();
+        const playPromise = localVideoRef.current.play();
         if (playPromise !== undefined) {
           playPromise.then(() => {
-            console.log("✅ Monitor: Video playing with mirror effect");
+            console.log("Monitor: Video playing with mirror effect");
           }).catch((err) => {
             console.log("Video autoplay prevented:", err);
           });
         }
       } catch (err) {
-        console.error("❌ Error attaching stream:", err);
+        console.error("Error attaching stream:", err);
       }
     }
   }, [videoStream, streamAttached]);
 
-  // Auto-scroll to bottom when new logs arrive
-  useEffect(() => {
-    if (logRef.current && filteredLogs.length > 0) {
-      logRef.current.scrollTop = logRef.current.scrollHeight;
-    }
-  }, [filteredLogs]);
-
-  // Apply filter and sort logs (oldest first, newest at bottom)
+  // Filter logs based on active filter and sort in ascending order (oldest first)
   useEffect(() => {
     let filtered = [];
     
@@ -78,47 +83,43 @@ export default function Monitor() {
       filtered = contextLogs.filter(log => !log.failed && log.action === "ENTRY");
     } else if (activeFilter === 'exit') {
       filtered = contextLogs.filter(log => !log.failed && log.action === "EXIT");
+    } else if (activeFilter === 'failed') {
+      filtered = contextLogs.filter(log => log.failed === true);
     }
     
-    // Sort logs by timestamp to ensure chronological order (oldest first, newest at bottom)
-    const sortedLogs = [...filtered].sort((a, b) => {
+    // Sort in ascending order (oldest first)
+    const sortedFiltered = filtered.sort((a, b) => {
       const timeA = a.timestamp || new Date(a.time).getTime();
       const timeB = b.timestamp || new Date(b.time).getTime();
       return timeA - timeB;
     });
     
-    setFilteredLogs(sortedLogs);
+    setFilteredLogs(sortedFiltered);
   }, [contextLogs, activeFilter]);
+
+  // Auto-scroll to bottom when new log is added
+  useEffect(() => {
+    if (logRef.current && filteredLogs.length > 0) {
+      logRef.current.scrollTop = logRef.current.scrollHeight;
+    }
+  }, [filteredLogs.length]);
 
   const handleFilterChange = (filter) => {
     setActiveFilter(filter);
-  };
-
-  const handleResetFilter = () => {
-    setActiveFilter('all');
+    if (logRef.current) {
+      logRef.current.scrollTop = logRef.current.scrollHeight;
+    }
   };
 
   const getStatusText = () => {
     if (!isCameraActive) return 'Camera offline - Go to Face Recognition';
     if (cameraStatus === 'detected' && detectedFace) {
-      return `✓ RECOGNIZED\n${detectedFace.name}`;
+      return `RECOGNIZED\n${detectedFace.name}`;
     }
-    if (cameraStatus === 'unauthorized') return '✗ UNAUTHORIZED';
-    if (videoStream && streamAttached) return '🎥 LIVE FEED ACTIVE';
+    if (cameraStatus === 'unauthorized') return 'UNAUTHORIZED';
+    if (videoStream && streamAttached) return 'LIVE FEED ACTIVE';
     return 'Waiting for camera...';
   };
-
-  // Debug logging
-  useEffect(() => {
-    console.log("📊 Monitor Status:", {
-      isCameraActive,
-      hasVideoStream: !!videoStream,
-      streamAttached,
-      cameraStatus,
-      detectedFace: detectedFace?.name || 'none',
-      totalLogs: filteredLogs.length
-    });
-  }, [isCameraActive, videoStream, streamAttached, cameraStatus, detectedFace, filteredLogs.length]);
 
   return (
     <div>
@@ -132,26 +133,32 @@ export default function Monitor() {
         <div className="rtm-card">
           <div className="rtm-subheader">
             <div className="rtm-student-count">
-              Students Inside: <span className="rtm-student-count-num">{studentsInside.toLocaleString()}</span>
+              Students Inside: <span className="rtm-student-count-num">{studentsInside}</span>
             </div>
             <div className="rtm-filter-controls">
               <button
                 className={`rtm-filter-btn ${activeFilter === 'all' ? 'active' : ''}`}
-                onClick={handleResetFilter}
+                onClick={() => handleFilterChange('all')}
               >
-                All Logs ({filteredLogs.length})
+                All Logs ({totalLogsCount})
               </button>
               <button
                 className={`rtm-filter-btn ${activeFilter === 'entrance' ? 'active' : ''}`}
                 onClick={() => handleFilterChange('entrance')}
               >
-                Entrance Only
+                Entrance Only ({entranceCount})
               </button>
               <button
                 className={`rtm-filter-btn ${activeFilter === 'exit' ? 'active' : ''}`}
                 onClick={() => handleFilterChange('exit')}
               >
-                Exit Only
+                Exit Only ({exitCount})
+              </button>
+              <button
+                className={`rtm-filter-btn ${activeFilter === 'failed' ? 'active' : ''}`}
+                onClick={() => handleFilterChange('failed')}
+              >
+                Failed Attempts ({failedCount})
               </button>
             </div>
           </div>
@@ -162,7 +169,7 @@ export default function Monitor() {
                 {isCameraActive && videoStream ? (
                   <>
                     <video 
-                      ref={videoRef}
+                      ref={localVideoRef}
                       autoPlay 
                       playsInline
                       muted
@@ -173,8 +180,8 @@ export default function Monitor() {
                         transform: 'scaleX(-1)',
                         WebkitTransform: 'scaleX(-1)',
                       }}
-                      onLoadedMetadata={() => console.log("✅ Monitor Video: Ready")}
-                      onError={(e) => console.error("❌ Monitor Video error:", e)}
+                      onLoadedMetadata={() => console.log("Monitor Video: Ready")}
+                      onError={(e) => console.error("Monitor Video error:", e)}
                     />
                     {detectedFace && cameraStatus === "detected" && (
                       <div style={{
@@ -193,7 +200,7 @@ export default function Monitor() {
                         border: '1px solid #00ff41',
                         animation: 'slideUp 0.3s ease-out'
                       }}>
-                        ✓ {detectedFace.name}
+                        {detectedFace.name}
                       </div>
                     )}
                     {cameraStatus === "unauthorized" && (
@@ -213,7 +220,7 @@ export default function Monitor() {
                         border: '1px solid #ff0000',
                         animation: 'slideUp 0.3s ease-out'
                       }}>
-                        ✗ UNAUTHORIZED
+                        UNAUTHORIZED
                       </div>
                     )}
                   </>
@@ -249,7 +256,7 @@ export default function Monitor() {
             <div className="rtm-log-panel" ref={logRef}>
               {filteredLogs.length === 0 ? (
                 <div className="rtm-empty-state">
-                  No {activeFilter === 'entrance' ? 'entrance' : activeFilter === 'exit' ? 'exit' : ''} logs to display
+                  No {activeFilter === 'entrance' ? 'entrance' : activeFilter === 'exit' ? 'exit' : activeFilter === 'failed' ? 'failed attempts' : ''} logs to display
                 </div>
               ) : (
                 filteredLogs.map((log, i) => (
@@ -260,8 +267,6 @@ export default function Monitor() {
           </div>
         </div>
       </div>
-
-    
     </div>
   );
 }

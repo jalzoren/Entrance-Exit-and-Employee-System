@@ -10,6 +10,18 @@ function EditProgramTab() {
   const [programType, setProgramType] = useState('Undergraduate');
   const [programStatus, setProgramStatus] = useState('Active');
   const [currentPage, setCurrentPage] = useState(1);
+  
+  // Department list - can be expanded dynamically
+  const [departments, setDepartments] = useState([
+    'College of Nursing',
+    'College of Engineering',
+    'College of Education',
+    'College of Computer Studies',
+    'College of Arts and Science',
+    'College of Business and Accountancy',
+    'College of Hospitality Management'
+  ]);
+  
   const [programs, setPrograms] = useState([
     { id: 1, programCode: 'BSCS', programName: 'Bachelor of Science in Computer Science', department: 'College of Computer Studies', programType: 'Undergraduate', programStatus: 'Active', dateCreated: '2023-06-01' },
     { id: 2, programCode: 'BSIT', programName: 'Bachelor of Science in Information Technology', department: 'College of Computer Studies', programType: 'Undergraduate', programStatus: 'Active', dateCreated: '2023-06-01' },
@@ -23,6 +35,11 @@ function EditProgramTab() {
   const handleSearchChange = (e) => {
     setSearch(e.target.value);
     setCurrentPage(1);
+  };
+
+  const handleAddDepartment = (newDepartment) => {
+    setDepartments((prev) => [...prev, newDepartment]);
+    alert(`Department "${newDepartment}" has been added successfully!`);
   };
 
   const filtered = programs.filter((p) => {
@@ -46,19 +63,22 @@ function EditProgramTab() {
     setPrograms((prev) => [...prev, { ...newProg, id: Date.now(), dateCreated: new Date().toISOString().split('T')[0] }]);
   };
 
+  const handleArchive = (program) => {
+    if (window.confirm(`Are you sure you want to archive "${program.programName}"?`)) {
+      setPrograms((prev) => prev.filter((p) => p.id !== program.id));
+      alert(`Program "${program.programName}" has been archived.`);
+    }
+  };
+
   return (
     <div className="edit-program-tab">
       <div className="ep-topbar">
         <input type="text" className="ep-search" placeholder="Search" value={search} onChange={handleSearchChange} />
         <select value={college} onChange={(e) => setCollege(e.target.value)} style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '14px' }}>
           <option value="">Select College Department</option>
-          <option value="College of Nursing">College of Nursing</option>
-          <option value="College of Engineering">College of Engineering</option>
-          <option value="College of Education">College of Education</option>
-          <option value="College of Computer Studies">College of Computer Studies</option>
-          <option value="College of Arts and Science">College of Arts and Science</option>
-          <option value="College of Business and Accountancy">College of Business and Accountancy</option>
-          <option value="College of Hospitality Management">College of Hospitality Management</option>
+          {departments.map((dept) => (
+            <option key={dept} value={dept}>{dept}</option>
+          ))}
         </select>
         <select value={programType} onChange={(e) => setProgramType(e.target.value)} style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '14px' }}>
           <option value="Undergraduate">Undergraduate</option>
@@ -96,7 +116,10 @@ function EditProgramTab() {
                   <td><span className={`type-badge ${prog.programType === 'Graduate' ? 'graduate' : 'undergrad'}`}>{prog.programType}</span></td>
                   <td><span className={`status-badge ${prog.programStatus === 'Active' ? 'active' : 'inactive'}`}>{prog.programStatus}</span></td>
                   <td>{prog.dateCreated}</td>
-                  <td><button className="ep-edit-btn" onClick={() => setEditingProgram(prog)}>Edit</button><button className="ep-archive-btn" onClick={() => handleArchive(prog)}>Archive</button></td>
+                  <td>
+                    <button className="ep-edit-btn" onClick={() => setEditingProgram(prog)}>Edit</button>
+                    <button className="ep-archive-btn" onClick={() => handleArchive(prog)}>Archive</button>
+                  </td>
                 </tr>
               ))
             ) : (
@@ -125,6 +148,8 @@ function EditProgramTab() {
           program={editingProgram}
           onClose={() => setEditingProgram(null)}
           onSave={handleSaveEdit}
+          departments={departments}
+          onAddDepartment={handleAddDepartment}
         />
       )}
 
@@ -132,6 +157,8 @@ function EditProgramTab() {
         <AddProgramModal
           onClose={() => setShowAddModal(false)}
           onAdd={handleAddProgram}
+          departments={departments}
+          onAddDepartment={handleAddDepartment}
         />
       )}
     </div>

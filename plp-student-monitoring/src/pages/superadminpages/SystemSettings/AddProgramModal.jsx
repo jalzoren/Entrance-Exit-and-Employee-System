@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
+import DepartmentSelect from './DepartmentSelect';
 import '../../../css/GlobalModal.css';
 
-function AddProgramModal({ onClose, onAdd }) {
+function AddProgramModal({ onClose, onAdd, departments, onAddDepartment }) {
   const [form, setForm] = useState({
     programCode: '',
     programName: '',
@@ -13,6 +14,10 @@ function AddProgramModal({ onClose, onAdd }) {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleDepartmentChange = (dept) => {
+    setForm((prev) => ({ ...prev, department: dept }));
   };
 
   const handleAdd = () => {
@@ -46,16 +51,12 @@ function AddProgramModal({ onClose, onAdd }) {
 
             <div className="modal-field modal-full-width">
               <label className="modal-label">Department <span className="required">*</span></label>
-              <select name="department" value={form.department} onChange={handleChange} className="modal-select">
-                <option value="">Select College Department</option>
-                <option value="College of Nursing">College of Nursing</option>
-                <option value="College of Engineering">College of Engineering</option>
-                <option value="College of Education">College of Education</option>
-                <option value="College of Computer Studies">College of Computer Studies</option>
-                <option value="College of Arts and Science">College of Arts and Science</option>
-                <option value="College of Business and Accountancy">College of Business and Accountancy</option>
-                <option value="College of Hospitality Management">College of Hospitality Management</option>
-              </select>
+              <DepartmentSelect
+                value={form.department}
+                onChange={handleDepartmentChange}
+                departments={departments}
+                onAddDepartment={onAddDepartment}
+              />
             </div>
 
             <div className="modal-field">

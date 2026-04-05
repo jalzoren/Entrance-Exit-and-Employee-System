@@ -11,24 +11,22 @@ export const useCameraContext = () => {
 };
 
 export const CameraProvider = ({ children }) => {
-  const [cameraFrame, setCameraFrame]     = useState(null);
-  const [cameraStatus, setCameraStatus]   = useState('neutral');
-  const [detectedFace, setDetectedFace]   = useState(null);
+  const [cameraFrame, setCameraFrame] = useState(null);
+  const [cameraStatus, setCameraStatus] = useState('neutral');
+  const [detectedFace, setDetectedFace] = useState(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
-  const [videoStream, setVideoStreamState]  = useState(null);
+  const [videoStream, setVideoStreamState] = useState(null);
 
-  const videoRef         = useRef(null);
-  const canvasRef        = useRef(null);
-  const streamRef        = useRef(null);
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const streamRef = useRef(null);
   const frameIntervalRef = useRef(null);
 
-  // ── Cleanup only on unmount ───────────────────────
-  // No auto-init here — camera is started explicitly
-  // by whichever component actually needs it.
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (streamRef.current) {
-        console.log("🔴 Cleaning up camera stream");
+        console.log("Cleaning up camera stream");
         streamRef.current.getTracks().forEach(track => track.stop());
       }
       if (frameIntervalRef.current) {
@@ -37,43 +35,29 @@ export const CameraProvider = ({ children }) => {
     };
   }, []);
 
-  // ── Called explicitly by FaceRecognition component ─
-  const initializeCamera = async () => {
-    // Guard: don't open a second stream if one already exists
+  // This just returns the existing stream, doesn't create a new one
+  const initializeCamera = useCallback(async () => {
     if (streamRef.current) {
-      console.log("📷 Camera already initialized, skipping.");
-      return;
+      console.log("Camera already initialized, returning existing stream");
+      return streamRef.current;
     }
+    console.log("No camera stream available yet. FaceRecognition will provide it.");
+    return null;
+  }, []);
 
-    try {
-      console.log("📷 Initializing camera...");
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 1280 }, height: { ideal: 720 } }
-      });
-
-      streamRef.current = stream;
-      setVideoStreamState(stream);
-      setIsCameraActive(true);
-      console.log("✅ Camera initialized successfully");
-
-      startFrameCapture();
-    } catch (err) {
-      console.error("❌ Error initializing camera:", err);
-      setIsCameraActive(false);
-    }
-  };
-
-  // ── Called explicitly to release the camera ───────
+  // Release camera
   const releaseCamera = useCallback(() => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
-      console.log("🔴 Camera released.");
+      console.log("Camera released.");
     }
     stopFrameCapture();
     setVideoStreamState(null);
     setIsCameraActive(false);
     setCameraFrame(null);
+    setCameraStatus('neutral');
+    setDetectedFace(null);
   }, []);
 
   const updateCameraFrame = useCallback((imageData) => {
@@ -82,19 +66,23 @@ export const CameraProvider = ({ children }) => {
   }, []);
 
   const updateCameraStatus = useCallback((status, faceData = null) => {
-    console.log(`🎯 CameraContext: Updating status to: ${status}`);
+    console.log(`CameraContext: Updating status to: ${status}`);
     setCameraStatus(status);
-    setDetectedFace(faceData || null);
+    if (faceData) {
+      setDetectedFace(faceData);
+    } else if (status === 'neutral') {
+      setDetectedFace(null);
+    }
   }, []);
 
   const resetCameraState = useCallback(() => {
-    console.log('🔄 CameraContext: Resetting camera state');
+    console.log('CameraContext: Resetting camera state');
     setCameraStatus('neutral');
     setDetectedFace(null);
   }, []);
 
   const setActiveCameraState = useCallback((isActive) => {
-    console.log(`📹 CameraContext: Setting camera active to: ${isActive}`);
+    console.log(`CameraContext: Setting camera active to: ${isActive}`);
     setIsCameraActive(isActive);
   }, []);
 
@@ -103,27 +91,23 @@ export const CameraProvider = ({ children }) => {
       clearInterval(frameIntervalRef.current);
     }
 
-    console.log('▶️ CameraContext: Starting frame capture');
+    console.log('CameraContext: Starting frame capture');
     frameIntervalRef.current = setInterval(() => {
-      if (streamRef.current && videoRef.current) {
+      if (streamRef.current && videoRef.current && videoRef.current.srcObject) {
         try {
-          if (!videoRef.current.srcObject && streamRef.current) {
-            videoRef.current.srcObject = streamRef.current;
-          }
-
           if (videoRef.current.videoWidth > 0 && videoRef.current.videoHeight > 0) {
             if (!canvasRef.current) {
               canvasRef.current = document.createElement('canvas');
             }
             const ctx = canvasRef.current.getContext('2d');
-            canvasRef.current.width  = videoRef.current.videoWidth;
+            canvasRef.current.width = videoRef.current.videoWidth;
             canvasRef.current.height = videoRef.current.videoHeight;
             ctx.drawImage(videoRef.current, 0, 0);
             const frameData = canvasRef.current.toDataURL('image/jpeg', 0.7);
             setCameraFrame(frameData);
           }
         } catch (err) {
-          console.error('❌ CameraContext: Error capturing frame:', err);
+          console.error('CameraContext: Error capturing frame:', err);
         }
       }
     }, 100);
@@ -133,12 +117,13 @@ export const CameraProvider = ({ children }) => {
     if (frameIntervalRef.current) {
       clearInterval(frameIntervalRef.current);
       frameIntervalRef.current = null;
-      console.log('⏹️ CameraContext: Stopped frame capture');
+      console.log('CameraContext: Stopped frame capture');
     }
   }, []);
 
+  // This receives the stream from FaceRecognition
   const setVideoStream = useCallback((stream) => {
-    console.log(`🎥 CameraContext: Setting video stream: ${!!stream}`);
+    console.log(`CameraContext: Setting video stream from FaceRecognition: ${!!stream}`);
     if (stream) {
       streamRef.current = stream;
       setVideoStreamState(stream);
@@ -165,8 +150,8 @@ export const CameraProvider = ({ children }) => {
     isCameraActive,
     videoStream,
     videoRef,
-    initializeCamera,   // ← now exposed so components call it explicitly
-    releaseCamera,      // ← exposed so FaceRecognition can clean up on unmount
+    initializeCamera,
+    releaseCamera,
     updateCameraFrame,
     updateCameraStatus,
     resetCameraState,
@@ -182,7 +167,7 @@ export const CameraProvider = ({ children }) => {
         autoPlay
         playsInline
         muted
-        style={{ display: 'none' }}
+        style={{ position: 'fixed', top: '-9999px', left: '-9999px' }}
       />
       {children}
     </CameraContext.Provider>

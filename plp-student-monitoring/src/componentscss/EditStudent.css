@@ -126,10 +126,12 @@
 .form-row {
   display: flex;
   gap: 16px;
+  flex-wrap: wrap;
 }
 
 .input-group {
   flex: 1;
+  min-width: 180px;
   display: flex;
   flex-direction: column;
   gap: 5px;
@@ -152,6 +154,8 @@
   outline: none;
   transition: border-color 0.2s;
   background: #fff;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .input-group input:focus,
@@ -253,6 +257,7 @@
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+  justify-content: center;
 }
 
 .photo-box-wrapper {
@@ -262,7 +267,9 @@
   gap: 6px;
 }
 
-.photo-box-container { position: relative; }
+.photo-box-container { 
+  position: relative; 
+}
 
 .photo-box {
   width: 96px;
@@ -322,6 +329,10 @@
   justify-content: center;
   font-size: 0.75rem;
   cursor: pointer;
+  transition: background 0.2s;
+}
+.photo-delete-btn:hover {
+  background: #c0392b;
 }
 
 .photo-label {
@@ -422,3 +433,32 @@
 .scan-button:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .scan-icon { font-size: 1rem; }
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .form-row {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .input-group {
+    min-width: 100%;
+  }
+  
+  .photo-box {
+    width: 70px;
+    height: 70px;
+  }
+  
+  .photo-label {
+    font-size: 0.6rem;
+  }
+  
+  .edit-form-actions {
+    flex-direction: column;
+  }
+  
+  .btn {
+    width: 100%;
+  }
+}
