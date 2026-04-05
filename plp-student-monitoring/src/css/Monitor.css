@@ -20,8 +20,7 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-overflow: hidden;
-font-family: "Oswald", sans-serif;
+  overflow: hidden;
 }
 
 
@@ -41,7 +40,7 @@ font-family: "Oswald", sans-serif;
   margin: 0;
   color: #01311d;
   font-size: 0.98rem;
-  font-family: "oswald", sans-serif;
+  font-family: 'Montserrat', sans-serif;
 }
 
 .header-divider {
