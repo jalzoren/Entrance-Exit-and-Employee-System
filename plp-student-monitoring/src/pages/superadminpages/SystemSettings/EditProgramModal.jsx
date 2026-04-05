@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
+import DepartmentSelect from './DepartmentSelect';
+import Swal from 'sweetalert2';
 import '../../../css/GlobalModal.css';
 
-function EditProgramModal({ program, onClose, onSave }) {
+function EditProgramModal({ program, onClose, onSave, departments, onDepartmentAdded }) {
   const [form, setForm] = useState({
-    programCode: program?.programCode || '',
-    programName: program?.programName || '',
-    department: program?.department || '',
-    programType: program?.programType || 'Undergraduate',
-    programStatus: program?.programStatus || 'Active',
+    programCode: program.programCode,
+    programName: program.programName,
+    department: program.department,
+    programType: program.programType,
+    programStatus: program.programStatus,
   });
 
   const handleChange = (e) => {
@@ -15,9 +17,66 @@ function EditProgramModal({ program, onClose, onSave }) {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleDepartmentChange = (dept) => {
+    setForm((prev) => ({ ...prev, department: dept }));
+  };
+
+  const handleAddDepartment = async (newDepartment) => {
+    Swal.fire({
+      title: 'Adding Department...',
+      text: 'Please wait',
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
+    try {
+      const response = await fetch('http://localhost:5000/api/departments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dept_name: newDepartment })
+      });
+      
+      if (!response.ok) throw new Error('Failed to add department');
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'Department Added!',
+        text: `${newDepartment} has been added successfully.`,
+        timer: 1500,
+        showConfirmButton: false
+      });
+      
+      // Refresh departments list in parent
+      if (onDepartmentAdded) {
+        const deptResponse = await fetch('http://localhost:5000/api/departments');
+        const updatedDepts = await deptResponse.json();
+        onDepartmentAdded(updatedDepts);
+      }
+      
+      // Auto-select the newly added department
+      setForm((prev) => ({ ...prev, department: newDepartment }));
+      
+    } catch (error) {
+      console.error('Error adding department:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Failed!',
+        text: 'Could not add department. It might already exist.',
+        confirmButtonColor: '#3085d6'
+      });
+    }
+  };
+
   const handleSave = () => {
     if (!form.programCode || !form.programName || !form.department) {
-      alert('Please fill in all required fields.');
+      Swal.fire({
+        icon: 'warning',
+        title: 'Missing Fields',
+        text: 'Please fill in all required fields.',
+        confirmButtonColor: '#3085d6'
+      });
       return;
     }
     onSave(form);
@@ -36,26 +95,36 @@ function EditProgramModal({ program, onClose, onSave }) {
           <div className="modal-grid-2">
             <div className="modal-field">
               <label className="modal-label">Program Code <span className="required">*</span></label>
-              <input type="text" name="programCode" value={form.programCode} onChange={handleChange} className="modal-input" placeholder="e.g. BSCS" />
+              <input 
+                type="text" 
+                name="programCode" 
+                value={form.programCode} 
+                onChange={handleChange} 
+                className="modal-input" 
+                placeholder="e.g. BSCS" 
+              />
             </div>
 
             <div className="modal-field">
               <label className="modal-label">Program Name <span className="required">*</span></label>
-              <input type="text" name="programName" value={form.programName} onChange={handleChange} className="modal-input" placeholder="e.g. Bachelor of Science in Computer Science" />
+              <input 
+                type="text" 
+                name="programName" 
+                value={form.programName} 
+                onChange={handleChange} 
+                className="modal-input" 
+                placeholder="e.g. Bachelor of Science in Computer Science" 
+              />
             </div>
 
             <div className="modal-field modal-full-width">
               <label className="modal-label">Department <span className="required">*</span></label>
-              <select name="department" value={form.department} onChange={handleChange} className="modal-select">
-                <option value="">Select College Department</option>
-                <option value="College of Nursing">College of Nursing</option>
-                <option value="College of Engineering">College of Engineering</option>
-                <option value="College of Education">College of Education</option>
-                <option value="College of Computer Studies">College of Computer Studies</option>
-                <option value="College of Arts and Science">College of Arts and Science</option>
-                <option value="College of Business and Accountancy">College of Business and Accountancy</option>
-                <option value="College of Hospitality Management">College of Hospitality Management</option>
-              </select>
+              <DepartmentSelect
+                value={form.department}
+                onChange={handleDepartmentChange}
+                departments={departments}
+                onAddDepartment={handleAddDepartment}
+              />
             </div>
 
             <div className="modal-field">

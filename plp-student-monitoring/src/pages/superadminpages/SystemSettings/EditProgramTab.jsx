@@ -1,90 +1,209 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import EditProgramModal from './EditProgramModal';
 import AddProgramModal from './AddProgramModal';
+import Swal from 'sweetalert2';
 
 const ROWS_PER_PAGE = 10;
 
 function EditProgramTab() {
   const [search, setSearch] = useState('');
   const [college, setCollege] = useState('');
-  const [programType, setProgramType] = useState('Undergraduate');
-  const [programStatus, setProgramStatus] = useState('Active');
+  const [programType, setProgramType] = useState('All');
+  const [programStatus, setProgramStatus] = useState('All');
   const [currentPage, setCurrentPage] = useState(1);
-  
-  // Department list - can be expanded dynamically
-  const [departments, setDepartments] = useState([
-    'College of Nursing',
-    'College of Engineering',
-    'College of Education',
-    'College of Computer Studies',
-    'College of Arts and Science',
-    'College of Business and Accountancy',
-    'College of Hospitality Management'
-  ]);
-  
-  const [programs, setPrograms] = useState([
-    { id: 1, programCode: 'BSCS', programName: 'Bachelor of Science in Computer Science', department: 'College of Computer Studies', programType: 'Undergraduate', programStatus: 'Active', dateCreated: '2023-06-01' },
-    { id: 2, programCode: 'BSIT', programName: 'Bachelor of Science in Information Technology', department: 'College of Computer Studies', programType: 'Undergraduate', programStatus: 'Active', dateCreated: '2023-06-01' },
-    { id: 3, programCode: 'MSCS', programName: 'Master of Science in Computer Science', department: 'College of Computer Studies', programType: 'Graduate', programStatus: 'Inactive', dateCreated: '2023-08-15' },
-    { id: 4, programCode: 'BSECE', programName: 'Bachelor of Science in Electronics Engineering', department: 'College of Engineering', programType: 'Undergraduate', programStatus: 'Active', dateCreated: '2023-06-01' },
-    { id: 7, programCode: 'BSN', programName: 'Bachelor of Science in Nursing', department: 'College of Nursing', programType: 'Undergraduate', programStatus: 'Active', dateCreated: '2023-06-01' },
-  ]);
+  const [departments, setDepartments] = useState([]);
+  const [programs, setPrograms] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [editingProgram, setEditingProgram] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
 
-  const handleSearchChange = (e) => {
-    setSearch(e.target.value);
-    setCurrentPage(1);
+  // Fetch departments from backend
+  const fetchDepartments = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/departments');
+      const data = await response.json();
+      setDepartments(data);
+    } catch (error) {
+      console.error('Error fetching departments:', error);
+    }
   };
 
-  const handleAddDepartment = (newDepartment) => {
-    setDepartments((prev) => [...prev, newDepartment]);
-    alert(`Department "${newDepartment}" has been added successfully!`);
+  // Fetch programs from backend
+  const fetchPrograms = async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (search) params.append('search', search);
+      if (college) params.append('department', college);
+      if (programType && programType !== 'All') params.append('programType', programType);
+      if (programStatus && programStatus !== 'All') params.append('programStatus', programStatus);
+      
+      const response = await fetch(`http://localhost:5000/api/programs?${params}`);
+      const data = await response.json();
+      setPrograms(data);
+      setCurrentPage(1);
+    } catch (error) {
+      console.error('Error fetching programs:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Failed to load programs',
+        confirmButtonColor: '#3085d6'
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const filtered = programs.filter((p) => {
-    const matchesSearch = [p.programCode, p.programName, p.department]
-      .join(' ').toLowerCase().includes(search.toLowerCase());
-    const matchesCollege = college === '' || p.department === college;
-    const matchesType = p.programType === programType;
-    const matchesStatus = p.programStatus === programStatus;
-    return matchesSearch && matchesCollege && matchesType && matchesStatus;
-  });
+  useEffect(() => {
+    fetchDepartments();
+  }, []);
 
+  useEffect(() => {
+    fetchPrograms();
+  }, [search, college, programType, programStatus]);
+
+  const filtered = programs;
   const totalPages = Math.max(1, Math.ceil(filtered.length / ROWS_PER_PAGE));
   const safePage = Math.min(currentPage, totalPages);
   const paginated = filtered.slice((safePage - 1) * ROWS_PER_PAGE, safePage * ROWS_PER_PAGE);
 
-  const handleSaveEdit = (updated) => {
-    setPrograms((prev) => prev.map((p) => (p.id === editingProgram.id ? { ...p, ...updated } : p)));
-  };
+  const handleSaveEdit = async (updated) => {
+    Swal.fire({
+      title: 'Updating...',
+      text: 'Please wait',
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
 
-  const handleAddProgram = (newProg) => {
-    setPrograms((prev) => [...prev, { ...newProg, id: Date.now(), dateCreated: new Date().toISOString().split('T')[0] }]);
-  };
-
-  const handleArchive = (program) => {
-    if (window.confirm(`Are you sure you want to archive "${program.programName}"?`)) {
-      setPrograms((prev) => prev.filter((p) => p.id !== program.id));
-      alert(`Program "${program.programName}" has been archived.`);
+    try {
+      const response = await fetch(`http://localhost:5000/api/programs/${editingProgram.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updated)
+      });
+      
+      if (!response.ok) throw new Error('Failed to update');
+      
+      await fetchPrograms();
+      setEditingProgram(null);
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'Updated!',
+        text: 'Program has been updated successfully.',
+        timer: 1500,
+        showConfirmButton: false
+      });
+    } catch (error) {
+      console.error('Error updating program:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Failed!',
+        text: 'Failed to update program',
+        confirmButtonColor: '#3085d6'
+      });
     }
   };
+
+  const handleAddProgram = async (newProg) => {
+    await fetchPrograms();
+  };
+
+  const handleDepartmentAdded = async (updatedDepartments) => {
+    setDepartments(updatedDepartments);
+  };
+
+  const handleArchive = async (program) => {
+    const result = await Swal.fire({
+      title: 'Archive Program?',
+      text: `Are you sure you want to archive "${program.programName}"?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, archive it!'
+    });
+
+    if (result.isConfirmed) {
+      Swal.fire({
+        title: 'Archiving...',
+        text: 'Please wait',
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
+      try {
+        const response = await fetch(`http://localhost:5000/api/programs/${program.id}/archive`, {
+          method: 'PATCH'
+        });
+        
+        if (!response.ok) throw new Error('Failed to archive');
+        
+        await fetchPrograms();
+        
+        Swal.fire({
+          icon: 'success',
+          title: 'Archived!',
+          text: `"${program.programName}" has been archived.`,
+          timer: 1500,
+          showConfirmButton: false
+        });
+      } catch (error) {
+        console.error('Error archiving program:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Failed!',
+          text: 'Failed to archive program',
+          confirmButtonColor: '#3085d6'
+        });
+      }
+    }
+  };
+
+  if (loading) {
+    return <div className="edit-program-tab" style={{ padding: '20px', textAlign: 'center' }}>Loading programs...</div>;
+  }
 
   return (
     <div className="edit-program-tab">
       <div className="ep-topbar">
-        <input type="text" className="ep-search" placeholder="Search" value={search} onChange={handleSearchChange} />
-        <select value={college} onChange={(e) => setCollege(e.target.value)} style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '14px' }}>
-          <option value="">Select College Department</option>
+        <input 
+          type="text" 
+          className="ep-search" 
+          placeholder="Search" 
+          value={search} 
+          onChange={(e) => setSearch(e.target.value)} 
+        />
+        <select 
+          value={college} 
+          onChange={(e) => setCollege(e.target.value)} 
+          style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '14px' }}
+        >
+          <option value="">All Departments</option>
           {departments.map((dept) => (
             <option key={dept} value={dept}>{dept}</option>
           ))}
         </select>
-        <select value={programType} onChange={(e) => setProgramType(e.target.value)} style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '14px' }}>
+        <select 
+          value={programType} 
+          onChange={(e) => setProgramType(e.target.value)} 
+          style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '14px' }}
+        >
+          <option value="All">All Types</option>
           <option value="Undergraduate">Undergraduate</option>
           <option value="Graduate">Graduate</option>
         </select>
-        <select value={programStatus} onChange={(e) => setProgramStatus(e.target.value)} style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '14px' }}>
+        <select 
+          value={programStatus} 
+          onChange={(e) => setProgramStatus(e.target.value)} 
+          style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '14px' }}
+        >
+          <option value="All">All Status</option>
           <option value="Active">Active</option>
           <option value="Inactive">Inactive</option>
         </select>
@@ -123,22 +242,36 @@ function EditProgramTab() {
                 </tr>
               ))
             ) : (
-              <tr><td colSpan={8} className="ep-empty">No programs found.</td></tr>
+              <tr>
+                <td colSpan="8" className="ep-empty">No programs found.</td>
+              </tr>
             )}
           </tbody>
         </table>
       </div>
 
       <div className="ep-pagination">
-        <button className="ep-page-btn ep-page-nav" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={safePage === 1}>
+        <button 
+          className="ep-page-btn ep-page-nav" 
+          onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} 
+          disabled={safePage === 1}
+        >
           ← Previous
         </button>
         {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-          <button key={page} className={`ep-page-btn ep-page-num ${safePage === page ? 'ep-page-active' : ''}`} onClick={() => setCurrentPage(page)}>
+          <button 
+            key={page} 
+            className={`ep-page-btn ep-page-num ${safePage === page ? 'ep-page-active' : ''}`} 
+            onClick={() => setCurrentPage(page)}
+          >
             {page}
           </button>
         ))}
-        <button className="ep-page-btn ep-page-nav" onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={safePage === totalPages}>
+        <button 
+          className="ep-page-btn ep-page-nav" 
+          onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} 
+          disabled={safePage === totalPages}
+        >
           Next →
         </button>
       </div>
@@ -149,7 +282,7 @@ function EditProgramTab() {
           onClose={() => setEditingProgram(null)}
           onSave={handleSaveEdit}
           departments={departments}
-          onAddDepartment={handleAddDepartment}
+          onDepartmentAdded={handleDepartmentAdded}
         />
       )}
 
@@ -158,7 +291,7 @@ function EditProgramTab() {
           onClose={() => setShowAddModal(false)}
           onAdd={handleAddProgram}
           departments={departments}
-          onAddDepartment={handleAddDepartment}
+          onDepartmentAdded={handleDepartmentAdded}
         />
       )}
     </div>

@@ -12,6 +12,7 @@ const recognizeRoute = require("./routes/recognize");
 const manualEntryRoute  = require('./routes/manualEntry');
 const qrScanRoute       = require('./routes/qrScan');
 const visitorRoute      = require('./routes/visitor');
+const programRoutes = require('./routes/programs');
 
 const PORT = process.env.PORT || 5000;
 
@@ -21,6 +22,7 @@ app.use("/api", registrationRoutes);
 app.use('/api', importStudentsRouter);
 app.use('/api', addUserRouter); 
 app.use("/api", recognizeRoute);
+app.use('/api', programRoutes);
 
 app.use('/api/manualentry', manualEntryRoute);
 app.use('/api/qrscan', qrScanRoute);

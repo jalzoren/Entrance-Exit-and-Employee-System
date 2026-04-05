@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import DepartmentSelect from './DepartmentSelect';
+import Swal from 'sweetalert2';
 import '../../../css/GlobalModal.css';
 
-function AddProgramModal({ onClose, onAdd, departments, onAddDepartment }) {
+function AddProgramModal({ onClose, onAdd, departments, onDepartmentAdded }) {
   const [form, setForm] = useState({
     programCode: '',
     programName: '',
@@ -10,6 +11,7 @@ function AddProgramModal({ onClose, onAdd, departments, onAddDepartment }) {
     programType: 'Undergraduate',
     programStatus: 'Active',
   });
+  const [isAdding, setIsAdding] = useState(false); // Add this to prevent double submission
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -20,13 +22,113 @@ function AddProgramModal({ onClose, onAdd, departments, onAddDepartment }) {
     setForm((prev) => ({ ...prev, department: dept }));
   };
 
-  const handleAdd = () => {
+  const handleAddDepartment = async (newDepartment) => {
+    Swal.fire({
+      title: 'Adding Department...',
+      text: 'Please wait',
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
+    try {
+      const response = await fetch('http://localhost:5000/api/departments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dept_name: newDepartment })
+      });
+      
+      if (!response.ok) throw new Error('Failed to add department');
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'Department Added!',
+        text: `${newDepartment} has been added successfully.`,
+        timer: 1500,
+        showConfirmButton: false
+      });
+      
+      if (onDepartmentAdded) {
+        const deptResponse = await fetch('http://localhost:5000/api/departments');
+        const updatedDepts = await deptResponse.json();
+        onDepartmentAdded(updatedDepts);
+      }
+      
+      setForm((prev) => ({ ...prev, department: newDepartment }));
+      
+    } catch (error) {
+      console.error('Error adding department:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Failed!',
+        text: 'Could not add department. It might already exist.',
+        confirmButtonColor: '#3085d6'
+      });
+    }
+  };
+
+  const handleAdd = async () => {
+    if (isAdding) return; // Prevent double submission
+    
     if (!form.programCode || !form.programName || !form.department) {
-      alert('Please fill in all required fields.');
+      Swal.fire({
+        icon: 'warning',
+        title: 'Missing Fields',
+        text: 'Please fill in all required fields.',
+        confirmButtonColor: '#3085d6'
+      });
       return;
     }
-    onAdd(form);
-    onClose();
+    
+    setIsAdding(true);
+    
+    Swal.fire({
+      title: 'Adding Program...',
+      text: 'Please wait',
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+    
+    try {
+      const response = await fetch('http://localhost:5000/api/programs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form)
+      });
+      
+      if (!response.ok) throw new Error('Failed to add program');
+      
+      const newProgram = await response.json();
+      
+      // Close the modal FIRST
+      onClose();
+      
+      // Then show success message
+      await Swal.fire({
+        icon: 'success',
+        title: 'Program Added!',
+        text: `${form.programName} has been added successfully.`,
+        timer: 2000,
+        showConfirmButton: false
+      });
+      
+      // Then refresh the program list
+      onAdd(newProgram);
+      
+    } catch (error) {
+      console.error('Error adding program:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Failed!',
+        text: 'Program code might already exist. Please use a different code.',
+        confirmButtonColor: '#3085d6'
+      });
+    } finally {
+      setIsAdding(false);
+    }
   };
 
   return (
@@ -41,12 +143,26 @@ function AddProgramModal({ onClose, onAdd, departments, onAddDepartment }) {
           <div className="modal-grid-2">
             <div className="modal-field">
               <label className="modal-label">Program Code <span className="required">*</span></label>
-              <input type="text" name="programCode" value={form.programCode} onChange={handleChange} className="modal-input" placeholder="e.g. BSCS" />
+              <input 
+                type="text" 
+                name="programCode" 
+                value={form.programCode} 
+                onChange={handleChange} 
+                className="modal-input" 
+                placeholder="e.g. BSCS" 
+              />
             </div>
 
             <div className="modal-field">
               <label className="modal-label">Program Name <span className="required">*</span></label>
-              <input type="text" name="programName" value={form.programName} onChange={handleChange} className="modal-input" placeholder="e.g. Bachelor of Science in Computer Science" />
+              <input 
+                type="text" 
+                name="programName" 
+                value={form.programName} 
+                onChange={handleChange} 
+                className="modal-input" 
+                placeholder="e.g. Bachelor of Science in Computer Science" 
+              />
             </div>
 
             <div className="modal-field modal-full-width">
@@ -55,13 +171,18 @@ function AddProgramModal({ onClose, onAdd, departments, onAddDepartment }) {
                 value={form.department}
                 onChange={handleDepartmentChange}
                 departments={departments}
-                onAddDepartment={onAddDepartment}
+                onAddDepartment={handleAddDepartment}
               />
             </div>
 
             <div className="modal-field">
               <label className="modal-label">Program Type <span className="required">*</span></label>
-              <select name="programType" value={form.programType} onChange={handleChange} className="modal-select">
+              <select 
+                name="programType" 
+                value={form.programType} 
+                onChange={handleChange} 
+                className="modal-select"
+              >
                 <option value="Undergraduate">Undergraduate</option>
                 <option value="Graduate">Graduate</option>
               </select>
@@ -69,7 +190,12 @@ function AddProgramModal({ onClose, onAdd, departments, onAddDepartment }) {
 
             <div className="modal-field">
               <label className="modal-label">Program Status <span className="required">*</span></label>
-              <select name="programStatus" value={form.programStatus} onChange={handleChange} className="modal-select">
+              <select 
+                name="programStatus" 
+                value={form.programStatus} 
+                onChange={handleChange} 
+                className="modal-select"
+              >
                 <option value="Active">Active</option>
                 <option value="Inactive">Inactive</option>
               </select>
@@ -79,7 +205,9 @@ function AddProgramModal({ onClose, onAdd, departments, onAddDepartment }) {
 
         <div className="modal-footer">
           <button className="modal-btn modal-btn-cancel" onClick={onClose}>Cancel</button>
-          <button className="modal-btn modal-btn-save" onClick={handleAdd}>Add Program</button>
+          <button className="modal-btn modal-btn-save" onClick={handleAdd} disabled={isAdding}>
+            {isAdding ? 'Adding...' : 'Add Program'}
+          </button>
         </div>
       </div>
     </div>
