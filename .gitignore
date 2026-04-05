@@ -2,3 +2,7 @@ python/venv/
 __pycache__/
 *.pyc
 *.onnx
+venv/
+mp_env/
+venv/
+mp_env/
