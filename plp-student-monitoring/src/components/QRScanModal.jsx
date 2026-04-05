@@ -1,37 +1,97 @@
 // QRScanModal.jsx
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import jsQR from "jsqr";
 import '../componentscss/QRScanModal.css';
 import { showEntryExitAlert } from '../components/ShowEntryExitAlerts.jsx';
 
 function QRScanModal({ onClose, mode = 'ENTRY' }) {
-  const videoRef    = useRef(null);
-  const canvasRef   = useRef(null);
-  const streamRef   = useRef(null);
-  const rafRef      = useRef(null);
+  const videoRef   = useRef(null);
+  const canvasRef  = useRef(null);
+  const streamRef  = useRef(null);
+  const rafRef     = useRef(null);
 
-  const [status, setStatus]   = useState(null);
-  const [scanned, setScanned] = useState(false);
+
+  const scannedRef = useRef(false);
+
+  const [status,  setStatus]  = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // ── Start camera ──────────────────────────────────
+  // ── Submit decoded QR ─────────────────────────────────────────────────
+  // Defined with useCallback before scanFrame so it can be referenced inside
+  const handleQRResult = useCallback(async (qrData) => {
+    setLoading(true);
+    setStatus(null);
+
+    try {
+      const res = await fetch('http://localhost:5000/api/qrscan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ qr_data: qrData, mode }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'QR scan failed.');
+
+      const name = data.student || data.visitor || 'Unknown';
+      onClose();
+      showEntryExitAlert({
+        action:     data.action,
+        student:    name,
+        department: data.department,
+      });
+
+    } catch (err) {
+      // On error: show message and allow retry
+      setStatus({ type: 'error', message: err.message });
+      scannedRef.current = false;         // ← re-arm the scanner
+      rafRef.current = requestAnimationFrame(scanFrame); // ← restart the loop
+    } finally {
+      setLoading(false);
+    }
+  }, [mode, onClose]);
+
+  // ── QR scan loop ──────────────────────────────────────────────────────
+  // Uses scannedRef (not state) so it always reads the current value.
+  const scanFrame = useCallback(() => {
+    const video  = videoRef.current;
+    const canvas = canvasRef.current;
+
+    if (video && canvas && video.readyState === video.HAVE_ENOUGH_DATA) {
+      const ctx = canvas.getContext('2d');
+      canvas.width  = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+      if (code && !scannedRef.current) {
+        scannedRef.current = true;        // ← lock immediately to prevent double-scan
+        handleQRResult(code.data);
+        return;                           // ← stop the loop while processing
+      }
+    }
+
+    rafRef.current = requestAnimationFrame(scanFrame);
+  }, [handleQRResult]);
+
+  // ── Start camera on mount ─────────────────────────────────────────────
   useEffect(() => {
-    let isMounted = true; // track component mounted state
-  
+    let isMounted = true;
+
     const startCamera = async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: 'environment' }
         });
-  
+
         if (!isMounted) {
-          // Component unmounted before stream ready
-          stream.getTracks().forEach(track => track.stop());
+          stream.getTracks().forEach(t => t.stop());
           return;
         }
-  
+
         streamRef.current = stream;
-  
+
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           try {
@@ -46,75 +106,25 @@ function QRScanModal({ onClose, mode = 'ENTRY' }) {
         setStatus({ type: 'error', message: 'Camera access denied or unavailable.' });
       }
     };
-  
+
     startCamera();
-  
+
     return () => {
       isMounted = false;
       cancelAnimationFrame(rafRef.current);
-      streamRef.current?.getTracks().forEach(track => track.stop());
+      streamRef.current?.getTracks().forEach(t => t.stop());
     };
-  }, []);
+  }, [scanFrame]);
 
-  // ── QR scan loop ──────────────────────────────────
-  const scanFrame = () => {
-    const video  = videoRef.current;
-    const canvas = canvasRef.current;
-
-    if (video && canvas && video.readyState === video.HAVE_ENOUGH_DATA) {
-      const ctx = canvas.getContext('2d');
-      canvas.width  = video.videoWidth;
-      canvas.height = video.videoHeight;
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const code = jsQR(imageData.data, imageData.width, imageData.height);
-
-      if (code && !scanned) {
-        setScanned(true);
-        handleQRResult(code.data);
-        return;
-      }
-    }
-
-    rafRef.current = requestAnimationFrame(scanFrame);
-  };
-
-  // ── Submit decoded QR ─────────────────────────────
-  const handleQRResult = async (qrData) => {
-    setLoading(true);
+  // ── Retry handler ─────────────────────────────────────────────────────
+  // Before: only reset state — the RAF loop was already dead, so nothing happened.
+  // Now: reset the ref AND explicitly restart the scan loop.
+  const handleRetry = () => {
+    if (loading) return;
+    scannedRef.current = false;           // re-arm
     setStatus(null);
-    try {
-      const res = await fetch('http://localhost:5000/api/qrscan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          qr_data: qrData,
-          mode,        
-        }),
-      });
-  
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'QR scan failed.');
-  
-      setStatus({ type: 'success', message: data.message });
-      
-      // Determine the name: student or visitor
-      const name = data.student || data.visitor || "Unknown";
-  
-      onClose();
-      showEntryExitAlert({
-        action:     data.action,
-        student:    name,
-        department: data.department, // undefined for visitor, safe to leave
-      });
-  
-    } catch (err) {
-      setStatus({ type: 'error', message: err.message });
-      setScanned(false);
-    } finally {
-      setLoading(false);
-    }
+    cancelAnimationFrame(rafRef.current); // cancel any lingering frame
+    rafRef.current = requestAnimationFrame(scanFrame); // restart loop
   };
 
   return (
@@ -137,8 +147,10 @@ function QRScanModal({ onClose, mode = 'ENTRY' }) {
           </div>
 
           <p className="modal-hint">
-            <span style={{ fontWeight: 'bold' }}>For Student: </span>Position your QR found in school ID to the scanner.* <br />
-            <span style={{ fontWeight: 'bold' }}>For Visitor: </span>Position your QR receive from the email.*
+            <span style={{ fontWeight: 'bold' }}>For Student: </span>
+            Position your QR found in school ID to the scanner.*<br />
+            <span style={{ fontWeight: 'bold' }}>For Visitor: </span>
+            Position your QR received from the email.*
           </p>
 
           {loading && <p className="modal-status info">Processing scan…</p>}
@@ -149,7 +161,7 @@ function QRScanModal({ onClose, mode = 'ENTRY' }) {
           <button className="modal-btn cancel" onClick={onClose}>Cancel</button>
           <button
             className="modal-btn submit"
-            onClick={() => { setScanned(false); setStatus(null); }}
+            onClick={handleRetry}
             disabled={loading}
           >
             Retry

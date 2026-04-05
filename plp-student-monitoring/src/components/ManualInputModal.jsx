@@ -8,6 +8,24 @@ function ManualInputModal({ onClose, mode = 'ENTRY' }) {
   const [status, setStatus]       = useState(null);
   const [loading, setLoading]     = useState(false);
 
+  // Format student ID input as "YY-XXXXX" ----------------------
+  const handleStudentIdChange = (e) => {
+    // Strip everything except digits
+    const digits = e.target.value.replace(/\D/g, "");
+
+    let formatted = digits;
+
+    // Auto-insert dash after the first 2 digits
+    if (digits.length >= 2) {
+      const year   = digits.slice(0, 2);
+      const number = digits.slice(2, 7); // max 5 digits after the dash
+      formatted = number.length > 0 ? `${year}-${number}` : year;
+    }
+
+    setStudentId(formatted);
+    setFormErrors(p => ({ ...p, studentId: "" }));
+  };
+  
   const handleSubmit = async () => {
     if (!studentId.trim()) {
       setStatus({ type: 'error', message: 'Please enter your Student ID number.' });
@@ -43,6 +61,8 @@ function ManualInputModal({ onClose, mode = 'ENTRY' }) {
     }
   };
 
+
+
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-box" onClick={e => e.stopPropagation()}>
@@ -57,9 +77,10 @@ function ManualInputModal({ onClose, mode = 'ENTRY' }) {
           <input
             className="modal-input"
             type="text"
+            maxLength={8}
             placeholder="e.g. 23-00123"
             value={studentId}
-            onChange={e => setStudentId(e.target.value)}
+            onChange={handleStudentIdChange}
             onKeyDown={e => e.key === 'Enter' && handleSubmit()}
             disabled={loading}
             autoFocus

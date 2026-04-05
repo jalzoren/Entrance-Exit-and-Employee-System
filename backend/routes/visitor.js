@@ -1,10 +1,10 @@
 // visitor.js
-const express = require('express');
-const router  = express.Router();
-const db      = require('../src/db');
-const { getPhTime } = require('../src/time');
+const express    = require('express');
+const router     = express.Router();
+const db         = require('../src/db');
+const { getTodayPhRange } = require('../src/time'); // no pool arg needed
 
-const QRCode = require('qrcode');
+const QRCode     = require('qrcode');
 const { v4: uuidv4 } = require('uuid');
 const nodemailer = require('nodemailer');
 
@@ -25,16 +25,16 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ message: 'Reason for visit is required.' });
 
   try {
-    const now = getPhTime();
+    // ── Server-authoritative PH time ───────────────────────────────────
+    const { now, dayStart, dayEnd } = await getTodayPhRange();
 
-    const today = now.getFullYear() + '-' +
-                  String(now.getMonth() + 1).padStart(2, '0') + '-' +
-                  String(now.getDate()).padStart(2, '0');
-
+    // ── Check if visitor already entered today (BETWEEN, not DATE()) ───
     const [existingLogs] = await db.query(
       `SELECT * FROM visitor_logs
-       WHERE email = ? AND DATE(log_time) = ? AND action = 'ENTRY'`,
-      [email.trim(), today]
+       WHERE email = ?
+         AND log_time BETWEEN ? AND ?
+         AND action = 'ENTRY'`,
+      [email.trim(), dayStart, dayEnd]
     );
 
     if (existingLogs.length > 0) {
@@ -43,35 +43,25 @@ router.post('/', async (req, res) => {
         action: 'ALREADY_ENTERED',
       });
     }
-  
+
     const qrToken = uuidv4();
-    const qrData = `VISITOR_EXIT:${qrToken}`;
-    const qrImage = await QRCode.toDataURL(qrData); 
+    const qrData  = `VISITOR_EXIT:${qrToken}`;
+    const qrImage = await QRCode.toDataURL(qrData);
 
     await db.query(
       `INSERT INTO visitor_logs (full_name, email, reason, other_reason, action, log_time, qr_token)
        VALUES (?, ?, ?, ?, 'ENTRY', ?, ?)`,
-      [
-        full_name.trim(),
-        email.trim(),
-        reason.trim(),
-        other_reason?.trim() || null,
-        now,
-        qrToken,
-      ]
+      [full_name.trim(), email.trim(), reason.trim(), other_reason?.trim() || null, now, qrToken]
     );
 
     const transporter = nodemailer.createTransport({
       service: 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
+      auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
     });
 
     await transporter.sendMail({
-      from: `"Visitor System" <${process.env.EMAIL_USER}>`,
-      to: email,
+      from:    `"Visitor System" <${process.env.EMAIL_USER}>`,
+      to:      email,
       subject: 'Your Visitor QR Code (EXIT PASS)',
       html: `
         <h3>Hello ${full_name},</h3>
@@ -82,14 +72,12 @@ router.post('/', async (req, res) => {
       `,
       attachments: [{
         filename: 'visitor_qr.png',
-        content: Buffer.from(qrImage.split(',')[1], 'base64'),
-        cid: 'visitorqr'
-      }]
+        content:  Buffer.from(qrImage.split(',')[1], 'base64'),
+        cid:      'visitorqr',
+      }],
     });
 
-    return res.json({
-      message: `Visitor pass issued for ${full_name.trim()}. Welcome!`,
-    });
+    return res.json({ message: `Visitor pass issued for ${full_name.trim()}. Welcome!` });
 
   } catch (err) {
     console.error('[Visitor Log Error]', err);

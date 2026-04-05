@@ -12,6 +12,7 @@ const recognizeRoute = require("./routes/recognize");
 const manualEntryRoute  = require('./routes/manualEntry');
 const qrScanRoute       = require('./routes/qrScan');
 const visitorRoute      = require('./routes/visitor');
+const visitorExitRoute    = require('./routes/visitor-exit');
 const programRoutes = require('./routes/programs');
 
 const PORT = process.env.PORT || 5000;
@@ -27,6 +28,7 @@ app.use('/api', programRoutes);
 app.use('/api/manualentry', manualEntryRoute);
 app.use('/api/qrscan', qrScanRoute);
 app.use('/api/visitor', visitorRoute);
+app.use('/api/visitor-exit', visitorExitRoute);
 
 // Start server
 app.listen(PORT, () => {

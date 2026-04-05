@@ -41,6 +41,7 @@ function RegisterStudent({ onClose }) {
   const [departments, setDepartments] = useState([]);
   const [programs, setPrograms] = useState([]);
   const [filteredPrograms, setFilteredPrograms] = useState([]);
+  const [emailManuallyEdited, setEmailManuallyEdited] = useState(false);
   const maxPhotos = 5;
 
   const emailIdRef = useRef(null);
@@ -84,11 +85,50 @@ function RegisterStudent({ onClose }) {
     }
   }, [college, programs]);
 
+  // Auto-generate email 
+  useEffect(() => {
+    if (emailManuallyEdited) return;
+
+    const cleanLast  = lastName.trim().toLowerCase().replace(/\s+/g, "");
+    const cleanFirst = firstName.trim().toLowerCase().replace(/\s+/g, "");
+
+    if (!cleanLast) {
+      setEmailId("");
+      return;
+    }
+
+    const generated = cleanFirst
+      ? `${cleanLast}_${cleanFirst}@plpasig.edu.ph`
+      : `${cleanLast}@plpasig.edu.ph`;
+
+    setEmailId(generated);
+    setFormErrors(prev => ({ ...prev, emailId: "" }));
+  }, [firstName, lastName, emailManuallyEdited]);
+
+  // Handle Enter key to move focus to next field
   const handleEnter = (e, nextRef) => {
     if (e.key === "Enter") {
       e.preventDefault(); // prevent form submit
       nextRef.current?.focus();
     }
+  };
+
+  // Format student ID input as "YY-XXXXX" ----------------------
+  const handleStudentIdChange = (e) => {
+    // Strip everything except digits
+    const digits = e.target.value.replace(/\D/g, "");
+
+    let formatted = digits;
+
+    // Auto-insert dash after the first 2 digits
+    if (digits.length >= 2) {
+      const year   = digits.slice(0, 2);
+      const number = digits.slice(2, 7); // max 5 digits after the dash
+      formatted = number.length > 0 ? `${year}-${number}` : year;
+    }
+
+    setStudentId(formatted);
+    setFormErrors(p => ({ ...p, studentId: "" }));
   };
 
   // Tracks which required fields have failed validation
@@ -118,7 +158,11 @@ function RegisterStudent({ onClose }) {
   const validateStep1 = () => {
   const plpasigRegex = /^[a-zA-Z0-9._%+-]+@plpasig\.edu\.ph$/i;
   const errors = {
-      studentId: !studentId.toString().trim()  ? "Student ID is required"        : "",
+      studentId: !studentId.toString().trim()
+                  ? "Student ID is required"
+                  : !/^\d{2}-(?!00000)\d{5}$/.test(studentId.trim())
+                  ? "Format must be YY-NNNNN (e.g. 23-00290), number 00001–99999"
+                  : "",
       lastName:  !lastName.trim()              ? "Last Name is required"          : "",
       firstName: !firstName.trim()             ? "First Name is required"         : "",
       college:   !college                      ? "College Department is required" : "",
@@ -378,40 +422,6 @@ function RegisterStudent({ onClose }) {
       {currentStep === 1 ? (
         <div className="register-form">
           <div className="form-note">* Required fields</div>
-
-          <div className="form-row">
-            <div className="input-group">
-              <label>First Name <span className="required">*</span></label>
-              <input
-                type="text"
-                placeholder="e.g Juan"
-                value={firstName}
-                onChange={(e) => { setFirstName(e.target.value); setFormErrors(p => ({...p, firstName: ""})); }}
-                className={formErrors.firstName ? "input-error" : ""}
-                style={{ textTransform: 'uppercase' }}
-                ref={firstNameRef}
-                onKeyDown={(e) => handleEnter(e, lastNameRef)}
-                required
-              />
-              {formErrors.firstName && <span className="field-error">{formErrors.firstName}</span>}
-            </div>
-            <div className="input-group">
-              <label>Email <span className="required">*</span></label>
-              <input
-                type="email"
-                placeholder="e.g delacruz_juan@plpasig.edu.ph"
-                value={emailId}
-                onChange={(e) => { setEmailId(e.target.value); setFormErrors(p => ({...p, emailId: ""})); }}
-                className={formErrors.emailId ? "input-error" : ""}
-                ref={emailIdRef}
-                onKeyDown={(e) => handleEnter(e, studentIdRef)}
-                required
-              />
-              {formErrors.emailId && <span className="field-error">{formErrors.emailId}</span>}
-            </div>
-            
-          </div>
-
           <div className="form-row">
             <div className="input-group">
               <label>Last Name <span className="required">*</span></label>
@@ -419,7 +429,11 @@ function RegisterStudent({ onClose }) {
                 type="text"
                 placeholder="e.g. Dela Cruz"
                 value={lastName}
-                onChange={(e) => { setLastName(e.target.value); setFormErrors(p => ({...p, lastName: ""})); }}
+                onChange={(e) => {
+                  setLastName(e.target.value);
+                  setEmailManuallyEdited(false); // re-enable auto-fill when name changes
+                  setFormErrors(p => ({...p, lastName: ""}));
+                }}
                 className={formErrors.lastName ? "input-error" : ""}
                 style={{ textTransform: 'uppercase' }}
                 ref={lastNameRef}
@@ -431,10 +445,11 @@ function RegisterStudent({ onClose }) {
             <div className="input-group">
               <label>Student ID <span className="required">*</span></label>
               <input
-                type="number"
-                placeholder="e.g 2300001"
+                type="text"
+                maxLength={8}
+                placeholder="e.g 23-00290"
                 value={studentId}
-                onChange={(e) => { setStudentId(e.target.value); setFormErrors(p => ({...p, studentId: ""})); }}
+                onChange={handleStudentIdChange}
                 className={formErrors.studentId ? "input-error" : ""}
                 ref={studentIdRef}
                 onKeyDown={(e) => handleEnter(e, collegeRef)}
@@ -442,21 +457,27 @@ function RegisterStudent({ onClose }) {
               />
               {formErrors.studentId && <span className="field-error">{formErrors.studentId}</span>}
             </div>
-            
           </div>
 
           <div className="form-row">
             <div className="input-group">
-              <label>Middle Name</label>
+              <label>First Name <span className="required">*</span></label>
               <input
                 type="text"
-                placeholder="e.g Smith"
-                value={middleName}
-                onChange={(e) => setMiddleName(e.target.value)}
+                placeholder="e.g Juan"
+                value={firstName}
+                onChange={(e) => {
+                  setFirstName(e.target.value);
+                  setEmailManuallyEdited(false); // re-enable auto-fill when name changes
+                  setFormErrors(p => ({...p, firstName: ""}));
+                }}
+                className={formErrors.firstName ? "input-error" : ""}
                 style={{ textTransform: 'uppercase' }}
-                ref={middleNameRef}
-                onKeyDown={(e) => handleEnter(e, extensionRef)}
+                ref={firstNameRef}
+                onKeyDown={(e) => handleEnter(e, lastNameRef)}
+                required
               />
+              {formErrors.firstName && <span className="field-error">{formErrors.firstName}</span>}
             </div>
             <div className="input-group">
               <label>College Department <span className="required">*</span></label>
@@ -475,9 +496,22 @@ function RegisterStudent({ onClose }) {
               </select>
               {formErrors.college && <span className="field-error">{formErrors.college}</span>}
             </div>
+            
           </div>
 
           <div className="form-row">
+            <div className="input-group">
+              <label>Middle Name</label>
+              <input
+                type="text"
+                placeholder="e.g Smith"
+                value={middleName}
+                onChange={(e) => setMiddleName(e.target.value)}
+                style={{ textTransform: 'uppercase' }}
+                ref={middleNameRef}
+                onKeyDown={(e) => handleEnter(e, extensionRef)}
+              />
+            </div>
             <div className="input-group">
               <label>Program <span className="required">*</span></label>
               <select
@@ -496,9 +530,12 @@ function RegisterStudent({ onClose }) {
               </select>
               {formErrors.program && <span className="field-error">{formErrors.program}</span>}
             </div>
+          </div>
+
+          <div className="form-row">
             <div className="input-group">
               <label>Extension Name</label>
-              <select value={extension} onChange={(e) => setExtension(e.target.value)} ref={extensionRef} onKeyDown={(e) => handleEnter(e, emailIdRef)}>
+              <select value={extension} onChange={(e) => setExtension(e.target.value)} ref={extensionRef} onKeyDown={(e) => handleEnter(e, studentIdRef)}>
                 <option value="">Select Extension Name</option>
                 <option value="Jr.">Jr.</option>
                 <option value="Sr.">Sr.</option>
@@ -508,11 +545,7 @@ function RegisterStudent({ onClose }) {
                 <option value="IV">IV</option>
               </select>
             </div>
-          </div>
-
-          <div className="form-row">
-            <div className='year-status'>
-              <div className="input-group">
+            <div className="input-group">
                 <label>Year Level <span className="required">*</span></label>
                 <input
                   type="number"
@@ -527,27 +560,47 @@ function RegisterStudent({ onClose }) {
                 />
                 {formErrors.yearLevel && <span className="field-error">{formErrors.yearLevel}</span>}
               </div>
-              <div className="input-group">
-                <label>Status <span className="required">*</span></label>
-                <select
-                  value={status}
-                  onChange={(e) => { setStatus(e.target.value); setFormErrors(p => ({...p, status: ""})); }}
-                  className={formErrors.status ? "input-error" : ""}
-                  ref={statusRef}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      handleNext();
-                    }
-                  }}
-                  required
-                >
-                  <option value="">Select Status</option>
-                  <option value="Regular">Regular</option>
-                  <option value="Irregular">Irregular</option>
-                </select>
-                {formErrors.status && <span className="field-error">{formErrors.status}</span>}
-              </div>
+          </div>
+
+          <div className="form-row">
+            <div className="input-group">
+              <label>Email <span className="required">*</span></label>
+              <input
+                type="email"
+                placeholder="e.g delacruz_juan@plpasig.edu.ph"
+                value={emailId}
+                onChange={(e) => {
+                  setEmailId(e.target.value);
+                  setEmailManuallyEdited(true);  // user took control — stop auto-fill
+                  setFormErrors(p => ({...p, emailId: ""}));
+                }}
+                className={formErrors.emailId ? "input-error" : ""}
+                ref={emailIdRef}
+                onKeyDown={(e) => handleEnter(e, studentIdRef)}
+                required
+              />
+              {formErrors.emailId && <span className="field-error">{formErrors.emailId}</span>}
+            </div>
+            <div className="input-group">
+              <label>Status <span className="required">*</span></label>
+              <select
+                value={status}
+                onChange={(e) => { setStatus(e.target.value); setFormErrors(p => ({...p, status: ""})); }}
+                className={formErrors.status ? "input-error" : ""}
+                ref={statusRef}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleNext();
+                  }
+                }}
+                required
+              >
+                <option value="">Select Status</option>
+                <option value="Regular">Regular</option>
+                <option value="Irregular">Irregular</option>
+              </select>
+              {formErrors.status && <span className="field-error">{formErrors.status}</span>}
             </div>
           </div>
 

@@ -2,23 +2,23 @@
 import Swal from 'sweetalert2';
 
 const ENTRY_GREETINGS = [
-  "Mabuhay! Ready to learn,",
-  "Kamusta! Let's start the day,",
-  "Magandang Araw,",
-  "Magandang Araw! Keep it up,",
-  "Kumusta? Attendance check,",
-  "Hi! Ready for class,",
+  "Mabuhay! Ready to learn",
+  "Kamusta! Let's start the day",
+  "Magandang Araw",
+  "Magandang Araw! Keep it up",
+  "Kumusta? Attendance check",
+  "Hi! Ready for class",
   "Maligayang pagdating!",
 ];
 
 const EXIT_GREETINGS = [
-  "Ingat sa labas!",
-  "Salamat! Bumalik ka agad ha,",
-  "See you later,",
-  "Take care out there,",
-  "Hanggang muli,",
-  "Stay safe,",
-  "Come back soon,",
+  "Ingat sa paguwi!",
+  "Salamat! Bumalik ka agad ha",
+  "See you later",
+  "Take care out there",
+  "Hanggang muli",
+  "Stay safe",
+  "Come back soon",
 ];
 
 
@@ -62,6 +62,8 @@ export function showEntryExitAlert({ action, student, department }) {
           color: rgba(255,255,255,0.75);
           margin: 0;
           font-weight: 400;
+          width: 100%;
+          text-align: center;
         ">${greeting}</p>
 
         <!-- Student Name -->
