@@ -1,5 +1,4 @@
-// RegisterStudent.jsx
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import axios from "axios";
 import Swal from 'sweetalert2';
 import '../componentscss/RegisterStudent.css';
@@ -36,8 +35,12 @@ function RegisterStudent({ onClose }) {
   const [middleName, setMiddleName] = useState("");
   const [yearLevel, setYearLevel] = useState("");
   const [college, setCollege] = useState("");
+  const [program, setProgram] = useState("");
   const [extension, setExtension] = useState("");
   const [status, setStatus] = useState("");
+  const [departments, setDepartments] = useState([]);
+  const [programs, setPrograms] = useState([]);
+  const [filteredPrograms, setFilteredPrograms] = useState([]);
   const maxPhotos = 5;
 
   const emailIdRef = useRef(null);
@@ -47,8 +50,39 @@ function RegisterStudent({ onClose }) {
   const extensionRef = useRef(null);
   const studentIdRef = useRef(null);
   const collegeRef = useRef(null);
+  const programRef = useRef(null);
   const yearLevelRef = useRef(null);
   const statusRef = useRef(null);
+
+  // Fetch departments and programs from backend
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const deptResponse = await fetch('http://localhost:5000/api/departments');
+        const deptData = await deptResponse.json();
+        setDepartments(deptData);
+        
+        const progResponse = await fetch('http://localhost:5000/api/programs');
+        const progData = await progResponse.json();
+        setPrograms(progData);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    };
+    fetchData();
+  }, []);
+
+  // Filter programs when department changes
+  useEffect(() => {
+    if (college) {
+      const filtered = programs.filter(prog => prog.department === college);
+      setFilteredPrograms(filtered);
+      setProgram('');
+    } else {
+      setFilteredPrograms([]);
+      setProgram('');
+    }
+  }, [college, programs]);
 
   const handleEnter = (e, nextRef) => {
     if (e.key === "Enter") {
@@ -65,6 +99,7 @@ function RegisterStudent({ onClose }) {
     lastName:   "",
     firstName:  "",
     college:    "",
+    program:    "",
     yearLevel:  "",
     status:     "",
   });
@@ -87,6 +122,7 @@ function RegisterStudent({ onClose }) {
       lastName:  !lastName.trim()              ? "Last Name is required"          : "",
       firstName: !firstName.trim()             ? "First Name is required"         : "",
       college:   !college                      ? "College Department is required" : "",
+      program:   !program                      ? "Program is required"            : "",
       yearLevel: !yearLevel.toString().trim()  ? "Year Level is required"         : "",
       status:    !status                       ? "Status is required"             : "",
       emailId:   !emailId.trim()
@@ -255,6 +291,7 @@ function RegisterStudent({ onClose }) {
           middle_name:        middleName,
           extension_name:     extension,
           college_department: college,
+          program:            program,
           year_level:         yearLevel,
           status:             status,
           images:             validImages
@@ -428,23 +465,37 @@ function RegisterStudent({ onClose }) {
                 onChange={(e) => { setCollege(e.target.value); setFormErrors(p => ({...p, college: ""})); }}
                 className={formErrors.college ? "input-error" : ""}
                 ref={collegeRef}
-                onKeyDown={(e) => handleEnter(e, yearLevelRef)}
+                onKeyDown={(e) => handleEnter(e, programRef)}
                 required
               >
                 <option value="">Select College Department</option>
-                <option value="College of Nursing">College of Nursing</option>
-                <option value="College of Engineering">College of Engineering</option>
-                <option value="College of Education">College of Education</option>
-                <option value="College of Computer Studies">College of Computer Studies</option>
-                <option value="College of Arts and Science">College of Arts and Science</option>
-                <option value="College of Business and Accountancy">College of Business and Accountancy</option>
-                <option value="College of Hospitality Management">College of Hospitality Management</option>
+                {departments.map((dept) => (
+                  <option key={dept} value={dept}>{dept}</option>
+                ))}
               </select>
               {formErrors.college && <span className="field-error">{formErrors.college}</span>}
             </div>
           </div>
 
           <div className="form-row">
+            <div className="input-group">
+              <label>Program <span className="required">*</span></label>
+              <select
+                value={program}
+                onChange={(e) => { setProgram(e.target.value); setFormErrors(p => ({...p, program: ""})); }}
+                className={formErrors.program ? "input-error" : ""}
+                ref={programRef}
+                onKeyDown={(e) => handleEnter(e, yearLevelRef)}
+                disabled={!college}
+                required
+              >
+                <option value="">{college ? "Select Program" : "Select Department First"}</option>
+                {filteredPrograms.map((prog) => (
+                  <option key={prog.id} value={prog.programName}>{prog.programName} ({prog.programCode})</option>
+                ))}
+              </select>
+              {formErrors.program && <span className="field-error">{formErrors.program}</span>}
+            </div>
             <div className="input-group">
               <label>Extension Name</label>
               <select value={extension} onChange={(e) => setExtension(e.target.value)} ref={extensionRef} onKeyDown={(e) => handleEnter(e, emailIdRef)}>
@@ -457,6 +508,9 @@ function RegisterStudent({ onClose }) {
                 <option value="IV">IV</option>
               </select>
             </div>
+          </div>
+
+          <div className="form-row">
             <div className='year-status'>
               <div className="input-group">
                 <label>Year Level <span className="required">*</span></label>
