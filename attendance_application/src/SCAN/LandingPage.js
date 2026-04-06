@@ -7,8 +7,19 @@ import LoginPage from './Adminlogin';
 
 
 
+// ── Keys shared with Settingspage ──────────────────────────────────────────
+const LOGO_KEY = 'institution_logo';
+const NAME_KEY = 'institution_name';
+
 function EmployeePage({ onBack, onNavigateAdmin }) {
   const [currentTime, setCurrentTime] = useState(new Date());
+  
+  // ── Branding (logo + name) ─────────────────────────────────────────────
+  const [branding, setBranding] = useState({
+    logo: localStorage.getItem(LOGO_KEY) || null,
+    name: localStorage.getItem(NAME_KEY) || 'INSTITUTIONAL ADMIN SUPPORT'
+  });
+
   const [cameraActive, setCameraActive] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState('');
   const [eventExpanded, setEventExpanded] = useState(false);
@@ -306,24 +317,29 @@ function EmployeePage({ onBack, onNavigateAdmin }) {
 
    
       <div className="logo-container logo-left">
-        <img 
-          src={`${process.env.PUBLIC_URL}/LOGO.png`} 
-          alt="Pasig City Logo" 
-          className="logo"
-        />
+        {branding.logo ? (
+          <img 
+            src={branding.logo} 
+            alt="Institution Logo" 
+            className="logo"
+            style={{ borderRadius: '50%', objectFit: 'cover' }}
+          />
+        ) : (
+          <img 
+            src={`${process.env.PUBLIC_URL}/LOGO.png`} 
+            alt="Default Logo" 
+            className="logo"
+          />
+        )}
       </div>
 
-      <div className="logo-container logo-right">
-        <img 
-          src={`${process.env.PUBLIC_URL}/ccs.png`} 
-          alt="CCS Logo" 
-          className="logo"
-        />
-      </div>
+      {/* Removed right logo container as per request */}
 
       <Container fluid className="main-content px-4">
         <Row className="justify-content-center">
           <Col xs={12} lg={11} xl={10} xxl={9}>
+            {/* Removed Institution Name Branding Header as per request */}
+
             {/* Date and Time Display */}
             <Card className="datetime-card shadow-lg" onClick={handleClockTap} style={{ cursor: 'default', userSelect: 'none' }}>
               <Card.Body className="text-center">

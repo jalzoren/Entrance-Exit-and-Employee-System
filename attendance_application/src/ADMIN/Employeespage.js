@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Row, Col, Card, Form, Button, Table, Modal, Alert } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import * as faceapi from 'face-api.js';
 import {
   getEmployees,
   addEmployee,
@@ -46,6 +47,163 @@ function EmployeesPage() {
   const [cameraSlot, setCameraSlot] = useState(null);
   const videoRef                    = useRef(null);
   const streamRef                   = useRef(null);
+  const detectionLoopRef            = useRef(null);   // requestAnimationFrame handle
+  const modelsLoadedRef             = useRef(false);  // load models once
+
+  // ── Real-time requirement states ──────────────────────────────────────────
+  // null = unchecked, true = pass (green), false = fail (red)
+  const defaultReqs = {
+    faceDetected:   null,
+    faceCentered:   null,
+    faceInsideCircle: null,
+    fullFaceVisible: null,
+    neutralExpression: null,
+    eyesOpen:       null,
+    noHat:          null, // cannot auto-detect — always null (manual)
+    noGlasses:      null, // cannot auto-detect — always null (manual)
+    goodDistance:   null,
+    headUpright:    null,
+  };
+  const [reqs, setReqs] = useState(defaultReqs);
+
+  // Load face-api models once
+  useEffect(() => {
+    const loadModels = async () => {
+      if (modelsLoadedRef.current) return;
+      try {
+        await Promise.all([
+          faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
+          faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
+          faceapi.nets.faceExpressionNet.loadFromUri('/models'),
+        ]);
+        modelsLoadedRef.current = true;
+      } catch (err) {
+        console.error('Could not load face-api models:', err);
+      }
+    };
+    loadModels();
+  }, []);
+
+  // ── Detection loop — runs every animation frame while camera is open ──────
+  const runDetectionLoop = async () => {
+    if (!videoRef.current || videoRef.current.readyState < 2) {
+      detectionLoopRef.current = requestAnimationFrame(runDetectionLoop);
+      return;
+    }
+
+    const video = videoRef.current;
+    const vw = video.videoWidth;
+    const vh = video.videoHeight;
+
+    // Ellipse guide — matches the SVG overlay (32% of width, 38% of height)
+    const cx = vw * 0.5;
+    const cy = vh * 0.5;
+    const rx = vw * 0.32;
+    const ry = vh * 0.38;
+
+    try {
+      const detection = await faceapi
+        .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.4 }))
+        .withFaceLandmarks()
+        .withFaceExpressions();
+
+      if (!detection) {
+        setReqs(prev => ({
+          ...prev,
+          faceDetected:    false,
+          faceCentered:    false,
+          faceInsideCircle: false,
+          fullFaceVisible: false,
+          neutralExpression: false,
+          eyesOpen:        false,
+          goodDistance:    false,
+          headUpright:     false,
+        }));
+      } else {
+        const box       = detection.detection.box;
+        const landmarks = detection.landmarks;
+        const exprs     = detection.expressions;
+
+        // Face center
+        const faceCX = box.x + box.width  / 2;
+        const faceCY = box.y + box.height / 2;
+
+        // 1. Face detected
+        const faceDetected = true;
+
+        // 2. Face centered (face center within 15% of ellipse center)
+        const faceCentered =
+          Math.abs(faceCX - cx) < vw * 0.10 &&
+          Math.abs(faceCY - cy) < vh * 0.10;
+
+        // 3. Face inside circle — all 4 corners of bounding box inside ellipse
+        const corners = [
+          [box.x,             box.y            ],
+          [box.x + box.width, box.y            ],
+          [box.x,             box.y + box.height],
+          [box.x + box.width, box.y + box.height],
+        ];
+        const faceInsideCircle = corners.every(([px, py]) =>
+          ((px - cx) ** 2) / (rx ** 2) + ((py - cy) ** 2) / (ry ** 2) <= 1
+        );
+
+        // 4. Full face visible (bounding box within video frame)
+        const fullFaceVisible =
+          box.x > 0 && box.y > 0 &&
+          box.x + box.width  < vw &&
+          box.y + box.height < vh;
+
+        // 5. Neutral expression (neutral is dominant)
+        const neutralExpression = exprs.neutral > 0.5;
+
+        // 6. Eyes open — check eye aspect ratio via landmarks
+        const leftEye  = landmarks.getLeftEye();   // 6 points
+        const rightEye = landmarks.getRightEye();  // 6 points
+        const eyeAR = (eye) => {
+          const h1 = Math.abs(eye[1].y - eye[5].y);
+          const h2 = Math.abs(eye[2].y - eye[4].y);
+          const w  = Math.abs(eye[0].x - eye[3].x);
+          return (h1 + h2) / (2 * w);
+        };
+        const eyesOpen = eyeAR(leftEye) > 0.2 && eyeAR(rightEye) > 0.2;
+
+        // 7. Good distance — face bounding box between 20–60% of frame width
+        const faceRatio  = box.width / vw;
+        const goodDistance = faceRatio > 0.20 && faceRatio < 0.60;
+
+        // 8. Head upright — eyes should be roughly on the same horizontal line
+        const leftPupil  = landmarks.getLeftEye()[0];
+        const rightPupil = landmarks.getRightEye()[3];
+        const eyeAngle   = Math.abs(Math.atan2(
+          rightPupil.y - leftPupil.y,
+          rightPupil.x - leftPupil.x
+        ) * (180 / Math.PI));
+        const headUpright = eyeAngle < 15;
+
+        setReqs({
+          faceDetected,
+          faceCentered,
+          faceInsideCircle,
+          fullFaceVisible,
+          neutralExpression,
+          eyesOpen,
+          noHat:     null,  // cannot detect automatically
+          noGlasses: null,  // cannot detect automatically
+          goodDistance,
+          headUpright,
+        });
+      }
+    } catch (err) {
+      // silently ignore per-frame errors
+    }
+
+    detectionLoopRef.current = requestAnimationFrame(runDetectionLoop);
+  };
+
+  // All auto-checkable requirements passed?
+  const allAutoReqsMet = reqs.faceDetected && reqs.faceCentered && reqs.faceInsideCircle &&
+    reqs.fullFaceVisible && reqs.neutralExpression && reqs.eyesOpen &&
+    reqs.goodDistance && reqs.headUpright;
 
   useEffect(() => {
     loadEmployees();
@@ -155,12 +313,18 @@ function EmployeesPage() {
 
   const openCamera = async (index) => {
     setCameraSlot(index);
+    setReqs(defaultReqs);
     setShowCamera(true);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
       streamRef.current = stream;
       setTimeout(() => {
-        if (videoRef.current) videoRef.current.srcObject = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.onloadeddata = () => {
+            detectionLoopRef.current = requestAnimationFrame(runDetectionLoop);
+          };
+        }
       }, 100);
     } catch (err) {
       alert('Camera access denied or not available.');
@@ -184,12 +348,17 @@ function EmployeesPage() {
   };
 
   const closeCamera = () => {
+    if (detectionLoopRef.current) {
+      cancelAnimationFrame(detectionLoopRef.current);
+      detectionLoopRef.current = null;
+    }
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(t => t.stop());
       streamRef.current = null;
     }
     setShowCamera(false);
     setCameraSlot(null);
+    setReqs(defaultReqs);
   };
 
   const handleSubmit = async (e) => {
@@ -218,7 +387,7 @@ function EmployeesPage() {
       }
 
       const photosToSave = imageSlots.filter(s => s !== null).map(s => s.preview);
-      if (employeeId) {
+      if (employeeId && photosToSave.length > 0) {
         await saveEmployeePhotos(employeeId, photosToSave);
       }
 
@@ -443,15 +612,161 @@ function EmployeesPage() {
       </Modal>
 
       {/* Camera Modal */}
-      <Modal show={showCamera} onHide={closeCamera} centered size="md">
-        <Modal.Header closeButton>
-          <Modal.Title> Capture Photo — Slot {(cameraSlot ?? 0) + 1}</Modal.Title>
+      <Modal show={showCamera} onHide={closeCamera} centered size="xl">
+        <Modal.Header closeButton style={{ background: '#1a1a2e', borderBottom: '1px solid #333' }}>
+          <Modal.Title style={{ color: '#fff', fontWeight: 700 }}>
+             Face Capture — Photo Slot {(cameraSlot ?? 0) + 1}
+          </Modal.Title>
         </Modal.Header>
-        <Modal.Body style={{ textAlign: 'center' }}>
-          <video ref={videoRef} autoPlay playsInline style={{ width: '100%', borderRadius: 8, background: '#000', maxHeight: 340 }} />
-          <div style={{ marginTop: 16, display: 'flex', gap: 10, justifyContent: 'center' }}>
-            <Button variant="secondary" onClick={closeCamera}>Cancel</Button>
-            <Button variant="success" onClick={capturePhoto}>📸 Capture</Button>
+        <Modal.Body style={{ background: '#1a1a2e', padding: 0 }}>
+          <div style={{ display: 'flex', minHeight: 480 }}>
+
+            {/* ── Left: Camera feed with circular guide ── */}
+            <div style={{
+              flex: '0 0 55%', position: 'relative',
+              background: '#000', display: 'flex',
+              alignItems: 'center', justifyContent: 'center',
+              overflow: 'hidden',
+            }}>
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+              />
+
+              {/* Dark overlay with circular cutout */}
+              <svg
+                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
+                viewBox="0 0 100 100"
+                preserveAspectRatio="none"
+              >
+                <defs>
+                  <mask id="circleMask">
+                    <rect width="100" height="100" fill="white" />
+                    <ellipse cx="50" cy="50" rx="32" ry="38" fill="black" />
+                  </mask>
+                </defs>
+                <rect width="100" height="100" fill="rgba(0,0,0,0.55)" mask="url(#circleMask)" />
+                {/* Circle border color: green if all met, red if any fail, grey if unchecked */}
+                <ellipse cx="50" cy="50" rx="32" ry="38"
+                  fill="none"
+                  stroke={allAutoReqsMet ? '#28a745' : reqs.faceDetected === false ? '#dc3545' : '#aaa'}
+                  strokeWidth="0.6"
+                  style={{ filter: `drop-shadow(0 0 4px ${allAutoReqsMet ? '#28a745' : reqs.faceDetected === false ? '#dc3545' : '#aaa'})` }}
+                />
+              </svg>
+
+              {/* Slot badge */}
+              <div style={{
+                position: 'absolute', top: 12, left: 12,
+                background: 'rgba(40,167,69,0.85)', color: '#fff',
+                borderRadius: 20, padding: '3px 12px', fontSize: 12, fontWeight: 700,
+              }}>
+                Slot {(cameraSlot ?? 0) + 1} of {MAX_SLOTS}
+              </div>
+
+              {/* All requirements met banner */}
+              {allAutoReqsMet && (
+                <div style={{
+                  position: 'absolute', top: 12, right: 12,
+                  background: 'rgba(40,167,69,0.9)', color: '#fff',
+                  borderRadius: 20, padding: '3px 12px', fontSize: 12, fontWeight: 700,
+                }}>
+                  ✅ Ready to capture!
+                </div>
+              )}
+
+              {/* Bottom buttons */}
+              <div style={{
+                position: 'absolute', bottom: 16,
+                display: 'flex', gap: 10, justifyContent: 'center', width: '100%',
+              }}>
+                <Button variant="secondary" onClick={closeCamera} style={{ borderRadius: 20, padding: '6px 22px' }}>
+                  Cancel
+                </Button>
+                <Button variant="success" onClick={capturePhoto} style={{ borderRadius: 20, padding: '6px 22px', fontWeight: 700 }}>
+                   Capture
+                </Button>
+              </div>
+            </div>
+
+            {/* ── Right: Live requirements panel ── */}
+            <div style={{ flex: 1, padding: '24px 20px', overflowY: 'auto', borderLeft: '1px solid #2a2a3e' }}>
+              <h6 style={{ color: '#28a745', fontWeight: 700, fontSize: 13, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 14 }}>
+                Face Capture Requirements
+              </h6>
+
+              {(() => {
+                // Each item: { key, icon, label, status }
+                // status: true=green, false=red, null=grey (manual/unchecked)
+                const items = [
+                  { key: 'faceDetected',        label: 'Face detected in frame.',                                           status: reqs.faceDetected },
+                  { key: 'faceCentered',        label: 'Face is centered inside the circular guide.',                       status: reqs.faceCentered },
+                  { key: 'faceInsideCircle',    label: 'Face fits within the recognition circle outline.',                 status: reqs.faceInsideCircle },
+                  { key: 'fullFaceVisible',     label: 'Full face visible — forehead to chin.',                            status: reqs.fullFaceVisible },
+                  { key: 'neutralExpression',   label: 'Neutral expression maintained.',                                   status: reqs.neutralExpression },
+                  { key: 'eyesOpen',            label: 'Both eyes open and clearly visible.',                             status: reqs.eyesOpen },
+                  { key: 'goodDistance',        label: 'Correct distance — not too close or too far.',                    status: reqs.goodDistance },
+                  { key: 'headUpright',         label: 'Head upright, looking directly at the camera — no tilting.',     status: reqs.headUpright },
+                  { key: 'noHat',               label: 'No hats or head coverings (unless religious).',                 status: null },
+                  { key: 'noGlasses',           label: 'No sunglasses or tinted glasses.',                             status: null },
+                ];
+
+                return (
+                  <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {items.map((item) => {
+                      const color  = item.status === true  ? '#28a745'
+                                   : item.status === false ? '#dc3545'
+                                   : '#888';
+                      const bg     = item.status === true  ? 'rgba(40,167,69,0.10)'
+                                   : item.status === false ? 'rgba(220,53,69,0.10)'
+                                   : 'transparent';
+                      const bullet = item.status === true  ? '✅'
+                                   : item.status === false ? '❌'
+                                   : '⬜';
+                      return (
+                        <li key={item.key} style={{
+                          display: 'flex', gap: 10, alignItems: 'flex-start',
+                          background: bg, borderRadius: 6, padding: '6px 8px',
+                          border: `1px solid ${item.status === true ? 'rgba(40,167,69,0.25)' : item.status === false ? 'rgba(220,53,69,0.25)' : 'transparent'}`,
+                          transition: 'all 0.2s',
+                        }}>
+                          <span style={{ fontSize: 14, flexShrink: 0 }}>{bullet}</span>
+                          <span style={{ fontSize: 12, color, lineHeight: 1.5, transition: 'color 0.2s' }}>
+                            {item.label}
+                            {item.status === null && item.key !== 'faceDetected' && (
+                              <span style={{ fontSize: 10, color: '#666', marginLeft: 6 }}>(check manually)</span>
+                            )}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                );
+              })()}
+
+              {/* Warning banner */}
+              <div style={{
+                marginTop: 16, background: 'rgba(255,193,7,0.12)',
+                border: '1px solid rgba(255,193,7,0.4)',
+                borderRadius: 8, padding: '10px 12px',
+                display: 'flex', gap: 8, alignItems: 'flex-start',
+              }}>
+                <span style={{ fontSize: 15, flexShrink: 0 }}>⚠️</span>
+                <span style={{ fontSize: 11.5, color: '#ffc107', lineHeight: 1.5 }}>
+                  Make sure your face fits properly inside the circle for accurate detection.
+                </span>
+              </div>
+
+              {/* Models not loaded warning */}
+              {!modelsLoadedRef.current && (
+                <div style={{ marginTop: 10, fontSize: 11, color: '#888', textAlign: 'center' }}>
+                  Loading face detection models…
+                </div>
+              )}
+            </div>
+
           </div>
         </Modal.Body>
       </Modal>

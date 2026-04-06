@@ -43,8 +43,19 @@ const MailIcon = () => (
   </svg>
 );
 
+// ── Keys shared with Settingspage ──────────────────────────────────────────
+const LOGO_KEY = 'institution_logo';
+const NAME_KEY = 'institution_name';
+
 export default function LoginPage() {
   const [time, setTime] = useState(new Date());
+  
+  // ── Branding (logo + name) ─────────────────────────────────────────────
+  const [branding, setBranding] = useState({
+    logo: localStorage.getItem(LOGO_KEY) || null,
+    name: localStorage.getItem(NAME_KEY) || 'Attendance Management System'
+  });
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
@@ -212,25 +223,26 @@ export default function LoginPage() {
         boxShadow:"0 2px 20px rgba(0,0,0,0.4)", zIndex:10
       }}>
         <span style={{ color:"#e8f5e0", letterSpacing:"0.25em", fontSize:13, fontWeight:600, textTransform:"uppercase" }}>
-          Attendance Management System
+          {branding.name}
         </span>
       </div>
 
-      {/* PLP Logo */}
+      {/* Institution Logo */}
       <div style={{ position:"absolute", top:LOGO_TOP, left:20, zIndex:20 }}>
-        <img src="/LOGO.png" alt="PLP Logo" style={{
-          width:LOGO_SIZE, height:LOGO_SIZE, borderRadius:"50%", objectFit:"cover",
-          border:"3px solid #f0c040", boxShadow:"0 4px 20px rgba(0,0,0,0.6)"
-        }}/>
+        {branding.logo ? (
+          <img src={branding.logo} alt="Institution Logo" style={{
+            width:LOGO_SIZE, height:LOGO_SIZE, borderRadius:"50%", objectFit:"cover",
+            border:"3px solid #f0c040", boxShadow:"0 4px 20px rgba(0,0,0,0.6)"
+          }}/>
+        ) : (
+          <img src="/LOGO.png" alt="Default Logo" style={{
+            width:LOGO_SIZE, height:LOGO_SIZE, borderRadius:"50%", objectFit:"cover",
+            border:"3px solid #f0c040", boxShadow:"0 4px 20px rgba(0,0,0,0.6)"
+          }}/>
+        )}
       </div>
 
-      {/* CCS Logo */}
-      <div style={{ position:"absolute", top:LOGO_TOP, right:20, zIndex:20 }}>
-        <img src="/ccs.png" alt="CCS Logo" style={{
-          width:LOGO_SIZE, height:LOGO_SIZE, borderRadius:"50%", objectFit:"cover",
-          border:"3px solid #f0c040", boxShadow:"0 4px 20px rgba(0,0,0,0.6)"
-        }}/>
-      </div>
+      {/* Removed secondary logo as per request */}
 
       {/* Center card */}
       <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", paddingTop: BAR_HEIGHT + LOGO_SIZE / 2 + 10, zIndex:5 }}>
@@ -260,7 +272,7 @@ export default function LoginPage() {
                 <span style={{ color:"#88eea8", fontSize:11, letterSpacing:"0.15em", fontWeight:600 }}>FACE RECOGNITION PORTAL</span>
               </div>
               <h2 style={{ color:"white", fontSize:26, fontWeight:800, textAlign:"center", margin:"0 0 6px", lineHeight:1.2, textShadow:"0 2px 10px rgba(0,0,0,0.5)" }}>
-                Attendance<br/>Management System
+                {branding.name}
               </h2>
               <div style={{ width:40, height:2, background:"linear-gradient(90deg,transparent,#5de88a,transparent)", margin:"14px 0" }}/>
               <div style={{ background:"rgba(0,0,0,0.35)", borderRadius:12, padding:"10px 20px", border:"1px solid rgba(255,255,255,0.1)", textAlign:"center" }}>
