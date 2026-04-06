@@ -189,11 +189,14 @@ export default function LoginPage() {
   // ── Navigate to AdminDashboard ──
   if (showAdmin) return <AdminDashboard onLogout={() => { setShowAdmin(false); setView("login"); setUsername(""); setPassword(""); setErrorMsg(""); }} />;
 
-  // Logo size
+  // Logo sizes
   const LOGO_SIZE = 100;
+  const LEFT_LOGO_SIZE = 116;
+  const LOGO_OFFSET = Math.max(LOGO_SIZE, LEFT_LOGO_SIZE);
   // Top bar height
   const BAR_HEIGHT = 60;
   const LOGO_TOP = BAR_HEIGHT - LOGO_SIZE / 2;
+  const LEFT_LOGO_TOP = BAR_HEIGHT - LEFT_LOGO_SIZE / 2;
 
   return (
     <div style={{ width:"100vw", height:"100vh", overflow:"hidden", position:"relative", fontFamily:"'Segoe UI', sans-serif" }}>
@@ -232,15 +235,15 @@ export default function LoginPage() {
       </div>
 
       {/* Institution Logo */}
-      <div style={{ position:"absolute", top:LOGO_TOP, left:20, zIndex:20 }}>
+      <div style={{ position:"absolute", top:LEFT_LOGO_TOP, left:20, zIndex:20 }}>
         {branding.logo ? (
           <img src={branding.logo} alt="Institution Logo" style={{
-            width:LOGO_SIZE, height:LOGO_SIZE, borderRadius:"50%", objectFit:"cover",
+            width:LEFT_LOGO_SIZE, height:LEFT_LOGO_SIZE, borderRadius:"50%", objectFit:"cover",
             border:"3px solid #f0c040", boxShadow:"0 4px 20px rgba(0,0,0,0.6)"
           }}/>
         ) : (
           <img src="/LOGO.png" alt="Default Logo" style={{
-            width:LOGO_SIZE, height:LOGO_SIZE, borderRadius:"50%", objectFit:"cover",
+            width:LEFT_LOGO_SIZE, height:LEFT_LOGO_SIZE, borderRadius:"50%", objectFit:"cover",
             border:"3px solid #f0c040", boxShadow:"0 4px 20px rgba(0,0,0,0.6)"
           }}/>
         )}
@@ -249,7 +252,7 @@ export default function LoginPage() {
       {/* Removed secondary logo as per request */}
 
       {/* Center card */}
-      <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", paddingTop: BAR_HEIGHT + LOGO_SIZE / 2 + 10, zIndex:5 }}>
+      <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", paddingTop: BAR_HEIGHT + LOGO_OFFSET / 2 + 10, zIndex:5 }}>
         <div style={{
           display:"flex", width:"min(860px,90vw)", height:"min(420px,65vh)",
           borderRadius:20, overflow:"hidden", boxShadow:"0 25px 80px rgba(0,0,0,0.55)"

@@ -556,7 +556,14 @@ const stopCamera = () => {
         )}
       </div>
 
-      {/* Removed right logo container as per request */}
+      <div className="logo-container logo-right">
+        <img 
+          src={`${process.env.PUBLIC_URL}/CCSlogo.png`} 
+          alt="CCS Logo" 
+          className="logo"
+          style={{ width: '200px', height: '200px' }}
+        />
+      </div>
 
       <Container fluid className="main-content px-4">
         <Row className="justify-content-center">
