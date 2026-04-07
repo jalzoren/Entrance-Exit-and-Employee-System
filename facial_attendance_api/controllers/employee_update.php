@@ -38,7 +38,7 @@ $employee_id   = $data["employee_ID"] ?? null;
 $employee_code = $data["employee_code"] ?? null;
 $firstName     = $data["employee_firstName"] ?? null;
 $lastName      = $data["employee_LastName"] ?? null;
-$email_ID      = $data["email_ID"] ?? null;
+$email         = $data["email"] ?? null; 
 $department_ID = $data["department_ID"] ?? null;
 $position_ID   = $data["position_ID"] ?? null;
 
@@ -57,6 +57,32 @@ if (!$employee_id || !$employee_code || !$firstName || !$lastName) {
 }
 
 try {
+
+    /* ----------------------------------
+       Handle Email (Optional)
+    ---------------------------------- */
+    $email_ID = null;
+    if (!empty($email)) {
+        // Try different column names for email table resilience
+        $emailCol = "email";
+        try {
+            $conn->query("SELECT email_address FROM email LIMIT 1");
+            $emailCol = "email_address";
+        } catch (Exception $e_col) {}
+
+        $checkEmail = $conn->prepare("SELECT email_ID FROM email WHERE $emailCol = ?");
+        $checkEmail->execute([$email]);
+        $existingEmail = $checkEmail->fetch(PDO::FETCH_ASSOC);
+
+        if ($existingEmail) {
+            $email_ID = $existingEmail['email_ID'];
+        } else {
+            // Insert new email
+            $stmtEmail = $conn->prepare("INSERT INTO email ($emailCol) VALUES (?)");
+            $stmtEmail->execute([$email]);
+            $email_ID = $conn->lastInsertId();
+        }
+    }
 
     /* ----------------------------------
        Prevent duplicate employee_code

@@ -39,7 +39,7 @@ function EmployeesPage() {
     employee_LastName:  '',
     department_ID:      '',
     position_ID:        '',
-    email_ID:           '',
+    email:              '', // Changed from email_ID to raw email string
   });
 
   const [saving, setSaving]     = useState(false);
@@ -54,6 +54,7 @@ function EmployeesPage() {
   const streamRef                   = useRef(null);
   const detectionLoopRef            = useRef(null);   // requestAnimationFrame handle
   const modelsLoadedRef             = useRef(false);  // load models once
+  const [showCaptureConfirm, setShowCaptureConfirm] = useState(false);
 
   // ── Real-time requirement states ──────────────────────────────────────────
   // null = unchecked, true = pass (green), false = fail (red)
@@ -257,7 +258,7 @@ function EmployeesPage() {
   const openAddModal = () => {
     setIsEditing(false);
     setEditingId(null);
-    setFormData({ employee_code: '', employee_firstName: '', employee_LastName: '', department_ID: '', position_ID: '', email_ID: '' });
+    setFormData({ employee_code: '', employee_firstName: '', employee_LastName: '', department_ID: '', position_ID: '', email: '' });
     setImageSlots(Array(MAX_SLOTS).fill(null));
     setFeedback({ type: '', message: '' });
     setShowModal(true);
@@ -272,7 +273,7 @@ function EmployeesPage() {
       employee_LastName:  String(emp.employee_LastName  || ''),
       department_ID:      emp.department_ID || '',
       position_ID:        emp.position_ID   || '',
-      email_ID:           emp.email_ID      || '',
+      email:              emp.email         || '',
     });
     setImageSlots(Array(MAX_SLOTS).fill(null));
     setFeedback({ type: '', message: '' });
@@ -374,79 +375,91 @@ const openCamera = async (index) => {
   }
 };
 
-  const capturePhoto = async () => {
+const capturePhoto = async () => {
   if (!videoRef.current) return;
 
-  // Optional: warn if requirements not fully met
   if (!allAutoReqsMet) {
-    const proceed = window.confirm("Some requirements are not met. Capture anyway?");
-    if (!proceed) {
-      return;
-    }
+    setShowCaptureConfirm(true);
+    return;
   }
 
-  try {
-    // 1. Capture frame instantly (this part should feel fast)
-    const canvas = document.createElement('canvas');
-    canvas.width = videoRef.current.videoWidth;
-    canvas.height = videoRef.current.videoHeight;
-    canvas.getContext('2d').drawImage(videoRef.current, 0, 0);
+  // If all reqs met, we just do it
+  await doCapture();
+};
 
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.82);   // good quality + smaller size
-
-    // Show preview immediately so user sees instant feedback
-    setImageSlots(prev => {
-      const updated = [...prev];
-      updated[cameraSlot] = { 
-        preview: dataUrl, 
-        embedding: null,     // will fill later
-        file: null 
-      };
-      return updated;
-    });
-
-    closeCamera();   // close modal right away for better UX
-
-    // 2. Do heavy face processing in background (after closing)
-    setTimeout(async () => {
-      try {
-        const img = await faceapi.fetchImage(dataUrl);
-
-        const detection = await faceapi
-          .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions({
-            scoreThreshold: 0.5,
-            inputSize: 416        // Smaller = significantly faster
-          }))
-          .withFaceLandmarks()
-          .withFaceDescriptor();
-
-        if (detection) {
-          const embedding = Array.from(detection.descriptor);
-
-          // Update the slot with embedding
-          setImageSlots(prev => {
-            const updated = [...prev];
-            const current = updated[cameraSlot];
-            if (current && current.preview === dataUrl) {
-              updated[cameraSlot] = { ...current, embedding };
-            }
-            return updated;
-          });
-        } else {
-          console.warn("No face detected in captured photo");
-        }
-      } catch (err) {
-        console.error("Failed to extract embedding:", err);
+const doCapture = async () => {
+  // 1. Immediately hide the confirmation box
+  setShowCaptureConfirm(false);
+  
+  // 2. Wrap the rest in a small timeout to let React hide the box first
+  // and ensure we don't block the UI thread during capture
+  setTimeout(async () => {
+    try {
+      if (!videoRef.current) {
+        console.warn("videoRef is null, closing camera anyway.");
+        closeCamera();
+        return;
       }
-    }, 50);
 
-  } catch (err) {
-    console.error(err);
-    alert("Failed to capture photo.");
-  }
+      const canvas = document.createElement('canvas');
+      canvas.width = videoRef.current.videoWidth;
+      canvas.height = videoRef.current.videoHeight;
+      canvas.getContext('2d').drawImage(videoRef.current, 0, 0);
+
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+
+      setImageSlots(prev => {
+        const updated = [...prev];
+        updated[cameraSlot] = { preview: dataUrl, embedding: null, file: null };
+        return updated;
+      });
+
+      // 3. Close the camera modal IMMEDIATELY after getting the dataUrl
+      closeCamera();
+
+      // 4. Then do the heavy face detection stuff in the background
+      setTimeout(async () => {
+        try {
+          const img = await faceapi.fetchImage(dataUrl);
+          const detection = await faceapi
+            .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.5, inputSize: 416 }))
+            .withFaceLandmarks()
+            .withFaceDescriptor();
+
+          if (detection) {
+            const embedding = Array.from(detection.descriptor);
+            setImageSlots(prev => {
+              const updated = [...prev];
+              const current = updated[cameraSlot];
+              if (current && current.preview === dataUrl) {
+                updated[cameraSlot] = { ...current, embedding };
+              }
+              return updated;
+            });
+          } else {
+            console.warn("No face detected in captured photo");
+          }
+        } catch (err) {
+          console.error("Failed to extract embedding:", err);
+        }
+      }, 100);
+
+    } catch (err) {
+      console.error(err);
+      alert("Failed to capture photo.");
+      closeCamera(); // Ensure it closes even on error
+    }
+  }, 10);
 };
 
   const closeCamera = () => {
+    // 1. Immediately signal React to hide the modal
+    setShowCamera(false);
+    setShowCaptureConfirm(false);
+    setCameraSlot(null);
+    setReqs(defaultReqs);
+
+    // 2. Stop all camera activity
     if (detectionLoopRef.current) {
       cancelAnimationFrame(detectionLoopRef.current);
       detectionLoopRef.current = null;
@@ -455,9 +468,33 @@ const openCamera = async (index) => {
       streamRef.current.getTracks().forEach(t => t.stop());
       streamRef.current = null;
     }
-    setShowCamera(false);
-    setCameraSlot(null);
-    setReqs(defaultReqs);
+
+    // 3. Force-remove any orphaned Bootstrap backdrop that blocks clicks
+    // We use a series of timeouts to ensure cleanup happens even if animations are slow
+    const cleanup = () => {
+      const backdrops = document.querySelectorAll('.modal-backdrop');
+      const openModalsCount = document.querySelectorAll('.modal.show').length;
+      
+      if (openModalsCount === 0) {
+        backdrops.forEach(el => {
+          el.style.display = 'none';
+          el.style.pointerEvents = 'none';
+        });
+        document.body.classList.remove('modal-open');
+        document.body.style.removeProperty('overflow');
+        document.body.style.removeProperty('padding-right');
+      } else if (backdrops.length > openModalsCount) {
+        for (let i = 0; i < backdrops.length - openModalsCount; i++) {
+          if (backdrops[i]) {
+            backdrops[i].style.display = 'none';
+            backdrops[i].style.pointerEvents = 'none';
+          }
+        }
+      }
+    };
+
+    setTimeout(cleanup, 300);
+    setTimeout(cleanup, 1000); // Robust fallback
   };
 
   const handleSubmit = async (e) => {
@@ -471,7 +508,11 @@ const openCamera = async (index) => {
     if (!formData.department_ID) { setFeedback({ type: 'danger', message: 'Please select a department.' }); return; }
     if (!formData.position_ID)   { setFeedback({ type: 'danger', message: 'Please select a position.'   }); return; }
 
-    const payload = { ...formData, email_ID: formData.email_ID || null };
+    // Ensure email is sent as raw string, null if empty
+    const payload = { 
+      ...formData, 
+      email: formData.email?.trim() || null 
+    };
 
     setSaving(true);
     try {
@@ -678,12 +719,13 @@ const openCamera = async (index) => {
 
             <Form.Group className="mb-4">
               <Form.Label>Email <span className="text-muted">(optional)</span></Form.Label>
-              <Form.Select name="email_ID" value={formData.email_ID} onChange={handleChange}>
-                <option value="">— None —</option>
-                {emails.map(e => (
-                  <option key={e.email_ID} value={e.email_ID}>{e.email}</option>
-                ))}
-              </Form.Select>
+              <Form.Control
+                type="email"
+                name="email"
+                placeholder="Enter email address..."
+                value={formData.email}
+                onChange={handleChange}
+              />
             </Form.Group>
 
             {/* 5 Photo Slots */}
@@ -763,7 +805,29 @@ const openCamera = async (index) => {
       </Modal>
 
       {/* Camera Modal */}
-      <Modal show={showCamera} onHide={closeCamera} centered size="xl">
+      <Modal show={showCamera} onHide={closeCamera} centered size="xl" backdrop="static" onExited={() => {
+          // Fallback cleanup if the timeout failed
+          const backdrops = document.querySelectorAll('.modal-backdrop');
+          if (backdrops.length > 0) {
+            const openModalsCount = document.querySelectorAll('.modal.show').length;
+            if (openModalsCount === 0) {
+              backdrops.forEach(el => {
+                if (el) {
+                  el.style.display = 'none';
+                  el.style.pointerEvents = 'none';
+                }
+              });
+              document.body.classList.remove('modal-open');
+            } else if (backdrops.length > openModalsCount) {
+               for (let i = 0; i < backdrops.length - openModalsCount; i++) {
+                 if (backdrops[i]) {
+                   backdrops[i].style.display = 'none';
+                   backdrops[i].style.pointerEvents = 'none';
+                 }
+               }
+            }
+          }
+        }}>
         <Modal.Header closeButton style={{ background: '#1a1a2e', borderBottom: '1px solid #333' }}>
           <Modal.Title style={{ color: '#fff', fontWeight: 700 }}>
              Face Capture — Photo Slot {(cameraSlot ?? 0) + 1}
@@ -827,6 +891,28 @@ const openCamera = async (index) => {
                   ✅ Ready to capture!
                 </div>
               )}
+              {/* Inline confirm — replaces window.confirm() */}
+{showCaptureConfirm && (
+  <div style={{
+    position: 'absolute', bottom: 70, left: '50%', transform: 'translateX(-50%)',
+    background: 'rgba(30,30,50,0.97)', border: '1px solid #ffc107',
+    borderRadius: 10, padding: '12px 20px', zIndex: 10,
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
+    width: '80%',
+  }}>
+    <span style={{ color: '#ffc107', fontSize: 13, textAlign: 'center' }}>
+      ⚠️ Some requirements are not met. Capture anyway?
+    </span>
+    <div style={{ display: 'flex', gap: 10 }}>
+      <Button size="sm" variant="outline-light" onClick={() => setShowCaptureConfirm(false)}>
+        Cancel
+      </Button>
+      <Button size="sm" variant="warning" onClick={doCapture}>
+        Capture Anyway
+      </Button>
+    </div>
+  </div>
+)}
 
               {/* Bottom buttons */}
               <div style={{

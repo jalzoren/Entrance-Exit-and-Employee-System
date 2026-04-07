@@ -205,9 +205,12 @@ export const deleteEvent = async (id) => {
   }
 };
 
-export const restoreEvent = async (id) => {
+export const restoreEvent = async (id, eventData = {}) => {
   try {
-    const { data } = await api.put(`/events.php?id=${id}`, { restore: true });
+    const { data } = await api.put(`/events.php?id=${id}`, { 
+      restore: true,
+      ...eventData 
+    });
     return data;
   } catch (error) {
     handleError(error);

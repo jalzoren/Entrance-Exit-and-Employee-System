@@ -26,6 +26,11 @@ function EventsArchive({ onNavigate }) {
   // ── Confirmation modal state ──
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState(null); // event object to restore
+  
+  // ── New date/time for restoration ──
+  const [restoreDate, setRestoreDate] = useState('');
+  const [restoreTime, setRestoreTime] = useState('');
+  const [restoreTimeEnd, setRestoreTimeEnd] = useState('');
 
   const [loadError, setLoadError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -67,18 +72,49 @@ function EventsArchive({ onNavigate }) {
   const askRestore = (event, e) => {
     if (e) e.stopPropagation();
     setConfirmTarget(event);
+    
+    // Helper to extract clean time part (HH:MM) from DATETIME string
+    const extractTime = (str) => {
+      if (!str || str.includes('0000-00-00')) return '';
+      // If it contains a space, it's a DATETIME like "2026-04-06 08:00:00"
+      if (str.includes(' ')) {
+        return str.split(' ')[1].substring(0, 5);
+      }
+      // Otherwise it might be just "08:00:00" or "08:00"
+      return str.substring(0, 5);
+    };
+
+    setRestoreDate(new Date().toISOString().split('T')[0]); // Default to today
+    setRestoreTime(extractTime(event.event_time) || '08:00');
+    setRestoreTimeEnd(extractTime(event.time_end) || '');
     setShowConfirmModal(true);
   };
 
   const confirmRestore = async () => {
     if (!confirmTarget) return;
-    setShowConfirmModal(false);
+    
+    // Validate that the new date is not in the past
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const newEventDay = new Date(restoreDate);
+    newEventDay.setHours(0, 0, 0, 0);
+
+    if (newEventDay < today) {
+      alert('Please select today or a future date to restore this event.');
+      return;
+    }
+
     setRestoring(true);
     try {
-      await restoreEvent(confirmTarget.event_ID);
-      setActionSuccess('Event restored successfully!');
+      await restoreEvent(confirmTarget.event_ID, {
+        event_date: restoreDate,
+        event_time: restoreTime,
+        time_end: restoreTimeEnd
+      });
+      setActionSuccess('Event restored and updated successfully!');
       setTimeout(() => setActionSuccess(''), 4000);
       loadAll();
+      setShowConfirmModal(false);
       setShowDetailModal(false);
     } catch (err) {
       console.error('Failed to restore event:', err);
@@ -496,16 +532,16 @@ function EventsArchive({ onNavigate }) {
                   )}
 
                   {/* ── Start & end time in grid ── */}
-                  {(event.event_time || event.event_end_time) && (
+                  {(event.event_time || event.time_end) && (
                     <div className="archive-grid-time-row">
                       {event.event_time && (
                         <span className="archive-grid-time-chip">
                           🕐 Start: {formatTime(event.event_time)}
                         </span>
                       )}
-                      {event.event_end_time && (
+                      {event.time_end && (
                         <span className="archive-grid-time-chip">
-                          🕑 End: {formatTime(event.event_end_time)}
+                          🕑 End: {formatTime(event.time_end)}
                         </span>
                       )}
                     </div>
@@ -571,10 +607,10 @@ function EventsArchive({ onNavigate }) {
                   <span className="archive-detail-label">🕐 Start Time</span>
                   <span className="archive-detail-value">{formatTime(selectedEvent.event_time)}</span>
                 </div>
-                {selectedEvent.event_end_time && (
+                {selectedEvent.time_end && (
                   <div className="archive-detail-item">
                     <span className="archive-detail-label">🕑 End Time</span>
-                    <span className="archive-detail-value">{formatTime(selectedEvent.event_end_time)}</span>
+                    <span className="archive-detail-value">{formatTime(selectedEvent.time_end)}</span>
                   </div>
                 )}
                 <div className="archive-detail-item">
@@ -663,10 +699,40 @@ function EventsArchive({ onNavigate }) {
           <Modal.Title style={{ fontSize: 16 }}>Restore Event</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <p style={{ margin: 0, fontSize: 14, color: '#374151' }}>
-            Are you sure you want to restore{' '}
-            <strong>{confirmTarget?.event_name}</strong> to the active events list?
+          <p style={{ fontSize: 14, color: '#374151', marginBottom: 20 }}>
+            To restore <strong>{confirmTarget?.event_name}</strong>, please set a new date and time so it stays in the active list.
           </p>
+          
+          <Row className="g-3">
+            <Col md={12}>
+              <Form.Label style={{ fontSize: 13, fontWeight: 600 }}>New Date</Form.Label>
+              <Form.Control
+                type="date"
+                size="sm"
+                min={new Date().toISOString().split('T')[0]}
+                value={restoreDate}
+                onChange={(e) => setRestoreDate(e.target.value)}
+              />
+            </Col>
+            <Col md={6}>
+              <Form.Label style={{ fontSize: 13, fontWeight: 600 }}>New Start Time</Form.Label>
+              <Form.Control
+                type="time"
+                size="sm"
+                value={restoreTime}
+                onChange={(e) => setRestoreTime(e.target.value)}
+              />
+            </Col>
+            <Col md={6}>
+              <Form.Label style={{ fontSize: 13, fontWeight: 600 }}>New End Time</Form.Label>
+              <Form.Control
+                type="time"
+                size="sm"
+                value={restoreTimeEnd}
+                onChange={(e) => setRestoreTimeEnd(e.target.value)}
+              />
+            </Col>
+          </Row>
         </Modal.Body>
         <Modal.Footer className="archive-modal-footer">
           <Button className="btn-modal-cancel" onClick={cancelRestore}>

@@ -20,6 +20,34 @@ if ($method === 'OPTIONS') {
 // ======================================================
 if ($method === 'GET') {
 
+    // --- AUTO-ARCHIVE PAST EVENTS ---
+    // Move events to archive if they are from a previous day.
+    // We keep today's events active until the day is fully over or past their end time.
+    try {
+        $today = date("Y-m-d");
+        $nowTime = date("H:i:s");
+        
+        // 1. Archive events where event_date < today
+        $conn->exec("UPDATE events SET is_archived = 1 WHERE (event_date < '$today' OR DATE(date) < '$today') AND is_archived = 0");
+
+        // 2. Archive today's events if they are past their time_end
+        // If time_end is NULL, we use a 6-hour grace period after event_time.
+        $sixHoursAgo = date("H:i:s", strtotime("-6 hours"));
+        
+        $conn->exec("
+            UPDATE events 
+            SET is_archived = 1 
+            WHERE (event_date = '$today' OR DATE(date) = '$today') 
+              AND is_archived = 0
+              AND (
+                  (time_end IS NOT NULL AND time_end < '$nowTime') OR 
+                  (time_end IS NULL AND (event_time < '$sixHoursAgo' OR time < '$sixHoursAgo'))
+              )
+        ");
+    } catch (Exception $e_auto) {
+        // Silently fail if auto-archive encounters schema issues
+    }
+
     // --- Check for is_archived column existence once ---
     static $hasArchivedCol = null;
     if ($hasArchivedCol === null) {
@@ -44,8 +72,9 @@ if ($method === 'GET') {
             SELECT 
                 ev.event_ID,
                 ev.event_name,
-                ev.event_date,
-                ev.event_time,
+                DATE(ev.event_date) AS event_date,
+                TIME_FORMAT(ev.event_time, '%H:%i:%s') AS event_time,
+                ev.time_end,
                 ev.description,
                 ev.eventtype_ID,
                 ev.location_ID,
@@ -57,7 +86,7 @@ if ($method === 'GET') {
             LEFT JOIN location   l ON ev.location_ID   = l.location_ID
             LEFT JOIN attendance a ON ev.event_ID      = a.event_ID
             $whereClause
-            GROUP BY ev.event_ID, ev.event_name, ev.event_date, ev.event_time, ev.description, ev.eventtype_ID, ev.location_ID, et.eventtype_name, l.location_name
+            GROUP BY ev.event_ID, ev.event_name, ev.event_date, ev.event_time, ev.time_end, ev.description, ev.eventtype_ID, ev.location_ID, et.eventtype_name, l.location_name
             ORDER BY ev.event_date DESC, ev.event_time DESC
         ";
         $stmt = $conn->prepare($q1);
@@ -70,8 +99,8 @@ if ($method === 'GET') {
                 SELECT 
                     ev.event_ID,
                     ev.event_name,
-                    ev.event_date,
-                    ev.event_time,
+                    DATE(ev.event_date) AS event_date,
+                    TIME_FORMAT(ev.event_time, '%H:%i:%s') AS event_time,
                     ev.description,
                     ev.eventtype_ID,
                     ev.location_ID,
@@ -96,8 +125,9 @@ if ($method === 'GET') {
                     SELECT 
                         ev.event_ID,
                         ev.event_name,
-                        ev.date        AS event_date,
-                        ev.time        AS event_time,
+                        DATE(ev.date)        AS event_date,
+                        TIME_FORMAT(ev.time, '%H:%i:%s') AS event_time,
+                        ev.time_end,
                         ev.event_desc  AS description,
                         ev.eventtype_ID,
                         ev.location_ID,
@@ -109,7 +139,7 @@ if ($method === 'GET') {
                     LEFT JOIN location   l ON ev.location_ID   = l.location_ID
                     LEFT JOIN attendance a ON ev.event_ID      = a.event_ID
                     $whereClause
-                    GROUP BY ev.event_ID, ev.event_name, event_date, event_time, description, ev.eventtype_ID, ev.location_ID, et.eventtype_name, l.location_name
+                    GROUP BY ev.event_ID, ev.event_name, event_date, event_time, ev.time_end, description, ev.eventtype_ID, ev.location_ID, et.eventtype_name, l.location_name
                     ORDER BY event_date DESC, event_time DESC
                 ";
                 $stmt = $conn->prepare($q3);
@@ -118,26 +148,27 @@ if ($method === 'GET') {
             } catch (Exception $e3) {
                 try {
                     // 4) date/time/event_desc + eventtype/location
-                    $q4 = "
-                        SELECT 
-                            ev.event_ID,
-                            ev.event_name,
-                            ev.date        AS event_date,
-                            ev.time        AS event_time,
-                            ev.event_desc  AS description,
-                            ev.eventtype_ID,
-                            ev.location_ID,
-                            et.eventtype   AS eventtype_name,
-                            l.location     AS location_name,
-                            COUNT(a.attendance_ID) AS attended_count
-                        FROM events ev
-                        LEFT JOIN eventtype et ON ev.eventtype_ID = et.eventtype_ID
-                        LEFT JOIN location   l ON ev.location_ID   = l.location_ID
-                        LEFT JOIN attendance a ON ev.event_ID      = a.event_ID
-                        $whereClause
-                        GROUP BY ev.event_ID, ev.event_name, event_date, event_time, description, ev.eventtype_ID, ev.location_ID, et.eventtype, l.location
-                        ORDER BY event_date DESC, event_time DESC
-                    ";
+                $q4 = "
+                    SELECT 
+                        ev.event_ID,
+                        ev.event_name,
+                        DATE(ev.date)        AS event_date,
+                        TIME_FORMAT(ev.time, '%H:%i:%s') AS event_time,
+                        ev.time_end,
+                        ev.event_desc  AS description,
+                        ev.eventtype_ID,
+                        ev.location_ID,
+                        et.eventtype   AS eventtype_name,
+                        l.location     AS location_name,
+                        COUNT(a.attendance_ID) AS attended_count
+                    FROM events ev
+                    LEFT JOIN eventtype et ON ev.eventtype_ID = et.eventtype_ID
+                    LEFT JOIN location   l ON ev.location_ID   = l.location_ID
+                    LEFT JOIN attendance a ON ev.event_ID      = a.event_ID
+                    $whereClause
+                    GROUP BY ev.event_ID, ev.event_name, event_date, event_time, ev.time_end, description, ev.eventtype_ID, ev.location_ID, et.eventtype, l.location
+                    ORDER BY event_date DESC, event_time DESC
+                ";
                     $stmt = $conn->prepare($q4);
                     $stmt->execute();
                     echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
@@ -176,8 +207,29 @@ if ($method === 'POST') {
         exit;
     }
 
+    $time_end = $data["time_end"] ?? null;
+
+    // --- Validation: Prevent past dates ---
+    $today = date("Y-m-d");
+    if ($data["event_date"] < $today) {
+        echo json_encode([
+            "error" => true,
+            "message" => "Cannot create an event in the past."
+        ]);
+        exit;
+    }
+
+    // --- Validation: Prevent invalid date formats ---
+    if ($data["event_date"] === "0000-00-00" || $data["event_time"] === "00:00:00") {
+        echo json_encode([
+            "error" => true,
+            "message" => "Invalid date or time entered."
+        ]);
+        exit;
+    }
+
     try {
-        // Try insert with event_date/event_time/description
+        // Try insert with event_date/event_time/time_end/description
         $query1 = "
             INSERT INTO events
             (
@@ -186,9 +238,10 @@ if ($method === 'POST') {
                 location_ID,
                 event_date,
                 event_time,
+                time_end,
                 description
             )
-            VALUES (?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
         ";
         $stmt = $conn->prepare($query1);
         $stmt->execute([
@@ -197,6 +250,7 @@ if ($method === 'POST') {
             $data["location_ID"],
             $data["event_date"],
             $data["event_time"],
+            $time_end,
             $data["description"] ?? null
         ]);
         echo json_encode([
@@ -205,7 +259,7 @@ if ($method === 'POST') {
         ]);
     } catch (Exception $e1) {
         try {
-            // Fallback insert with date/time/event_desc
+            // Fallback insert with date/time/time_end/event_desc
             $query2 = "
                 INSERT INTO events
                 (
@@ -214,9 +268,10 @@ if ($method === 'POST') {
                     location_ID,
                     date,
                     time,
+                    time_end,
                     event_desc
                 )
-                VALUES (?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
             ";
             $stmt = $conn->prepare($query2);
             $stmt->execute([
@@ -225,6 +280,7 @@ if ($method === 'POST') {
                 $data["location_ID"],
                 $data["event_date"],
                 $data["event_time"],
+                $time_end,
                 $data["description"] ?? null
             ]);
             echo json_encode([
@@ -261,8 +317,35 @@ if ($method === 'PUT') {
     // --- RESTORE ACTION ---
     if (isset($data["restore"]) && $data["restore"] === true) {
         try {
-            $stmt = $conn->prepare("UPDATE events SET is_archived = 0 WHERE event_ID = ?");
-            $stmt->execute([$event_id]);
+            $newDate = $data["event_date"] ?? null;
+            $newTime = $data["event_time"] ?? null;
+            $newTimeEnd = $data["time_end"] ?? null;
+
+            if ($newDate && $newTime) {
+                // Restore AND update date/time to prevent immediate re-archiving
+                // If columns are DATETIME, we might need to combine them, but typically
+                // MySQL allows setting a DATETIME with just a date or time string.
+                // However, to be safe and ensure the date is correctly set for the start time:
+                
+                $query = "UPDATE events SET is_archived = 0, event_date = ?, event_time = ?, time_end = ? WHERE event_ID = ?";
+                $params = [$newDate, $newTime, $newTimeEnd, $event_id];
+                
+                try {
+                    $stmt = $conn->prepare($query);
+                    $stmt->execute($params);
+                } catch (Exception $e_col) {
+                    // Fallback for different column names (date/time instead of event_date/event_time)
+                    // We use CONCAT to ensure 'time' (if it's a DATETIME) gets the correct date part
+                    $query = "UPDATE events SET is_archived = 0, date = ?, time = ?, time_end = ? WHERE event_ID = ?";
+                    $stmt = $conn->prepare($query);
+                    $stmt->execute($params);
+                }
+            } else {
+                // Just restore (might be re-archived immediately if still in past)
+                $stmt = $conn->prepare("UPDATE events SET is_archived = 0 WHERE event_ID = ?");
+                $stmt->execute([$event_id]);
+            }
+
             echo json_encode([
                 "success" => true,
                 "message" => "Event restored successfully"
@@ -290,8 +373,30 @@ if ($method === 'PUT') {
         exit;
     }
 
+    $time_end = $data["time_end"] ?? null;
+
+    // --- Validation: Prevent past dates (only if date is being changed) ---
+    // Note: We allow updating an event that is today, but not to a date before today.
+    $today = date("Y-m-d");
+    if ($data["event_date"] < $today) {
+        echo json_encode([
+            "error" => true,
+            "message" => "Cannot set an event date in the past."
+        ]);
+        exit;
+    }
+
+    // --- Validation: Prevent invalid date formats ---
+    if ($data["event_date"] === "0000-00-00" || $data["event_time"] === "00:00:00") {
+        echo json_encode([
+            "error" => true,
+            "message" => "Invalid date or time entered."
+        ]);
+        exit;
+    }
+
     try {
-        // Try update with event_date/event_time/description
+        // Try update with event_date/event_time/time_end/description
         $query1 = "
             UPDATE events
             SET event_name   = ?,
@@ -299,6 +404,7 @@ if ($method === 'PUT') {
                 location_ID  = ?,
                 event_date   = ?,
                 event_time   = ?,
+                time_end     = ?,
                 description  = ?
             WHERE event_ID   = ?
         ";
@@ -309,6 +415,7 @@ if ($method === 'PUT') {
             $data["location_ID"],
             $data["event_date"],
             $data["event_time"],
+            $time_end,
             $data["description"] ?? null,
             $event_id
         ]);
@@ -326,7 +433,7 @@ if ($method === 'PUT') {
         }
     } catch (Exception $e1) {
         try {
-            // Fallback update with date/time/event_desc
+            // Fallback update with date/time/time_end/event_desc
             $query2 = "
                 UPDATE events
                 SET event_name   = ?,
@@ -334,6 +441,7 @@ if ($method === 'PUT') {
                     location_ID  = ?,
                     date         = ?,
                     time         = ?,
+                    time_end     = ?,
                     event_desc   = ?
                 WHERE event_ID   = ?
             ";
@@ -344,6 +452,7 @@ if ($method === 'PUT') {
                 $data["location_ID"],
                 $data["event_date"],
                 $data["event_time"],
+                $time_end,
                 $data["description"] ?? null,
                 $event_id
             ]);

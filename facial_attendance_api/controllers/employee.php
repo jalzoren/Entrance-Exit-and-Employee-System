@@ -213,12 +213,30 @@ if (!empty($missing_fields)) {
             exit;
         }
 
-        $emailQuery = "INSERT INTO email (email) VALUES (?)";
-        $stmtEmail = $conn->prepare($emailQuery);
-        $stmtEmail->execute([$email]);
+        // --- NEW EMAIL HANDLING ---
+        $email_ID = null;
+        if (!empty($email)) {
+            // Check if email already exists in email table
+            // Try different column names for email table resilience
+            $emailCol = "email";
+            try {
+                $conn->query("SELECT email_address FROM email LIMIT 1");
+                $emailCol = "email_address";
+            } catch (Exception $e_col) {}
 
-        // GET GENERATED email_ID
-        $email_ID = $conn->lastInsertId();
+            $checkEmail = $conn->prepare("SELECT email_ID FROM email WHERE $emailCol = ?");
+            $checkEmail->execute([$email]);
+            $existingEmail = $checkEmail->fetch(PDO::FETCH_ASSOC);
+
+            if ($existingEmail) {
+                $email_ID = $existingEmail['email_ID'];
+            } else {
+                // Insert new email
+                $stmtEmail = $conn->prepare("INSERT INTO email ($emailCol) VALUES (?)");
+                $stmtEmail->execute([$email]);
+                $email_ID = $conn->lastInsertId();
+            }
+        }
 
         $query = "
             INSERT INTO employees

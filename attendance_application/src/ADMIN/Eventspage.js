@@ -39,6 +39,7 @@ function EventsPage({ onNavigate }) {
     location_ID: '',
     event_date: '',
     event_time: '',
+    time_end: '',
     description: ''
   });
 
@@ -102,6 +103,7 @@ function EventsPage({ onNavigate }) {
       location_ID: '',
       event_date: '',
       event_time: '',
+      time_end: '',
       description: ''
     });
     setShowCreateModal(true);
@@ -110,12 +112,26 @@ function EventsPage({ onNavigate }) {
   const openEditModal = (ev) => {
     setIsEditing(true);
     setEditingId(ev.event_ID);
+
+    // Clean up dates and times if they are DATETIME strings
+    const extractDate = (str) => {
+      if (!str) return '';
+      return str.split(' ')[0]; // Extract YYYY-MM-DD
+    };
+
+    const extractTime = (str) => {
+      if (!str || str.includes('0000-00-00')) return '';
+      if (str.includes(' ')) return str.split(' ')[1].substring(0, 5);
+      return str.substring(0, 5);
+    };
+
     setNewEvent({
       event_name: ev.event_name || '',
       eventtype_ID: ev.eventtype_ID || '',
       location_ID: ev.location_ID || '',
-      event_date: ev.event_date || '',
-      event_time: ev.event_time || '',
+      event_date: extractDate(ev.event_date) || '',
+      event_time: extractTime(ev.event_time) || '',
+      time_end: extractTime(ev.time_end) || '',
       description: ev.description || ''
     });
     setShowCreateModal(true);
@@ -131,6 +147,22 @@ function EventsPage({ onNavigate }) {
     e.preventDefault();
     setCreateError('');
     setCreateSuccess('');
+
+    // --- Validation: Prevent past dates ---
+    const selectedDate = new Date(`${newEvent.event_date}T${newEvent.event_time || '00:00'}`);
+    const now = new Date();
+    
+    // We allow events for today, so we only block if the date is strictly before today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const eventDay = new Date(newEvent.event_date);
+    eventDay.setHours(0, 0, 0, 0);
+
+    if (eventDay < today && !isEditing) {
+      setCreateError('Cannot create an event in the past.');
+      return;
+    }
+
     try {
       setCreating(true);
       let res;
@@ -319,9 +351,9 @@ function EventsPage({ onNavigate }) {
                     </p>
 
                     <div className="event-meta">
-                      <span className="meta-item">{event.event_date}</span>
-                      <span className="meta-item">{event.event_time}</span>
-                      <span className="meta-item">{event.location_name}</span>
+                      <span className="meta-item">📅 {event.event_date}</span>
+                      <span className="meta-item">🕐 {event.event_time} {event.time_end ? ` - ${event.time_end}` : ''}</span>
+                      <span className="meta-item">📍 {event.location_name}</span>
                     </div>
 
                   </div>
@@ -450,6 +482,7 @@ function EventsPage({ onNavigate }) {
                 <Form.Control
                   type="date"
                   required
+                  min={new Date().toISOString().split('T')[0]}
                   value={newEvent.event_date}
                   onChange={e =>
                     setNewEvent({ ...newEvent, event_date: e.target.value })
@@ -458,13 +491,24 @@ function EventsPage({ onNavigate }) {
               </Col>
 
               <Col md={6}>
-                <Form.Label>Time</Form.Label>
+                <Form.Label>Start Time</Form.Label>
                 <Form.Control
                   type="time"
                   required
                   value={newEvent.event_time}
                   onChange={e =>
                     setNewEvent({ ...newEvent, event_time: e.target.value })
+                  }
+                />
+              </Col>
+
+              <Col md={6}>
+                <Form.Label>End Time</Form.Label>
+                <Form.Control
+                  type="time"
+                  value={newEvent.time_end}
+                  onChange={e =>
+                    setNewEvent({ ...newEvent, time_end: e.target.value })
                   }
                 />
               </Col>
