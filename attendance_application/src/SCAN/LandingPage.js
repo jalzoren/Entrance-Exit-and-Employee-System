@@ -108,6 +108,18 @@ function EmployeePage({ onBack, onNavigateAdmin }) {
     }
   };
 
+  const handleScanDifferentFace = () => {
+    if (recognitionTimer) clearTimeout(recognitionTimer);
+    
+    setRecognizedUser(null);
+    setShowConfirmButtons(false);
+    setRecognitionConfidence(0);
+    setCurrentDetectedName('');
+    setCurrentConfidence(0);
+    setLastDetectionTime(0);        // Important: reset timer
+    setIsScanning(true);            // Resume scanning
+  };
+
   const handleExitManualMode = () => {
     setManualMode(false);
     setManualId('');
@@ -253,6 +265,7 @@ useEffect(() => {
     }, []);
 
   // Live Face Detection + Overlay (runs continuously while camera is active)
+// Live Face Detection + Recognition (Optimized + Pause after match)
 useEffect(() => {
   if (!cameraActive || !modelsLoaded || !employees.length || !isScanning) {
     setCurrentDetectedName('');
@@ -261,17 +274,18 @@ useEffect(() => {
   }
 
   const runRecognition = async () => {
-      const now = Date.now();
-    if (now - lastDetectionTime < DETECTION_INTERVAL) return;
-    setLastDetectionTime(now);
     const video = videoRef.current;
     if (!video || video.readyState < 2) return;
+
+    const now = Date.now();
+    if (now - lastDetectionTime < DETECTION_INTERVAL) return;
+    setLastDetectionTime(now);
 
     try {
       const detection = await faceapi
         .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ 
-          inputSize: 224,           // ← Optimized
-          scoreThreshold: 0.3 
+          inputSize: 160,           // Reduced for speed
+          scoreThreshold: 0.35 
         }))
         .withFaceLandmarks()
         .withFaceDescriptor();
@@ -284,116 +298,79 @@ useEffect(() => {
 
       const liveEmbedding = detection.descriptor;
 
-    let bestMatch = null;
-    let bestScore = -Infinity;
+      let bestMatch = null;
+      let bestScore = -Infinity;
 
-    console.log(`\n=== Starting new recognition cycle ===`);
-    console.log(`Comparing with ${employees.length} employees...`);
+      for (const emp of employees) {
+        if (!emp.embedding) continue;
 
-    for (const emp of employees) {
-      const empCode = emp.employee_code || emp.id || 'unknown';
-
-      if (!emp.embedding) {
-        console.warn(`[${empCode}] No embedding field at all`);
-        continue;
-      }
-
-      console.log(`[${empCode}] Embedding type:`, typeof emp.embedding, 
-                  Array.isArray(emp.embedding) ? `(array length: ${emp.embedding.length})` : '');
-
-      let storedArray = null;
-
-      // Try different formats
-      if (Array.isArray(emp.embedding)) {
-        storedArray = emp.embedding;
-      } 
-      else if (typeof emp.embedding === 'string') {
-        try {
-          const parsed = JSON.parse(emp.embedding);
-          if (Array.isArray(parsed)) {
-            storedArray = parsed;
-            console.log(`[${empCode}] Successfully parsed JSON array, length: ${parsed.length}`);
-          } else {
-            console.warn(`[${empCode}] JSON parsed but not an array`);
+        let storedArray = emp.embedding;
+        if (typeof emp.embedding === 'string') {
+          try {
+            storedArray = JSON.parse(emp.embedding);
+          } catch (e) {
+            continue;
           }
-        } catch (e) {
-          console.warn(`[${empCode}] Failed to parse as JSON. First 100 chars:`, 
-                       emp.embedding.substring(0, 100));
+        }
+
+        if (!Array.isArray(storedArray) || storedArray.length !== 128) continue;
+
+        const storedEmbedding = new Float32Array(storedArray);
+        const similarity = cosineSimilarity(liveEmbedding, storedEmbedding);
+
+        if (similarity > bestScore) {
+          bestScore = similarity;
+          bestMatch = emp;
         }
       }
 
-      if (!Array.isArray(storedArray) || storedArray.length !== 128) {
-        console.warn(`[${empCode}] Invalid embedding - length: ${storedArray?.length || 'not array'}`);
-        continue;
-      }
+      const MIN_SIMILARITY = 0.40;
 
-      const storedEmbedding = new Float32Array(storedArray);
-      const similarity = cosineSimilarity(liveEmbedding, storedEmbedding);
-
-      console.log(`[${empCode}] Similarity: ${similarity.toFixed(4)}`);
-
-      if (similarity > bestScore) {
-        bestScore = similarity;
-        bestMatch = emp;
-      }
-    }
-
-    console.log(`Best cosine similarity found: ${bestScore.toFixed(4)}`);
-
-    const MIN_SIMILARITY = 0.40;   // Very lenient for testing
-
-    if (bestMatch && bestScore > MIN_SIMILARITY) {
+      if (bestMatch && bestScore > MIN_SIMILARITY) {
         const detectedName = `${bestMatch.employee_firstName} ${bestMatch.employee_LastName}`;
         const confidencePercent = Math.round(bestScore * 100);
 
-        console.log(`🎉 GOOD MATCH FOUND! ${detectedName} (${confidencePercent}%)`);
-        
         setCurrentDetectedName(detectedName);
         setCurrentConfidence(confidencePercent);
 
         const newUser = {
-        name: detectedName,
-        id: bestMatch.employee_code,
-        department: bestMatch.department_name,
-        role: bestMatch.position,
-        employeeId: bestMatch.employee_ID,
-        photo: null,
-        lastAction: null,
-        similarity: bestScore
-      };
+          name: detectedName,
+          id: bestMatch.employee_code,
+          department: bestMatch.department_name,
+          role: bestMatch.position,
+          employeeId: bestMatch.employee_ID,
+          photo: null,
+          lastAction: null,
+          similarity: bestScore
+        };
 
-      if (!recognizedUser || recognizedUser.employeeId !== newUser.employeeId) {
+        if (!recognizedUser || recognizedUser.employeeId !== newUser.employeeId) {
           setRecognizedUser(newUser);
           setRecognitionConfidence(confidencePercent);
           setShowConfirmButtons(false);
 
-          // Auto-confirm after 3 seconds and PAUSE scanning
           if (recognitionTimer) clearTimeout(recognitionTimer);
 
           const timer = setTimeout(() => {
             setShowConfirmButtons(true);
-            setIsScanning(false);        // ← THIS PAUSES THE HEAVY LOOP
-          }, 3000);
+            setIsScanning(false);   // Pause scanning
+          }, 2800);   // Slightly faster confirmation
 
           setRecognitionTimer(timer);
         }
-    } else {
-      setCurrentDetectedName('');
-      setCurrentConfidence(0);
+      } else {
+        setCurrentDetectedName('');
+        setCurrentConfidence(0);
+      }
+    } catch (err) {
+      console.error("Recognition error:", err);
     }
-  } catch (err) {
-    console.error("Recognition error:", err);
-  }
-};
-
-// Use setInterval instead of requestAnimationFrame for better control + less lag
-  const interval = setInterval(runRecognition, 300);   // Run every 300ms (much better than 60fps)
-
-  return () => {
-    clearInterval(interval);
   };
-}, [cameraActive, modelsLoaded, employees, isScanning, recognizedUser]);  
-// Note: We keep recognizedUser if you want, but isScanning is now the main control
+
+  const intervalId = setInterval(runRecognition, 280);   // ~3.5 detections/sec
+
+  return () => clearInterval(intervalId);
+}, [cameraActive, modelsLoaded, employees, isScanning]);   // Removed recognizedUser dependency
 
 const startCamera = async () => {
   if (!selectedEvent) {
@@ -784,11 +761,7 @@ const stopCamera = () => {
       <Button
         variant="outline-secondary"
         size="lg"
-        onClick={() => {
-          setRecognizedUser(null);
-          setShowConfirmButtons(false);
-          setRecognitionConfidence(0);
-        }}
+        onClick={handleScanDifferentFace}
       >
         <i className="bi bi-arrow-repeat me-2"></i>
         Scan Different Face
