@@ -300,13 +300,7 @@ function EditStudent({ student, onClose }) {
 
         {/* Tabs */}
         <div className="edit-tabs">
-          <button
-            type="button"
-            className={`edit-tab ${activeTab === "info" ? "edit-tab-active" : ""}`}
-            onClick={() => setActiveTab("info")}
-          >
-            Student Information
-          </button>
+      
 
           {/* Face tab only shown when student has no face registered */}
           {!student.hasFace && (

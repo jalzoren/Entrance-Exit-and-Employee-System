@@ -5,33 +5,40 @@ import RegisterStudent from "../../components/RegisterStudent";
 import ImportStudent from "../../components/ImportStudents";
 import EditStudent from "../../components/EditStudent";
 import axios from "axios";
-import { FiDownload, FiPlus, FiFilter } from "react-icons/fi";
+
+// React Icons
+import { 
+  FiDownload, 
+  FiPlus, 
+  FiFilter, 
+  FiUsers, 
+  FiUserCheck, 
+  FiAlertTriangle 
+} from "react-icons/fi";
 import { IoMdArrowDropdown } from "react-icons/io";
 import { IoNotificationsCircleOutline } from "react-icons/io5";
 
 function Students() {
-  const [currentPage, setCurrentPage]             = useState(1);
-  const [department, setDepartment]               = useState("");
-  const [yearLevel, setYearLevel]                 = useState("");
-  const [registrationDate, setRegistrationDate]   = useState("");
-  const [searchQuery, setSearchQuery]             = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [department, setDepartment] = useState("");
+  const [yearLevel, setYearLevel] = useState("");
+  const [registrationDate, setRegistrationDate] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+
   const [showRegisterModal, setShowRegisterModal] = useState(false);
-  const [showImportModal, setShowImportModal]     = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingStudent, setEditingStudent] = useState(null);
 
-  // Edit modal state
-  const [showEditModal, setShowEditModal]         = useState(false);
-  const [editingStudent, setEditingStudent]       = useState(null);
-
-  const [students, setStudents]                   = useState([]);
-  const [loading, setLoading]                     = useState(true);
-  const [error, setError]                         = useState(null);
-  const [pendingFaceCount, setPendingFaceCount]   = useState(0);
-  const [faceStatusMap, setFaceStatusMap]         = useState({});
+  const [students, setStudents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [pendingFaceCount, setPendingFaceCount] = useState(0);
+  const [faceStatusMap, setFaceStatusMap] = useState({});
 
   const recordsPerPage = 5;
 
   // ── Data fetching ─────────────────────────────────────────────────────────
-
   const fetchStudents = async () => {
     try {
       setLoading(true);
@@ -54,7 +61,7 @@ function Students() {
   const fetchPendingFaceReg = async () => {
     try {
       const response = await axios.get("http://localhost:5000/api/pending-face-registration");
-      setPendingFaceCount(response.data.count);
+      setPendingFaceCount(response.data.count || 0);
     } catch (err) {
       console.error("Error fetching pending face registration count:", err);
     }
@@ -63,7 +70,7 @@ function Students() {
   const fetchFaceStatus = async () => {
     try {
       const response = await axios.get("http://localhost:5000/api/students-face-status");
-      setFaceStatusMap(response.data);
+      setFaceStatusMap(response.data || {});
     } catch (err) {
       console.error("Error fetching face status map:", err);
     }
@@ -83,13 +90,40 @@ function Students() {
     setCurrentPage(1);
   }, [searchQuery, department, yearLevel, registrationDate]);
 
-  // ── Filtering ─────────────────────────────────────────────────────────────
+  // ── Statistics Calculation based on STATUS ─────────────────────────────────
+  const activeStudents = students.filter(s => s.status !== 'Inactive' && s.status !== null);
+  const allStudentsCount = activeStudents.length;
 
-  const filteredStudents = students.filter((student) => {
-    // Exclude inactive students from the Students page
-    if (student.status === 'Inactive') {
-      return false;
+  // Count Regular students (status = 'Regular' or 'regular')
+  const regularStudentsCount = activeStudents.filter(student => {
+    const status = student.status?.toLowerCase();
+    return status === 'regular';
+  }).length;
+
+  // Count Irregular students (status = 'Irregular' or 'irregular')
+  const irregularStudentsCount = activeStudents.filter(student => {
+    const status = student.status?.toLowerCase();
+    return status === 'irregular';
+  }).length;
+
+  // Debug: Log status values to see what's in your data
+  useEffect(() => {
+    if (students.length > 0) {
+      const statuses = students.map(s => ({
+        id: s.student_id,
+        name: `${s.first_name} ${s.last_name}`,
+        status: s.status
+      }));
+      console.log('Student statuses:', statuses);
+      console.log('Regular count:', regularStudentsCount);
+      console.log('Irregular count:', irregularStudentsCount);
+      console.log('Total active:', allStudentsCount);
     }
+  }, [students, regularStudentsCount, irregularStudentsCount, allStudentsCount]);
+
+  // ── Filtering & Pagination ────────────────────────────────────────────────
+  const filteredStudents = students.filter((student) => {
+    if (student.status === 'Inactive') return false;
 
     const matchesSearch =
       searchQuery === "" ||
@@ -97,11 +131,8 @@ function Students() {
       student.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       student.student_id?.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesDepartment =
-      department === "" || student.college_department === department;
-
-    const matchesYearLevel =
-      yearLevel === "" || student.year_level === yearLevel;
+    const matchesDepartment = department === "" || student.college_department === department;
+    const matchesYearLevel = yearLevel === "" || student.year_level === yearLevel;
 
     let matchesDate = true;
     if (registrationDate && student.created_at) {
@@ -112,19 +143,16 @@ function Students() {
     return matchesSearch && matchesDepartment && matchesYearLevel && matchesDate;
   });
 
-  // ── Pagination ────────────────────────────────────────────────────────────
-
-  const totalPages         = Math.ceil(filteredStudents.length / recordsPerPage);
-  const indexOfLastRecord  = currentPage * recordsPerPage;
+  const totalPages = Math.ceil(filteredStudents.length / recordsPerPage);
+  const indexOfLastRecord = currentPage * recordsPerPage;
   const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
-  const currentStudents    = filteredStudents.slice(indexOfFirstRecord, indexOfLastRecord);
+  const currentStudents = filteredStudents.slice(indexOfFirstRecord, indexOfLastRecord);
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) setCurrentPage(page);
   };
 
   // ── Modal controls ────────────────────────────────────────────────────────
-
   const handleAddClick = () => {
     setShowRegisterModal(true);
     document.body.style.overflow = "hidden";
@@ -151,9 +179,6 @@ function Students() {
     handleCloseImportModal();
   };
 
-  // ── Edit: open modal pre-loaded with the selected student ─────────────────
-  // Passes the full student object + hasFace so the modal can decide
-  // whether to show the face registration tab.
   const handleEdit = (student) => {
     setEditingStudent({
       ...student,
@@ -171,14 +196,11 @@ function Students() {
   };
 
   // ── Helpers ───────────────────────────────────────────────────────────────
-
   const formatFullName = (student) => {
     if (!student) return "";
-    const firstName     = student.first_name || "";
-    const lastName      = student.last_name || "";
-    const middleInitial = student.middle_name
-      ? ` ${student.middle_name.charAt(0)}.`
-      : "";
+    const firstName = student.first_name || "";
+    const lastName = student.last_name || "";
+    const middleInitial = student.middle_name ? ` ${student.middle_name.charAt(0)}.` : "";
     return `${lastName}, ${firstName}${middleInitial}`.trim();
   };
 
@@ -195,14 +217,16 @@ function Students() {
 
   const getStatusBadgeClass = (status) => {
     if (!status) return "unknown";
-    return status.toLowerCase();
+    const statusLower = status.toLowerCase();
+    if (statusLower === 'regular') return 'regular';
+    if (statusLower === 'irregular') return 'irregular';
+    if (statusLower === 'inactive') return 'inactive';
+    return 'unknown';
   };
-
-  // ── Pagination renderer ───────────────────────────────────────────────────
 
   const renderPageNumbers = () => {
     if (totalPages <= 1) return null;
-    const pages      = [];
+    const pages = [];
     const maxVisible = 5;
 
     if (totalPages <= maxVisible) {
@@ -212,32 +236,38 @@ function Students() {
             key={i}
             className={`page-number ${currentPage === i ? "active" : ""}`}
             onClick={() => handlePageChange(i)}
-          >{i}</button>
+          >
+            {i}
+          </button>
         );
       }
     } else {
       pages.push(
-        <button key={1} className={`page-number ${currentPage === 1 ? "active" : ""}`} onClick={() => handlePageChange(1)}>1</button>
+        <button key={1} className={`page-number ${currentPage === 1 ? "active" : ""}`} onClick={() => handlePageChange(1)}>
+          1
+        </button>
       );
       let start = Math.max(2, currentPage - 1);
-      let end   = Math.min(totalPages - 1, currentPage + 1);
-      if (currentPage <= 2)              end   = Math.min(totalPages - 1, 4);
+      let end = Math.min(totalPages - 1, currentPage + 1);
+      if (currentPage <= 2) end = Math.min(totalPages - 1, 4);
       if (currentPage >= totalPages - 1) start = Math.max(2, totalPages - 3);
       if (start > 2) pages.push(<span key="e1" className="ellipsis">...</span>);
       for (let i = start; i <= end; i++) {
         pages.push(
-          <button key={i} className={`page-number ${currentPage === i ? "active" : ""}`} onClick={() => handlePageChange(i)}>{i}</button>
+          <button key={i} className={`page-number ${currentPage === i ? "active" : ""}`} onClick={() => handlePageChange(i)}>
+            {i}
+          </button>
         );
       }
       if (end < totalPages - 1) pages.push(<span key="e2" className="ellipsis">...</span>);
       pages.push(
-        <button key={totalPages} className={`page-number ${currentPage === totalPages ? "active" : ""}`} onClick={() => handlePageChange(totalPages)}>{totalPages}</button>
+        <button key={totalPages} className={`page-number ${currentPage === totalPages ? "active" : ""}`} onClick={() => handlePageChange(totalPages)}>
+          {totalPages}
+        </button>
       );
     }
     return pages;
   };
-
-  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <div>
@@ -253,21 +283,44 @@ function Students() {
             <h3><IoNotificationsCircleOutline /></h3>
             <div className="notification-content">
               <p>
-                <strong>Action Required:</strong>{" "}
-                There {pendingFaceCount === 1 ? "is" : "are"}{" "}
-                <strong>{pendingFaceCount}</strong>{" "}
-                student{pendingFaceCount === 1 ? "" : "s"} that{" "}
+                <strong>Action Required:</strong> There {pendingFaceCount === 1 ? "is" : "are"}{" "}
+                <strong>{pendingFaceCount}</strong> student{pendingFaceCount === 1 ? "" : "s"} that{" "}
                 {pendingFaceCount === 1 ? "needs" : "need"} face registration.
-                Please complete their face enrollment to activate full system access.
               </p>
             </div>
           </div>
         </section>
       )}
 
-      <div className="student-management">
+      {/* Dashboard Stat Cards - Now based on STATUS */}
+      <div className="stats-container">
+        <div className="stat-card all-students">
+          <div className="stat-icon"><FiUsers /></div>
+          <div className="stat-details">
+            <h3>All Students</h3>
+            <p className="stat-number">{allStudentsCount}</p>
+          </div>
+        </div>
 
-        {/* ── Controls ── */}
+        <div className="stat-card regular-students">
+          <div className="stat-icon"><FiUserCheck /></div>
+          <div className="stat-details">
+            <h3>Regular Students</h3>
+            <p className="stat-number">{regularStudentsCount}</p>
+          </div>
+        </div>
+
+        <div className="stat-card irregular-students">
+          <div className="stat-icon"><FiAlertTriangle /></div>
+          <div className="stat-details">
+            <h3>Irregular Students</h3>
+            <p className="stat-number">{irregularStudentsCount}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="student-management">
+        {/* Controls */}
         <div className="controls">
           <button type="button" className="sort-button">
             <FiFilter className="sort-icon" />
@@ -321,7 +374,7 @@ function Students() {
           </button>
         </div>
 
-        {/* ── Table ── */}
+        {/* Table */}
         <div className="table-container">
           {loading ? (
             <div className="loading-state">Loading students...</div>
@@ -345,12 +398,9 @@ function Students() {
                 {currentStudents.length > 0 ? (
                   currentStudents.map((student, index) => {
                     const hasFace = faceStatusMap[student.student_id] === true;
-
                     return (
                       <tr key={student.student_id}>
                         <td>{indexOfFirstRecord + index + 1}</td>
-
-                        {/* Student ID + face dot indicator */}
                         <td>
                           <div className="student-id-cell">
                             <span>{student.student_id || "N/A"}</span>
@@ -360,29 +410,22 @@ function Students() {
                             />
                           </div>
                         </td>
-
                         <td>{formatFullName(student)}</td>
                         <td>{student.college_department || "N/A"}</td>
                         <td>{student.year_level || "N/A"}</td>
-
                         <td>
                           <span className={`status-badge ${getStatusBadgeClass(student.status)}`}>
                             {student.status || "Unknown"}
                           </span>
                         </td>
-
                         <td>{formatDate(student.created_at)}</td>
-
-                        {/* Actions — Edit only */}
                         <td className="action-cell">
-                          <div className="action-buttons-text">
-                            <button
-                              className="action-text-btn edit-text-btn"
-                              onClick={() => handleEdit(student)}
-                            >
-                              Edit
-                            </button>
-                          </div>
+                          <button
+                            className="action-text-btn edit-text-btn"
+                            onClick={() => handleEdit(student)}
+                          >
+                            Edit
+                          </button>
                         </td>
                       </tr>
                     );
@@ -397,15 +440,23 @@ function Students() {
           )}
         </div>
 
-        {/* ── Pagination ── */}
+        {/* Pagination */}
         {!loading && !error && filteredStudents.length > 0 && (
           <>
             <div className="pagination">
-              <button className="pagination-button" onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}>
+              <button 
+                className="pagination-button" 
+                onClick={() => handlePageChange(currentPage - 1)} 
+                disabled={currentPage === 1}
+              >
                 ← Previous
               </button>
               <div className="page-numbers">{renderPageNumbers()}</div>
-              <button className="pagination-button" onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages}>
+              <button 
+                className="pagination-button" 
+                onClick={() => handlePageChange(currentPage + 1)} 
+                disabled={currentPage === totalPages}
+              >
                 Next →
               </button>
             </div>
@@ -418,7 +469,7 @@ function Students() {
         )}
       </div>
 
-      {/* ── Register modal ── */}
+      {/* Modals */}
       {showRegisterModal && (
         <div className="modal-overlay">
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -427,7 +478,6 @@ function Students() {
         </div>
       )}
 
-      {/* ── Import modal ── */}
       {showImportModal && (
         <ImportStudent
           isOpen={showImportModal}
@@ -436,12 +486,8 @@ function Students() {
         />
       )}
 
-      {/* ── Edit modal ── */}
       {showEditModal && editingStudent && (
-        <EditStudent
-          student={editingStudent}
-          onClose={handleCloseEditModal}
-        />
+        <EditStudent student={editingStudent} onClose={handleCloseEditModal} />
       )}
     </div>
   );

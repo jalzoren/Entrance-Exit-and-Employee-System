@@ -3,7 +3,9 @@ import GeneralSettings from './GeneralSettings';
 import EditProgramTab from './EditProgramTab';
 import Archive from './Archive';
 import Irregular from './Irregular';
+import DepartmentsTab from './DepartmentsTab'; // Import the new component
 import "../../../css/SystemSettings.css";
+
 function SystemSettings() {
   const [activeTab, setActiveTab] = useState('General Settings');
   const [settings, setSettings] = useState({
@@ -27,8 +29,16 @@ function SystemSettings() {
     alert('Settings saved successfully!');
   };
 
-  const tabs = ['General Settings', 'Archive', 'Edit Program', 'Regular and Irregular'];
+const allTabs = [
+  'General Settings',
+  'Departments',
+  'Programs',
+  'Regular and Irregular',   // ← kept here but will be hidden
+  'Archive'
+];
 
+// Filter out the tab you want to hide
+const tabs = allTabs.filter(tab => tab !== 'Regular and Irregular');
   return (
     <div>
       <header className="header-card">
@@ -36,36 +46,40 @@ function SystemSettings() {
         <p className="subtitle">Dashboard / System Settings</p>
       </header>
 
-          <div className="system-settings">
+      <div className="system-settings">
+        <div className="settings-container">
+          <div className="settings-tabs">
+            {tabs.map((tab) => (
+              <button 
+                key={tab} 
+                className={`tab ${activeTab === tab ? 'active' : ''}`} 
+                onClick={() => setActiveTab(tab)}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
 
-      <div className="settings-container">
-        <div className="settings-tabs">
-          {tabs.map((tab) => (
-            <button 
-              key={tab} 
-              className={`tab ${activeTab === tab ? 'active' : ''}`} 
-              onClick={() => setActiveTab(tab)}
-            >
-              {tab}
-            </button>
-          ))}
+          {activeTab === 'General Settings' && (
+            <GeneralSettings 
+              settings={settings} 
+              onInputChange={handleInputChange} 
+              onSave={handleSaveSettings} 
+            />
+          )}
+
+          {activeTab === 'Departments' && <DepartmentsTab />}
+
+          {activeTab === 'Programs' && <EditProgramTab />}
+
+
+       
+       
+       {/**  {activeTab === 'Regular and Irregular' && <Irregular />}*/} 
+                    {activeTab === 'Archive' && <Archive />}
+
         </div>
-
-        {activeTab === 'General Settings' && (
-          <GeneralSettings 
-            settings={settings} 
-            onInputChange={handleInputChange} 
-            onSave={handleSaveSettings} 
-          />
-        )}
-
-        {activeTab === 'Edit Program' && <EditProgramTab />}
-
-        {activeTab === 'Archive' && <Archive />}
-
-        {activeTab === 'Regular and Irregular' && <Irregular />}
       </div>
-    </div>
     </div>
   );
 }

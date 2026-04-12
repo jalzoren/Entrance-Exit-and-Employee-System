@@ -103,10 +103,26 @@ function EditProgramModal({ program, onClose, onSave, departments, onDepartmentA
                 className="modal-input" 
                 placeholder="e.g. BSCS" 
               />
+
+
+
             </div>
 
-            <div className="modal-field">
-              <label className="modal-label">Program Name <span className="required">*</span></label>
+              <div className="modal-field">
+             <label className="modal-label">Department <span className="required">*</span></label>
+              <DepartmentSelect
+                value={form.department}
+                onChange={handleDepartmentChange}
+                departments={departments}
+                onAddDepartment={handleAddDepartment}
+              />
+            </div>
+
+          
+
+            <div className="modal-field modal-full-width">
+
+               <label className="modal-label">Program Name <span className="required">*</span></label>
               <input 
                 type="text" 
                 name="programName" 
@@ -115,16 +131,7 @@ function EditProgramModal({ program, onClose, onSave, departments, onDepartmentA
                 className="modal-input" 
                 placeholder="e.g. Bachelor of Science in Computer Science" 
               />
-            </div>
-
-            <div className="modal-field modal-full-width">
-              <label className="modal-label">Department <span className="required">*</span></label>
-              <DepartmentSelect
-                value={form.department}
-                onChange={handleDepartmentChange}
-                departments={departments}
-                onAddDepartment={handleAddDepartment}
-              />
+              
             </div>
 
             <div className="modal-field">

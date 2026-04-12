@@ -179,16 +179,18 @@ function EditProgramTab() {
           value={search} 
           onChange={(e) => setSearch(e.target.value)} 
         />
-        <select 
-          value={college} 
-          onChange={(e) => setCollege(e.target.value)} 
-          style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '14px' }}
-        >
-          <option value="">All Departments</option>
-          {departments.map((dept) => (
-            <option key={dept} value={dept}>{dept}</option>
-          ))}
-        </select>
+     <select 
+  value={college} 
+  onChange={(e) => setCollege(e.target.value)} 
+  style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '14px' }}
+>
+  <option value="">All Departments</option>
+  {departments.map((dept) => (
+    <option key={dept.id} value={dept.dept_name}>
+      {dept.dept_name}
+    </option>
+  ))}
+</select>
         <select 
           value={programType} 
           onChange={(e) => setProgramType(e.target.value)} 
