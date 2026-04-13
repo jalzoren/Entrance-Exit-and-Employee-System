@@ -152,52 +152,131 @@ function DepartmentsTab() {
     const deptName = typeof dept === 'string' ? dept : (dept.dept_name || 'this department');
     const deptId = typeof dept === 'string' ? dept : dept.id;
 
-    const result = await Swal.fire({
-      title: 'Archive Department?',
-      text: `Are you sure you want to archive "${deptName}"?`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Yes, archive it!'
-    });
+    // First check if department has active programs
+    try {
+        const programsResponse = await fetch(`http://localhost:5000/api/programs?department=${encodeURIComponent(deptName)}&programStatus=Active`);
+        const activePrograms = await programsResponse.json();
+        
+        let message = `Are you sure you want to archive "${deptName}"?`;
+        if (activePrograms.length > 0) {
+            message = `"${deptName}" has ${activePrograms.length} active program(s):\n\n`;
+            activePrograms.forEach(p => {
+                message += `• ${p.programName} (${p.programCode})\n`;
+            });
+            message += `\nThese programs will also be archived. Continue?`;
+        }
 
-    if (result.isConfirmed) {
-      Swal.fire({
-        title: 'Archiving...',
-        text: 'Please wait',
-        allowOutsideClick: false,
-        didOpen: () => Swal.showLoading()
-      });
-
-      try {
-        const response = await fetch(`http://localhost:5000/api/departments/${deptId}/archive`, {
-          method: 'PATCH'
+        const result = await Swal.fire({
+            title: 'Archive Department?',
+            text: message,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, archive it!'
         });
 
-        if (!response.ok) throw new Error('Failed to archive department');
+        if (result.isConfirmed) {
+            Swal.fire({
+                title: 'Archiving...',
+                text: 'Please wait',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
 
-        // Remove department from local state immediately
-        setDepartments((prev) => prev.filter((d) => d.id !== deptId));
+            try {
+                // Archive the department
+                const response = await fetch(`http://localhost:5000/api/departments/${deptId}/archive`, {
+                    method: 'PATCH'
+                });
 
-        Swal.fire({
-          icon: 'success',
-          title: 'Archived!',
-          text: `"${deptName}" has been archived.`,
-          timer: 1500,
-          showConfirmButton: false
+                if (!response.ok) throw new Error('Failed to archive department');
+
+                // Archive all active programs in this department
+                if (activePrograms.length > 0) {
+                    for (const program of activePrograms) {
+                        await fetch(`http://localhost:5000/api/programs/${program.id}/archive`, {
+                            method: 'PATCH'
+                        });
+                    }
+                }
+
+                // Remove department from local state immediately
+                setDepartments((prev) => prev.filter((d) => d.id !== deptId));
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Archived!',
+                    html: `"${deptName}"${activePrograms.length > 0 ? ` and ${activePrograms.length} program(s)` : ''} has been archived.`,
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+                
+                // Refresh the page data to reflect changes
+                fetchDepartments();
+                
+            } catch (error) {
+                console.error('Error archiving department:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Failed!',
+                    text: 'Failed to archive department',
+                    confirmButtonColor: '#3085d6'
+                });
+            }
+        }
+    } catch (error) {
+        console.error('Error checking active programs:', error);
+        // If can't check programs, still allow archive
+        const result = await Swal.fire({
+            title: 'Archive Department?',
+            text: `Are you sure you want to archive "${deptName}"?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, archive it!'
         });
-      } catch (error) {
-        console.error('Error archiving department:', error);
-        Swal.fire({
-          icon: 'error',
-          title: 'Failed!',
-          text: 'Failed to archive department',
-          confirmButtonColor: '#3085d6'
-        });
-      }
+
+        if (result.isConfirmed) {
+            Swal.fire({
+                title: 'Archiving...',
+                text: 'Please wait',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            try {
+                const response = await fetch(`http://localhost:5000/api/departments/${deptId}/archive`, {
+                    method: 'PATCH'
+                });
+
+                if (!response.ok) throw new Error('Failed to archive department');
+
+                setDepartments((prev) => prev.filter((d) => d.id !== deptId));
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Archived!',
+                    text: `"${deptName}" has been archived.`,
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+                
+                fetchDepartments();
+                
+            } catch (error) {
+                console.error('Error archiving department:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Failed!',
+                    text: 'Failed to archive department',
+                    confirmButtonColor: '#3085d6'
+                });
+            }
+        }
     }
-  };
+};
 
   if (loading) {
     return <div className="edit-program-tab" style={{ padding: '20px', textAlign: 'center' }}>Loading departments...</div>;

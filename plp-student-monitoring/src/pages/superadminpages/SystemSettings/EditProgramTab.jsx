@@ -144,7 +144,6 @@ function EditProgramTab() {
         
         if (!response.ok) throw new Error('Failed to archive');
         
-        // Remove program from local state immediately
         setPrograms((prev) => prev.filter((p) => p.id !== program.id));
         
         Swal.fire({
@@ -180,18 +179,18 @@ function EditProgramTab() {
           value={search} 
           onChange={(e) => setSearch(e.target.value)} 
         />
-     <select 
-  value={college} 
-  onChange={(e) => setCollege(e.target.value)} 
-  style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '14px' }}
->
-  <option value="">All Departments</option>
-  {departments.map((dept) => (
-    <option key={dept.id} value={dept.dept_name}>
-      {dept.dept_name}
-    </option>
-  ))}
-</select>
+        <select 
+          value={college} 
+          onChange={(e) => setCollege(e.target.value)} 
+          style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '14px' }}
+        >
+          <option value="">All Departments</option>
+          {departments.map((dept) => (
+            <option key={dept.id} value={dept.dept_name}>
+              {dept.dept_name}
+            </option>
+          ))}
+        </select>
         <select 
           value={programType} 
           onChange={(e) => setProgramType(e.target.value)} 
@@ -213,6 +212,7 @@ function EditProgramTab() {
               <th>Program Name</th>
               <th>College/Department</th>
               <th>Type</th>
+              <th>Duration</th>
               <th>Status</th>
               <th>Date Created</th>
               <th>Action</th>
@@ -227,6 +227,7 @@ function EditProgramTab() {
                   <td>{prog.programName}</td>
                   <td>{prog.department}</td>
                   <td><span className={`type-badge ${prog.programType === 'Graduate' ? 'graduate' : 'undergrad'}`}>{prog.programType}</span></td>
+                  <td>{prog.duration} {prog.duration === 1 ? 'year' : 'years'}</td>
                   <td><span className={`status-badge ${prog.programStatus === 'Active' ? 'active' : 'inactive'}`}>{prog.programStatus}</span></td>
                   <td>{prog.dateCreated}</td>
                   <td>
@@ -237,7 +238,7 @@ function EditProgramTab() {
               ))
             ) : (
               <tr>
-                <td colSpan="8" className="ep-empty">No programs found.</td>
+                <td colSpan="9" className="ep-empty">No programs found.</td>
               </tr>
             )}
           </tbody>

@@ -10,8 +10,9 @@ function AddProgramModal({ onClose, onAdd, departments, onDepartmentAdded }) {
     department: '',
     programType: 'Undergraduate',
     programStatus: 'Active',
+    duration: '',
   });
-  const [isAdding, setIsAdding] = useState(false); // Add this to prevent double submission
+  const [isAdding, setIsAdding] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -69,13 +70,13 @@ function AddProgramModal({ onClose, onAdd, departments, onDepartmentAdded }) {
   };
 
   const handleAdd = async () => {
-    if (isAdding) return; // Prevent double submission
+    if (isAdding) return;
     
-    if (!form.programCode || !form.programName || !form.department) {
+    if (!form.programCode || !form.programName || !form.department || !form.duration) {
       Swal.fire({
         icon: 'warning',
         title: 'Missing Fields',
-        text: 'Please fill in all required fields.',
+        text: 'Please fill in all required fields including duration.',
         confirmButtonColor: '#3085d6'
       });
       return;
@@ -103,10 +104,8 @@ function AddProgramModal({ onClose, onAdd, departments, onDepartmentAdded }) {
       
       const newProgram = await response.json();
       
-      // Close the modal FIRST
       onClose();
       
-      // Then show success message
       await Swal.fire({
         icon: 'success',
         title: 'Program Added!',
@@ -115,7 +114,6 @@ function AddProgramModal({ onClose, onAdd, departments, onDepartmentAdded }) {
         showConfirmButton: false
       });
       
-      // Then refresh the program list
       onAdd(newProgram);
       
     } catch (error) {
@@ -186,6 +184,20 @@ function AddProgramModal({ onClose, onAdd, departments, onDepartmentAdded }) {
                 <option value="Undergraduate">Undergraduate</option>
                 <option value="Graduate">Graduate</option>
               </select>
+            </div>
+
+            <div className="modal-field">
+              <label className="modal-label">Duration (Years) <span className="required">*</span></label>
+              <input 
+                type="number" 
+                name="duration" 
+                value={form.duration} 
+                onChange={handleChange} 
+                className="modal-input" 
+                placeholder="e.g. 4"
+                min="1"
+                max="10"
+              />
             </div>
 
             <div className="modal-field">
