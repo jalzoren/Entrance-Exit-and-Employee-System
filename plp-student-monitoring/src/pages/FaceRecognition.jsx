@@ -255,6 +255,12 @@ function FaceRecognition({ mode = 'ENTRY' }) {
           action:     result.action,
           student:    result.student,
           department: result.department,
+          time:       new Intl.DateTimeFormat('en-PH', { 
+            timeZone: 'Asia/Manila',
+            hour:     '2-digit',
+            minute:   '2-digit',
+            hour12:   true,
+          }).format(new Date()),
         });
         setTimeout(restartScan, 3200);
       }, 1500);

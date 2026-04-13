@@ -24,14 +24,22 @@ const EXIT_GREETINGS = [
 
 const getRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
-export function showEntryExitAlert({ action, student, department }) {
+export function showEntryExitAlert({ action, student, department, time }) {
   const isEntry    = action === 'ENTRY';
   const greeting   = getRandom(isEntry ? ENTRY_GREETINGS : EXIT_GREETINGS);
   const themeColor = isEntry ? '#01311d' : '#587f1d';
   const iconColor  = isEntry ? '#86efac' : '#d9fca5';
   const badgeText  = isEntry ? 'ENTRY RECORDED' : 'EXIT RECORDED';
-  const badgeBg    = isEntry ? 'rgba(34,197,94,0.15)' : 'rgba(88, 127, 29,0.15)';
-  const badgeBorder= isEntry ? 'rgba(34,197,94,0.4)'  : 'rgba(217, 252, 165,0.4)';
+  const badgeBg    = isEntry ? 'rgba(34,197,94,0.15)' : 'rgba(88,127,29,0.15)';
+  const badgeBorder= isEntry ? 'rgba(34,197,94,0.4)'  : 'rgba(217,252,165,0.4)';
+
+  // Use the passed time or generate one from the client clock as fallback
+  const displayTime = time ?? new Intl.DateTimeFormat('en-PH', {
+    timeZone: 'Asia/Manila',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  }).format(new Date());
 
   Swal.fire({
     html: `
@@ -44,7 +52,6 @@ export function showEntryExitAlert({ action, student, department }) {
         padding: 8px 0;
         border-radius: 12px;
       ">
-        <!-- Badge -->
         <div style="
           font-size: 0.7rem;
           font-weight: 700;
@@ -56,17 +63,14 @@ export function showEntryExitAlert({ action, student, department }) {
           padding: 4px 16px;
         ">${badgeText}</div>
 
-        <!-- Greeting -->
         <p style="
           font-size: 1.1rem;
           color: rgba(255,255,255,0.75);
           margin: 0;
           font-weight: 400;
-          width: 100%;
           text-align: center;
         ">${greeting}</p>
 
-        <!-- Student Name -->
         <p style="
           font-size: 1.25rem;
           font-weight: 700;
@@ -76,7 +80,6 @@ export function showEntryExitAlert({ action, student, department }) {
           text-align: center;
         ">${student}</p>
 
-        <!-- Department -->
         <p style="
           font-size: 0.82rem;
           color: rgba(255,255,255,0.6);
@@ -84,25 +87,30 @@ export function showEntryExitAlert({ action, student, department }) {
           font-weight: 500;
           letter-spacing: 0.04em;
         ">${department}</p>
+
+        <!-- Time -->
+        <p style="
+          font-size: 0.78rem;
+          color: ${iconColor};
+          margin: 0;
+          font-weight: 600;
+          letter-spacing: 0.06em;
+          opacity: 0.85;
+        ">${displayTime}</p>
       </div>
     `,
-    background:       themeColor,
-    timer:            3000,
-    timerProgressBar: true,
+    background:        themeColor,
+    timer:             3000,
+    timerProgressBar:  true,
     showConfirmButton: false,
-    width:            '360px',
-    padding:          '1.8rem',
-    backdrop: `
-      rgba(0, 0, 0, 0.65)
-      center top
-      no-repeat
-    `,
+    width:             '360px',
+    padding:           '1.8rem',
+    backdrop:          'rgba(0,0,0,0.65) center top no-repeat',
     customClass: {
-      popup:      'entry-alert-popup',
+      popup:            'entry-alert-popup',
       timerProgressBar: 'entry-alert-progress',
     },
     didOpen: (popup) => {
-      // Style the progress bar to match the theme
       const bar = popup.querySelector('.swal2-timer-progress-bar');
       if (bar) {
         bar.style.background = iconColor;

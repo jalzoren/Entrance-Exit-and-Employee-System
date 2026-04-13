@@ -32,9 +32,8 @@ router.post('/', async (req, res) => {
     //    dayEnd   → same
     const { now, dayStart, dayEnd } = await getTodayPhRange(db);
 
-    console.log('[Manual Entry] PH now:', now.toString());
+    console.log('[Manual Entry]', student_id.trim(), '| mode:', mode);
     console.log('[Manual Entry] Window:', dayStart, '→', dayEnd);
-
     // 3. Check last action today using BETWEEN (timezone-safe)
     const [lastLogs] = await db.query(
       `SELECT action FROM entry_exit_logs
@@ -71,6 +70,8 @@ router.post('/', async (req, res) => {
        VALUES (?, ?, ?, ?)`,
       [student_id.trim(), authResult.insertId, mode, now]
     );
+
+    console.log('[Manual Entry] ', mode, 'logged for', fullName);
 
     return res.json({
       message:    `${mode} recorded for ${fullName}.`,

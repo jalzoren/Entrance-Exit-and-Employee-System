@@ -23,7 +23,6 @@ function ManualInputModal({ onClose, mode = 'ENTRY' }) {
     }
 
     setStudentId(formatted);
-    setFormErrors(p => ({ ...p, studentId: "" }));
   };
   
   const handleSubmit = async () => {
