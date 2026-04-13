@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 12, 2026 at 09:02 AM
+-- Generation Time: Apr 13, 2026 at 08:19 AM
 -- Server version: 10.4.32-MariaDB
--- PHP Version: 8.2.12
+-- PHP Version: 8.0.30
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -102,7 +102,8 @@ CREATE TABLE `departments` (
 --
 
 INSERT INTO `departments` (`id`, `dept_code`, `dept_name`, `status`, `created_at`, `updated_at`) VALUES
-(1, '', 'College of Computer Studies', 'Active', '2026-04-12 14:20:34', '2026-04-12 14:20:34');
+(8, 'COE', 'College of Engineering', 'Active', '2026-04-13 04:42:32', '2026-04-13 05:07:54'),
+(9, 'CCS', 'College of Computer Studies', 'Active', '2026-04-13 04:44:09', '2026-04-13 06:02:46');
 
 -- --------------------------------------------------------
 
@@ -151,19 +152,19 @@ CREATE TABLE `programs` (
   `department` varchar(100) NOT NULL,
   `programType` enum('Undergraduate','Graduate') NOT NULL DEFAULT 'Undergraduate',
   `programStatus` enum('Active','Inactive') NOT NULL DEFAULT 'Active',
+  `duration` int(11) NOT NULL DEFAULT 0,
   `dateCreated` date NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `programs`
 --
 
-INSERT INTO `programs` (`id`, `programCode`, `programName`, `department`, `programType`, `programStatus`, `dateCreated`) VALUES
-(10, 'BSIT', 'Bachelor of Science in Information Technology', 'College of Business and Accountancy', 'Undergraduate', 'Active', '2026-04-05'),
-(11, 'BSN', 'Bachelor of Science in Nursing', 'College of Nursing', 'Undergraduate', 'Inactive', '2026-04-05'),
-(12, 'IT GIRLS-GHORLS', 'BSIT3E', 'College of ITGIRLS', 'Graduate', 'Active', '2026-04-05'),
-(13, 'BSCS', 'Bachelor of Science in Computer Science', 'College of Computer Studies', 'Undergraduate', 'Active', '2026-04-05'),
-(14, 'BSCeee', 'Bachelor of Science in Computer Computer', 'College of BSIT', 'Undergraduate', 'Active', '2026-04-06');
+INSERT INTO `programs` (`id`, `programCode`, `programName`, `department`, `programType`, `programStatus`, `duration`, `dateCreated`) VALUES
+(16, 'BSE', 'Bachelor of Science in Electrical Engineering', 'College of Engineering', 'Undergraduate', 'Active', 4, '2026-04-13'),
+(17, 'BSIE', 'Bachelor of Science in Industrial Engineering', 'College of Engineering', 'Undergraduate', 'Active', 4, '2026-04-13'),
+(18, 'BSIT', 'Bachelor of Science in Information Technology', 'College of Computer Studies', 'Undergraduate', 'Active', 4, '2026-04-13'),
+(19, 'BSCS', 'Bachelor of Science in Computer Science', 'College of Computer Studies', 'Undergraduate', 'Active', 4, '2026-04-13');
 
 -- --------------------------------------------------------
 
@@ -336,7 +337,7 @@ ALTER TABLE `authentication`
 -- AUTO_INCREMENT for table `departments`
 --
 ALTER TABLE `departments`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `entry_exit_logs`
@@ -348,7 +349,7 @@ ALTER TABLE `entry_exit_logs`
 -- AUTO_INCREMENT for table `programs`
 --
 ALTER TABLE `programs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 
 --
 -- AUTO_INCREMENT for table `student_face_embeddings`
