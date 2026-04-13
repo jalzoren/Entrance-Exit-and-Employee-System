@@ -1,4 +1,15 @@
 // components/EditStudent.jsx
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tabbed modal:
+//   Tab 1 — Student Information  (always available — edit any field)
+//   Tab 2 — Face Registration    (only shown when student has no face yet)
+//
+// Props:
+//   student  — full student object + hasFace boolean (injected by Students.jsx)
+//   onClose  — called after save or dismiss; parent refreshes data
+// ─────────────────────────────────────────────────────────────────────────────
+
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Swal from "sweetalert2";
@@ -19,6 +30,7 @@ import {
 import RegisterStudentCam from "./RegisterStudentCam";
 import "../componentscss/EditStudent.css";
 
+// ── Capture step definitions (same as RegisterStudent) ────────────────────────
 const CAPTURE_STEPS = [
   { text: "Face in Center", instruction: "Look straight at the camera", icon: "center" },
   { text: "Face in Left",   instruction: "Turn your face slightly to the left", icon: "left" },
@@ -30,6 +42,7 @@ const CAPTURE_STEPS = [
 const MAX_PHOTOS = 5;
 const EXTENSION_OPTIONS = ["", "Jr.", "Sr.", "I", "II", "III", "IV"];
 
+// ── Direction icon helper (mirrors RegisterStudent) ───────────────────────────
 function DirectionIcon({ step }) {
   switch (step) {
     case 0: return <div className="face-icon-center" />;
@@ -41,38 +54,45 @@ function DirectionIcon({ step }) {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// COMPONENT
+// ──────────────────────────────────────────────────────────
+
 function EditStudent({ student, onClose }) {
+  // Active tab: "info" | "face"
   const [activeTab, setActiveTab] = useState("info");
 
+   // ── Tab 1: editable student fields ─────────────────────
   // Student info fields
-  const [email, setEmail] = useState(student.email || "");
-  const [firstName, setFirstName] = useState(student.first_name || "");
-  const [lastName, setLastName] = useState(student.last_name || "");
-  const [middleName, setMiddleName] = useState(student.middle_name || "");
-  const [extension, setExtension] = useState(student.extension_name || "");
-  const [college, setCollege] = useState(student.college_department || "");
-  const [program, setProgram] = useState(student.program_name || "");
-  const [yearLevel, setYearLevel] = useState(student.year_level || "");
-  const [status, setStatus] = useState(student.status || "");
-  const [formErrors, setFormErrors] = useState({});
-  const [savingInfo, setSavingInfo] = useState(false);
+  const [email, setEmail] = useState(student.email                         || "");
+  const [firstName,   setFirstName]   = useState(student.first_name        || "");
+  const [lastName,    setLastName]    = useState(student.last_name         || "");
+  const [middleName,  setMiddleName]  = useState(student.middle_name       || "");
+  const [extension,   setExtension]   = useState(student.extension_name    || "");
+  const [college,     setCollege]     = useState(student.college_department|| "");
+  const [program,     setProgram]     = useState(student.program_name      || "");
+  const [yearLevel,   setYearLevel]   = useState(student.year_level        || "");
+  const [status,      setStatus]      = useState(student.status            || "");
+  const [formErrors,  setFormErrors]  = useState({});
+  const [savingInfo,  setSavingInfo]  = useState(false);
 
   // Departments and programs
   const [activeDepartments, setActiveDepartments] = useState([]);
   const [programs, setPrograms] = useState([]);
   const [filteredPrograms, setFilteredPrograms] = useState([]);
 
-  // Face capture
-  const [photoPreviews, setPhotoPreviews] = useState(Array(MAX_PHOTOS).fill(null));
-  const [captureStep, setCaptureStep] = useState(0);
-  const [showCamera, setShowCamera] = useState(false);
-  const [isScanning, setIsScanning] = useState(false);
-  const [scanComplete, setScanComplete] = useState(false);
-  const [scanError, setScanError] = useState(false);
+   // ── Tab 2: face capture ────────────────────────────────
+  const [photoPreviews,  setPhotoPreviews]  = useState(Array(MAX_PHOTOS).fill(null));
+  const [captureStep,    setCaptureStep]    = useState(0);
+  const [showCamera,     setShowCamera]     = useState(false);
+  const [isScanning,     setIsScanning]     = useState(false);
+  const [scanComplete,   setScanComplete]   = useState(false);
+  const [scanError,      setScanError]      = useState(false);
 
-  const uploadedPhotos = photoPreviews.filter(Boolean).length;
-  const progressPercent = (uploadedPhotos / MAX_PHOTOS) * 100;
+  const uploadedPhotos   = photoPreviews.filter(Boolean).length;
+  const progressPercent  = (uploadedPhotos / MAX_PHOTOS) * 100;
 
+   // ── Validation ────────────────────────────────────────
   // Fetch active departments
   useEffect(() => {
     const fetchActiveDepartments = async () => {
@@ -121,18 +141,18 @@ function EditStudent({ student, onClose }) {
   // Validation (including program)
   const validateInfo = () => {
     const errors = {
-      lastName: !lastName.trim() ? "Last Name is required" : "",
-      firstName: !firstName.trim() ? "First Name is required" : "",
-      college: !college ? "College Department is required" : "",
-      program: !program ? "Program is required" : "",
-      yearLevel: !yearLevel ? "Year Level is required" : "",
-      status: !status ? "Status is required" : "",
+      lastName:  !lastName.trim()  ? "Last Name is required"           : "",
+      firstName: !firstName.trim() ? "First Name is required"          : "",
+      college:   !college          ? "College Department is required"  : "",
+      yearLevel: !yearLevel        ? "Year Level is required"          : "",
+      status:    !status           ? "Status is required"              : "",
+      program:   !program          ? "Program is required"             : "",
     };
     setFormErrors(errors);
     return Object.values(errors).every(e => e === "");
   };
 
-  // Save student info
+  // ── Save student info ──────────────────────────────────
   const handleSaveInfo = async () => {
     if (!validateInfo()) return;
 
