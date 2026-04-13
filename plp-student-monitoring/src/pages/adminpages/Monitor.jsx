@@ -235,6 +235,8 @@ export default function Monitor() {
                 Failed Attempts ({failedCount})
               </button>
             </div>
+
+            {/* Export Buttons 
             <div style={{ 
               display: 'flex', 
               gap: '8px',
@@ -279,6 +281,8 @@ export default function Monitor() {
                 Import XML
               </button>
             </div>
+
+            */}
           </div>
 
           <div className="rtm-body">
