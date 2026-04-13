@@ -10,6 +10,7 @@ function EditProgramModal({ program, onClose, onSave, departments, onDepartmentA
     department: program.department,
     programType: program.programType,
     programStatus: program.programStatus,
+    duration: program.duration,
   });
 
   const handleChange = (e) => {
@@ -48,14 +49,12 @@ function EditProgramModal({ program, onClose, onSave, departments, onDepartmentA
         showConfirmButton: false
       });
       
-      // Refresh departments list in parent
       if (onDepartmentAdded) {
         const deptResponse = await fetch('http://localhost:5000/api/departments');
         const updatedDepts = await deptResponse.json();
         onDepartmentAdded(updatedDepts);
       }
       
-      // Auto-select the newly added department
       setForm((prev) => ({ ...prev, department: newDepartment }));
       
     } catch (error) {
@@ -70,11 +69,11 @@ function EditProgramModal({ program, onClose, onSave, departments, onDepartmentA
   };
 
   const handleSave = () => {
-    if (!form.programCode || !form.programName || !form.department) {
+    if (!form.programCode || !form.programName || !form.department || !form.duration) {
       Swal.fire({
         icon: 'warning',
         title: 'Missing Fields',
-        text: 'Please fill in all required fields.',
+        text: 'Please fill in all required fields including duration.',
         confirmButtonColor: '#3085d6'
       });
       return;
@@ -103,13 +102,10 @@ function EditProgramModal({ program, onClose, onSave, departments, onDepartmentA
                 className="modal-input" 
                 placeholder="e.g. BSCS" 
               />
-
-
-
             </div>
 
-              <div className="modal-field">
-             <label className="modal-label">Department <span className="required">*</span></label>
+            <div className="modal-field">
+              <label className="modal-label">Department <span className="required">*</span></label>
               <DepartmentSelect
                 value={form.department}
                 onChange={handleDepartmentChange}
@@ -118,11 +114,8 @@ function EditProgramModal({ program, onClose, onSave, departments, onDepartmentA
               />
             </div>
 
-          
-
             <div className="modal-field modal-full-width">
-
-               <label className="modal-label">Program Name <span className="required">*</span></label>
+              <label className="modal-label">Program Name <span className="required">*</span></label>
               <input 
                 type="text" 
                 name="programName" 
@@ -131,7 +124,6 @@ function EditProgramModal({ program, onClose, onSave, departments, onDepartmentA
                 className="modal-input" 
                 placeholder="e.g. Bachelor of Science in Computer Science" 
               />
-              
             </div>
 
             <div className="modal-field">
@@ -140,6 +132,20 @@ function EditProgramModal({ program, onClose, onSave, departments, onDepartmentA
                 <option value="Undergraduate">Undergraduate</option>
                 <option value="Graduate">Graduate</option>
               </select>
+            </div>
+
+            <div className="modal-field">
+              <label className="modal-label">Duration (Years) <span className="required">*</span></label>
+              <input 
+                type="number" 
+                name="duration" 
+                value={form.duration} 
+                onChange={handleChange} 
+                className="modal-input" 
+                placeholder="e.g. 4"
+                min="1"
+                max="10"
+              />
             </div>
 
             <div className="modal-field">

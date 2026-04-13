@@ -107,8 +107,14 @@ function FaceRecognition({ mode = 'ENTRY' }) {
   // ── Keyboard shortcuts ────────────────────────────
   useEffect(() => {
     const handleKey = (e) => {
+      // Safe check for e.key existence
+      if (!e.key) return;
+      
       const k = e.key.toLowerCase();
+      
+      // Don't trigger if typing in input/textarea
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      
       const found = altMethods.find(m => m.key === k);
       if (found) {
         e.preventDefault();
@@ -117,6 +123,7 @@ function FaceRecognition({ mode = 'ENTRY' }) {
         setTimeout(() => setActiveKey(null), 150);
       }
     };
+    
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
   }, [altMethods]);

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<visitor-module>
+  <form-config>
+    <fields>
+      <field name="fullName" type="text" required="true">
+        <label>Full Name</label>
+        <placeholder>e.g Bitancor, Jerimiah A.</placeholder>
+        <error-message>Full name is required.</error-message>
+      </field>
+      
+      <field name="email" type="email" required="true">
+        <label>Email</label>
+        <placeholder>e.g. juan@email.com</placeholder>
+        <error-message>Email is required.</error-message>
+      </field>
+      
+      <field name="reason" type="select" required="true">
+        <label>Reason for Visit</label>
+        <error-message>Please select a reason for visit.</error-message>
+        <options>
+          <option value="">-- Select a reason --</option>
+          <option value="Meeting with Faculty">Meeting with Faculty</option>
+          <option value="Enrollment / Registration">Enrollment / Registration</option>
+          <option value="Library Access">Library Access</option>
+          <option value="Event / Activity">Event / Activity</option>
+          <option value="Delivery / Pickup">Delivery / Pickup</option>
+          <option value="Other">Other</option>
+        </options>
+      </field>
+      
+      <field name="otherReason" type="textarea" required="true" depends-on="reason" depends-value="Other">
+        <label>Other Reason</label>
+        <placeholder>Describe your reason...</placeholder>
+        <error-message>Please describe your reason.</error-message>
+      </field>
+    </fields>
+  </form-config>
+  
+  <modal-config>
+    <title>Visitor Form</title>
+    <instructions>
+      <title>INSTRUCTIONS</title>
+      <text>Fill in your details to register for a temporary visitor pass.</text>
+    </instructions>
+    <hint>Check your email for the QR Code</hint>
+  </modal-config>
+  
+  <api-config>
+    <endpoint url="http://localhost:5000/api/visitor" method="POST">
+      <field-mapping>
+        <map form-field="fullName" api-field="full_name"/>
+        <map form-field="email" api-field="email"/>
+        <map form-field="reason" api-field="reason"/>
+        <map form-field="otherReason" api-field="other_reason"/>
+      </field-mapping>
+    </endpoint>
+  </api-config>
+</visitor-module>

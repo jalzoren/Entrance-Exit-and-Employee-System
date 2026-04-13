@@ -200,6 +200,47 @@ router.delete('/departments/:id', async (req, res) => {
     }
 });
 
+// Get active departments only (for registration/editing)
+router.get('/departments/active', async (req, res) => {
+    try {
+        const [rows] = await pool.query(
+            'SELECT id, dept_code, dept_name FROM departments WHERE status = "Active" ORDER BY dept_name'
+        );
+        res.json(rows);
+    } catch (error) {
+        console.error('Error fetching active departments:', error);
+        res.status(500).json({ error: 'Database error' });
+    }
+});
+
+// Get active programs only (with active departments)
+router.get('/programs/active', async (req, res) => {
+    try {
+        const { department } = req.query;
+        
+        let query = `
+            SELECT p.* 
+            FROM programs p
+            JOIN departments d ON p.department = d.dept_name
+            WHERE d.status = "Active" AND p.programStatus = "Active"
+        `;
+        let params = [];
+        
+        if (department) {
+            query += ' AND p.department = ?';
+            params.push(department);
+        }
+        
+        query += ' ORDER BY p.programName ASC';
+        
+        const [rows] = await pool.query(query, params);
+        res.json(rows);
+    } catch (error) {
+        console.error('Error fetching active programs:', error);
+        res.status(500).json({ error: 'Database error' });
+    }
+});
+
 // ============ PROGRAM ROUTES ============
 
 // Get all programs
@@ -207,7 +248,7 @@ router.get('/programs', async (req, res) => {
     try {
         const { search, department, programType, programStatus } = req.query;
         
-        let query = 'SELECT * FROM programs WHERE 1=1';
+        let query = 'SELECT *, duration FROM programs WHERE 1=1';
         let params = [];
         
         if (search) {
@@ -246,7 +287,7 @@ router.get('/programs/archived', async (req, res) => {
     try {
         const { search, department, programType } = req.query;
         
-        let query = 'SELECT * FROM programs WHERE programStatus = "Inactive"';
+        let query = 'SELECT *, duration FROM programs WHERE programStatus = "Inactive"';
         let params = [];
         
         if (search) {
@@ -278,7 +319,7 @@ router.get('/programs/archived', async (req, res) => {
 // Get single program by ID
 router.get('/programs/:id', async (req, res) => {
     try {
-        const [rows] = await pool.query('SELECT * FROM programs WHERE id = ?', [req.params.id]);
+        const [rows] = await pool.query('SELECT *, duration FROM programs WHERE id = ?', [req.params.id]);
         
         if (rows.length === 0) {
             return res.status(404).json({ error: 'Program not found' });
@@ -294,16 +335,16 @@ router.get('/programs/:id', async (req, res) => {
 // Create new program
 router.post('/programs', async (req, res) => {
     try {
-        const { programCode, programName, department, programType, programStatus } = req.body;
+        const { programCode, programName, department, programType, programStatus, duration } = req.body;
         const dateCreated = getPHDate();
         
         const [result] = await pool.query(
-            `INSERT INTO programs (programCode, programName, department, programType, programStatus, dateCreated) 
-             VALUES (?, ?, ?, ?, ?, ?)`,
-            [programCode, programName, department, programType, programStatus, dateCreated]
+            `INSERT INTO programs (programCode, programName, department, programType, programStatus, duration, dateCreated) 
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [programCode, programName, department, programType, programStatus, duration, dateCreated]
         );
         
-        const [newProgram] = await pool.query('SELECT * FROM programs WHERE id = ?', [result.insertId]);
+        const [newProgram] = await pool.query('SELECT *, duration FROM programs WHERE id = ?', [result.insertId]);
         res.status(201).json(newProgram[0]);
     } catch (error) {
         console.error('Error adding program:', error);
@@ -317,7 +358,7 @@ router.post('/programs', async (req, res) => {
 // Update program (PUT)
 router.put('/programs/:id', async (req, res) => {
     try {
-        const { programCode, programName, department, programType, programStatus } = req.body;
+        const { programCode, programName, department, programType, programStatus, duration } = req.body;
         
         const [result] = await pool.query(
             `UPDATE programs SET 
@@ -325,16 +366,17 @@ router.put('/programs/:id', async (req, res) => {
              programName = ?, 
              department = ?, 
              programType = ?, 
-             programStatus = ?
+             programStatus = ?,
+             duration = ?
              WHERE id = ?`,
-            [programCode, programName, department, programType, programStatus, req.params.id]
+            [programCode, programName, department, programType, programStatus, duration, req.params.id]
         );
         
         if (result.affectedRows === 0) {
             return res.status(404).json({ error: 'Program not found' });
         }
         
-        const [updatedProgram] = await pool.query('SELECT * FROM programs WHERE id = ?', [req.params.id]);
+        const [updatedProgram] = await pool.query('SELECT *, duration FROM programs WHERE id = ?', [req.params.id]);
         res.json(updatedProgram[0]);
     } catch (error) {
         console.error('Error updating program:', error);
@@ -360,7 +402,7 @@ router.patch('/programs/:id', async (req, res) => {
             return res.status(404).json({ error: 'Program not found' });
         }
         
-        const [updatedProgram] = await pool.query('SELECT * FROM programs WHERE id = ?', [req.params.id]);
+        const [updatedProgram] = await pool.query('SELECT *, duration FROM programs WHERE id = ?', [req.params.id]);
         res.json(updatedProgram[0]);
     } catch (error) {
         console.error('Error updating program status:', error);
