@@ -10,7 +10,7 @@ import * as faceapi from 'face-api.js';
 
 
 // ── Keys shared with Settingspage ──────────────────────────────────────────
-const LOGO_KEY = 'institution_logo';
+const LOGO_KEY = 'plp_logo';
 const NAME_KEY = 'institution_name';
 
 function EmployeePage({ onBack, onNavigateAdmin }) {
