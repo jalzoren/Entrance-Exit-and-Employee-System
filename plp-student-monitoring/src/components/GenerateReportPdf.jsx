@@ -34,6 +34,9 @@ const GenerateReportPdf = forwardRef(({ reportData, filters }, ref) => {
     generateWithFilters: handleGeneratePDF
   }));
 
+  const leftLogoSrc = '/logo.png'; 
+  const rightLogoSrc = '/logo3.png'; 
+
   // Use reportData from props
   const {
     totalStudents = 5500,
@@ -71,7 +74,14 @@ const GenerateReportPdf = forwardRef(({ reportData, filters }, ref) => {
       padding: '30px 20px',
       fontFamily: 'Arial, Helvetica, sans-serif'
     }}>
-     
+      {/* Download Button */}
+      <div style={{ 
+        maxWidth: '900px', 
+        margin: '0 auto 20px auto', 
+        textAlign: 'center'
+      }}>
+  
+      </div>
 
       {/* REPORT CONTENT - This gets converted to PDF */}
       <div 
@@ -80,28 +90,129 @@ const GenerateReportPdf = forwardRef(({ reportData, filters }, ref) => {
           maxWidth: '900px',
           margin: '0 auto',
           background: 'white',
-          fontFamily: 'Arial, Helvetica, sans-serif'
+          fontFamily: 'Arial, Helvetica, sans-serif',
+          boxShadow: '0 4px 10px rgba(0,0,0,0.1)'
         }}
       >
-        {/* ========== HEADER SECTION ========== */}
+        {/* ========== HEADER WITH LOGOS ON BOTH SIDES ========== */}
         <div style={{
           padding: '30px 30px 20px 30px',
           borderBottom: '2px solid #000',
         }}>
+          {/* Header with Left Logo, Center Text, Right Logo */}
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '20px'
+          }}>
+            {/* Left Logo */}
+            <div style={{
+              width: '80px',
+              height: '80px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <img 
+                src={leftLogoSrc}
+                alt="University Logo Left"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain'
+                }}
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.parentElement.innerHTML = '<div style="width:70px;height:70px;background:#f0f0f0;border:2px solid #ccc;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#999;">LOGO</div>';
+                }}
+              />
+            </div>
+            
+            {/* Center Text */}
+            <div style={{ textAlign: 'center', flex: 1 }}>
+              <div style={{
+                fontSize: '22px',
+                fontWeight: 'bold',
+                color: '#01311d',
+                letterSpacing: '1px'
+              }}>
+                PAMANTASAN NG LUNGSOD NG PASIG
+              </div>
+              <div style={{
+                fontSize: '12px',
+                color: '#01311d',
+                marginTop: '5px'
+              }}>
+                Alcalde Jose St., Kapasigan, Pasig City
+              </div>
+            </div>
+            
+            {/* Right Logo */}
+            <div style={{
+              width: '80px',
+              height: '80px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <img 
+                src={rightLogoSrc}
+                alt="University Logo Right"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain'
+                }}
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.parentElement.innerHTML = '<div style="width:70px;height:70px;background:#f0f0f0;border:2px solid #ccc;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#999;">LOGO</div>';
+                }}
+              />
+            </div>
+          </div>
+          
+          {/* Divider Line */}
+          <div style={{ 
+            borderTop: '2px solid #01311d', 
+            margin: '10px 0 15px 0'
+          }}></div>
+          
+          {/* System Title - Centered */}
+          <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+            <div style={{
+              fontSize: '16px',
+              fontWeight: 'bold',
+              color: '#01311d',
+              letterSpacing: '2px',
+              textTransform: 'uppercase'
+            }}>
+              ENTRANCE AND EXIT STUDENT MONITORING SYSTEM
+            </div>
+          </div>
+          
+          {/* Divider */}
+          <div style={{ borderTop: '1px solid #ccc', margin: '15px 0' }}></div>
+          
+          {/* Report Title */}
           <h1 style={{ 
             fontSize: '28px', 
             fontWeight: 'bold', 
             marginBottom: '15px',
             letterSpacing: '1px',
-            color: '#000'
+            color: '#000',
+            textAlign: 'center'
           }}>
             SUMMARY REPORT
           </h1>
+          
+          {/* Description */}
           <p style={{ 
             color: '#555', 
             fontSize: '12px', 
             lineHeight: '1.6',
-            marginBottom: '20px'
+            marginBottom: '20px',
+            textAlign: 'right'
           }}>
             This summary report provides an overview of student entrance and exit activity within the selected date range. 
             It presents key attendance metrics, authentication method distribution, traffic trends, and detailed logs to 
