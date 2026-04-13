@@ -38,6 +38,7 @@ function RegisterStudent({ onClose, onSuccess }) {
   const [extension, setExtension] = useState("");
   const [status, setStatus] = useState("");
   const [departments, setDepartments] = useState([]);
+  const [loadingDepartments, setLoadingDepartments] = useState(true);
   const [programs, setPrograms] = useState([]);
   const [filteredPrograms, setFilteredPrograms] = useState([]);
   const [emailManuallyEdited, setEmailManuallyEdited] = useState(false);
@@ -76,36 +77,47 @@ function RegisterStudent({ onClose, onSuccess }) {
 
   // Fetch departments and programs from backend
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const deptResponse = await fetch('http://localhost:5000/api/departments');
-        const deptData = await deptResponse.json();
-        // Extract department names from the response objects
-        const departmentNames = Array.isArray(deptData) 
-          ? deptData.map(dept => typeof dept === 'object' ? dept.dept_name || dept.name || dept : dept)
-          : [];
-        setDepartments(departmentNames);
-        
-        const progResponse = await fetch('http://localhost:5000/api/programs');
-        const progData = await progResponse.json();
-        setPrograms(Array.isArray(progData) ? progData : []);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        Swal.fire({
-          title: "Connection Error",
-          text: "Failed to connect to server. Please check if the backend is running.",
-          icon: "error",
-          confirmButtonText: "OK",
-          customClass: {
-            popup: "swal-popup",
-            confirmButton: "swal-btn-primary",
-          },
-          buttonsStyling: false,
-        });
+  const fetchData = async () => {
+    setLoadingDepartments(true);
+    try {
+      // Fetch active departments using status filter
+      const deptResponse = await fetch('http://localhost:5000/api/departments?status=Active');
+      if (!deptResponse.ok) throw new Error(`HTTP ${deptResponse.status}`);
+      const deptData = await deptResponse.json();
+      console.log('Departments response:', deptData);
+      
+      let departmentNames = [];
+      if (Array.isArray(deptData)) {
+        departmentNames = deptData.map(item => item.dept_name).filter(Boolean);
       }
-    };
-    fetchData();
-  }, []);
+      setDepartments(departmentNames);
+      
+      // Fetch active programs
+      const progResponse = await fetch('http://localhost:5000/api/programs?programStatus=Active');
+      if (!progResponse.ok) throw new Error(`HTTP ${progResponse.status}`);
+      const progData = await progResponse.json();
+      console.log('Programs response:', progData);
+      setPrograms(Array.isArray(progData) ? progData : []);
+      
+    } catch (error) {
+      console.error('Fetch error:', error);
+      Swal.fire({
+        title: "Connection Error",
+        text: "Failed to connect to server. Please check if the backend is running.",
+        icon: "error",
+        confirmButtonText: "OK",
+        customClass: {
+          popup: "swal-popup",
+          confirmButton: "swal-btn-primary",
+        },
+        buttonsStyling: false,
+      });
+    } finally {
+      setLoadingDepartments(false);
+    }
+  };
+  fetchData();
+}, []);
 
   // Filter programs when department changes
   useEffect(() => {
@@ -554,11 +566,14 @@ function RegisterStudent({ onClose, onSuccess }) {
                 ref={collegeRef}
                 onKeyDown={(e) => handleEnter(e, programRef)}
                 required
+                disabled={loadingDepartments}
               >
-                <option value="">Select College Department</option>
+                <option value="">
+                  {loadingDepartments ? "Loading departments..." : "Select College Department"}
+                </option>
                 {departments.map((dept, index) => (
                   <option key={index} value={dept}>
-                    {typeof dept === 'string' ? dept : dept?.dept_name || dept?.name || JSON.stringify(dept)}
+                    {dept}
                   </option>
                 ))}
               </select>

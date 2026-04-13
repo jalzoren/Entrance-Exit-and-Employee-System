@@ -51,7 +51,7 @@ function AddProgramModal({ onClose, onAdd, departments, onDepartmentAdded }) {
       });
       
       if (onDepartmentAdded) {
-        const deptResponse = await fetch('http://localhost:5000/api/departments');
+        const deptResponse = await fetch('http://localhost:5000/api/departments/active');
         const updatedDepts = await deptResponse.json();
         onDepartmentAdded(updatedDepts);
       }

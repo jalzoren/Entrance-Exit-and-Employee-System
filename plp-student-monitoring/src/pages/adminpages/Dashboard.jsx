@@ -1,3 +1,4 @@
+// Dashboard.jsx
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import ReactDOM from "react-dom";
 import {
@@ -43,8 +44,7 @@ class TimeService {
     const timeStr = date.toLocaleTimeString("en-PH", {
       hour: "2-digit",
       minute: "2-digit",
-      second: "2-digit",
-      hour12: false,
+      hour12: true,
     });
     return { day, date: dateStr, time: timeStr };
   }

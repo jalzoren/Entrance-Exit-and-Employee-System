@@ -90,7 +90,7 @@ router.post('/', async (req, res) => {
     // ── Record authentication ───────────────────────────────────────────
     const [authResult] = await db.query(
       `INSERT INTO authentication (student_id, method, auth_status, timestamp)
-       VALUES (?, 'QR Code', 'SUCCESS', ?)`,
+       VALUES (?, 'QR', 'SUCCESS', ?)`,
       [student_id, now]
     );
 
