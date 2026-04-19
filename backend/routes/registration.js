@@ -149,13 +149,13 @@ router.post("/register", async (req, res) => {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         student_id,
-        email?.trim().toLowerCase() ?? null,   // emails are lowercase by convention
+        email?.trim().toLowerCase() ?? null,   
         first_name?.trim().toUpperCase(),
         last_name?.trim().toUpperCase(),
         middle_name?.trim().toUpperCase() || null,
         extension_name?.trim() || null,
         college_department,
-        program || null,
+        program,
         year_level,
         status
       ]

@@ -102,7 +102,7 @@ export function showEntryExitAlert({ action, student, department, time }) {
       </div>
     `,
     background:        themeColor,
-    timer:             3000,
+    timer:             1500,
     timerProgressBar:  true,
     showConfirmButton: false,
     width:             '360px',
