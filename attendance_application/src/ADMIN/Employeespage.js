@@ -316,11 +316,33 @@ const runDetectionLoop = async () => {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (ev) => {
-      setImageSlots(prev => {
-        const updated = [...prev];
-        updated[index] = { preview: ev.target.result, file };
-        return updated;
-      });
+      (async () => {
+        const dataUrl = ev.target.result;
+        try {
+          // Try to extract embedding using face-api
+          const img = await faceapi.fetchImage(dataUrl);
+          const detection = await faceapi
+            .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.5, inputSize: 256 }))
+            .withFaceLandmarks()
+            .withFaceDescriptor();
+
+          if (!detection) {
+            alert('No face detected in the uploaded image. Please upload a clear photo with a single face.');
+            return;
+          }
+
+          const embedding = Array.from(detection.descriptor);
+
+          setImageSlots(prev => {
+            const updated = [...prev];
+            updated[index] = { preview: dataUrl, file, embedding };
+            return updated;
+          });
+        } catch (err) {
+          console.error('Failed to process uploaded image for embedding:', err);
+          alert('Failed to process uploaded image. Please try another image.');
+        }
+      })();
     };
     reader.readAsDataURL(file);
   };
