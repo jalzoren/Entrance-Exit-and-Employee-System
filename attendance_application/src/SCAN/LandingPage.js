@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { Container, Row, Col, Card, Button, Badge, Modal, Form } from 'react-bootstrap';
 import './LandingPage.css';
-import { getEvents, getEmployees, getEmployeePhotos, markAttendance, getAttendance } from '../api';
+import { getEvents, getEmployees, getEmployeePhotos } from '../api';
 import LoginPage from './Adminlogin';
 import * as faceapi from 'face-api.js';
 
@@ -28,7 +28,6 @@ function EmployeePage({ onBack, onNavigateAdmin }) {
   const [recognizedUser, setRecognizedUser] = useState(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [attendanceType, setAttendanceType] = useState('');
-  const [attendanceSubmitting, setAttendanceSubmitting] = useState(false);
   const videoRef = useRef(null);
   const [stream, setStream] = useState(null);
   const [isDetecting, setIsDetecting] = useState(false);
@@ -350,12 +349,6 @@ useEffect(() => {
           setRecognitionConfidence(confidencePercent);
           // Immediately pause scanning when a match is found
           setIsScanning(false);
-          // Auto-submit attendance for this detected user
-          try {
-            autoSubmitAttendance(newUser);
-          } catch (e) {
-            console.error('Auto attendance failed to start', e);
-          }
         }
       } else {
         setCurrentDetectedName('');
