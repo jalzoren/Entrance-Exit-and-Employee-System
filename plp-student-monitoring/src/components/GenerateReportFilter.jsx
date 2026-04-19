@@ -48,18 +48,10 @@ function GenerateReportFilter({ onClose, onGenerate, onDownloadPDF }) {
     
     console.log('Generating report with filters:', reportFilters);
     
-    // First apply filters to get filtered data
+    // Apply filters to get filtered data
     if (onGenerate) {
       onGenerate(reportFilters);
     }
-    
-    // Then trigger PDF download after filters are applied
-    // Give a small delay to ensure state updates
-    setTimeout(() => {
-      if (onDownloadPDF) {
-        onDownloadPDF();
-      }
-    }, 500);
     
     onClose();
   };

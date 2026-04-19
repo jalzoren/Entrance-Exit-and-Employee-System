@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useRef } from 'react';
 import '../../css/Records.css';
-import GenerateReportFilter from '../../components/GenerateReportFilter';
-import GenerateReportPdf from '../../components/GenerateReportPdf';
+
 import { useLogContext } from '../../context/LogContext';
 
 function Records() {
@@ -434,20 +433,7 @@ function Records() {
               />
             </div>
 
-            <div className="filter-group button-group">
-              <button 
-                className="generate-report-btn"
-                onClick={() => setShowFilterPopup(true)}
-              >
-                Generate Report
-              </button>
-              <button 
-                className="reset-filters-btn"
-                onClick={resetFilters}
-              >
-                Reset Filters
-              </button>
-            </div>
+          
           </div>
         </div>
 
@@ -532,40 +518,6 @@ function Records() {
         )}
       </div>
 
-      {/* Generate Report Filter Popup */}
-      {showFilterPopup && (
-        <GenerateReportFilter 
-          onClose={() => setShowFilterPopup(false)}
-          onGenerate={handleApplyFilters}
-        />
-      )}
-
-      {/* PDF Preview Modal */}
-      {showPdfPreview && filteredReportData && (
-        <div className="modal-overlay" onClick={handleClosePdfPreview}>
-          <div className="pdf-preview-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="pdf-preview-header">
-              <h2>Report Preview</h2>
-              <button className="close-btn" onClick={handleClosePdfPreview}>×</button>
-            </div>
-            <div className="pdf-preview-content">
-              <GenerateReportPdf 
-                ref={pdfRef}
-                reportData={filteredReportData}
-                filters={appliedFilters}
-              />
-            </div>
-            <div className="pdf-preview-footer">
-              <button className="cancel-btn" onClick={handleClosePdfPreview}>
-                Close
-              </button>
-              <button className="download-btn" onClick={handleDownloadPDF}>
-                Download PDF
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

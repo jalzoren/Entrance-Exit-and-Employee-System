@@ -73,9 +73,11 @@ html, body {
 /* METRICS CARDS */
 .metrics-row {
   display: flex;
-  gap: 24px;
-  margin-bottom: 32px;
-  flex-wrap: wrap;
+    gap: 24px;
+    margin-bottom: 32px;
+    flex-wrap: nowrap;
+    flex-direction: row-reverse;
+    align-items: center;
 }
 
 .metric-card {
