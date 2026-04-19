@@ -53,7 +53,12 @@ if ($method === 'GET') {
     if (isset($_GET["id"]) && isset($_GET["include_targets"])) {
         $event_id = $_GET["id"];
         try {
-            $eventStmt = $conn->prepare("SELECT event_ID, COALESCE(is_active, 1) AS is_active FROM events WHERE event_ID = ?");
+            $hasStatusCol = columnExists($conn, "events", "status");
+            if ($hasStatusCol) {
+                $eventStmt = $conn->prepare("SELECT event_ID, COALESCE(is_active, 1) AS is_active, COALESCE(status, '') AS status FROM events WHERE event_ID = ?");
+            } else {
+                $eventStmt = $conn->prepare("SELECT event_ID, COALESCE(is_active, 1) AS is_active FROM events WHERE event_ID = ?");
+            }
             $eventStmt->execute([$event_id]);
             $eventRow = $eventStmt->fetch(PDO::FETCH_ASSOC);
 
@@ -61,11 +66,15 @@ if ($method === 'GET') {
             $targetStmt->execute([$event_id]);
             $targets = $targetStmt->fetchAll(PDO::FETCH_COLUMN);
 
-            echo json_encode([
+            $out = [
                 "event_ID" => $event_id,
                 "is_active" => (int)($eventRow["is_active"] ?? 0),
                 "employee_ids" => array_map("intval", $targets ?: [])
-            ]);
+            ];
+            if (!empty($eventRow) && array_key_exists('status', $eventRow)) {
+                $out['status'] = $eventRow['status'];
+            }
+            echo json_encode($out);
         } catch (Exception $e) {
             echo json_encode([
                 "error" => true,
@@ -125,6 +134,10 @@ if ($method === 'GET') {
     }
     $whereClause = !empty($where) ? (" WHERE " . implode(" AND ", $where)) : "";
 
+    // Check if a `status` column exists so we can surface it in responses
+    $hasStatusCol = columnExists($conn, "events", "status");
+    $statusSelect = $hasStatusCol ? "COALESCE(ev.status, '') AS status," : "";
+
     try {
         // 1) event_date/event_time/description + eventtype_name/location_name
         $q1 = "
@@ -139,6 +152,7 @@ if ($method === 'GET') {
                 ev.location_ID,
                 et.eventtype_name AS eventtype_name,
                 l.location_name   AS location_name,
+                " . $statusSelect . "
                 COALESCE(ev.is_active, 1) AS is_active,
                 COUNT(a.attendance_ID) AS attended_count,
                 (SELECT COUNT(*) FROM event_target_employees ete WHERE ete.event_ID = ev.event_ID) AS selected_count
@@ -167,6 +181,7 @@ if ($method === 'GET') {
                     ev.location_ID,
                     et.eventtype     AS eventtype_name,
                     l.location       AS location_name,
+                    " . $statusSelect . "
                     COALESCE(ev.is_active, 1) AS is_active,
                     COUNT(a.attendance_ID) AS attended_count,
                     (SELECT COUNT(*) FROM event_target_employees ete WHERE ete.event_ID = ev.event_ID) AS selected_count
@@ -196,6 +211,7 @@ if ($method === 'GET') {
                         ev.location_ID,
                         et.eventtype_name AS eventtype_name,
                         l.location_name   AS location_name,
+                        " . $statusSelect . "
                         COALESCE(ev.is_active, 1) AS is_active,
                         COUNT(a.attendance_ID) AS attended_count,
                         (SELECT COUNT(*) FROM event_target_employees ete WHERE ete.event_ID = ev.event_ID) AS selected_count
@@ -225,6 +241,7 @@ if ($method === 'GET') {
                         ev.location_ID,
                         et.eventtype   AS eventtype_name,
                         l.location     AS location_name,
+                        " . $statusSelect . "
                         COALESCE(ev.is_active, 1) AS is_active,
                         COUNT(a.attendance_ID) AS attended_count,
                         (SELECT COUNT(*) FROM event_target_employees ete WHERE ete.event_ID = ev.event_ID) AS selected_count
@@ -429,7 +446,11 @@ if ($method === 'PUT') {
                 exit;
             }
 
-            $stmt = $conn->prepare("UPDATE events SET is_active = 1 WHERE event_ID = ?");
+            if (columnExists($conn, "events", "status")) {
+                $stmt = $conn->prepare("UPDATE events SET status = 'Activated' WHERE event_ID = ?");
+            } else {
+                $stmt = $conn->prepare("UPDATE events SET is_active = 1 WHERE event_ID = ?");
+            }
             $stmt->execute([$event_id]);
             echo json_encode(["success" => true, "message" => "Event activated successfully"]);
         } catch (Exception $e) {
@@ -440,7 +461,11 @@ if ($method === 'PUT') {
 
     if (($data["action"] ?? "") === "deactivate_event") {
         try {
-            $stmt = $conn->prepare("UPDATE events SET is_active = 0 WHERE event_ID = ?");
+            if (columnExists($conn, "events", "status")) {
+                $stmt = $conn->prepare("UPDATE events SET status = 'Deactivated' WHERE event_ID = ?");
+            } else {
+                $stmt = $conn->prepare("UPDATE events SET is_active = 0 WHERE event_ID = ?");
+            }
             $stmt->execute([$event_id]);
             echo json_encode(["success" => true, "message" => "Event deactivated successfully"]);
         } catch (Exception $e) {

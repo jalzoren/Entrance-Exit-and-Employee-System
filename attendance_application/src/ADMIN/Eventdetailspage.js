@@ -69,6 +69,10 @@ function EventDetailsPage({ onNavigate, eventData }) {
   const [savingSetup, setSavingSetup]   = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [eventActive, setEventActive]   = useState((eventData?.is_active ?? 1) === 1);
+  const [eventStatus, setEventStatus]   = useState(
+    eventData?.status ?? ((eventData?.is_active ?? 1) === 1 ? 'Activated' : 'Deactivated')
+  );
+  const [hasSetup, setHasSetup] = useState(false);
 
   const plpLogo         = localStorage.getItem(PLP_LOGO_KEY) || '';
   const institutionName = localStorage.getItem(NAME_KEY) || 'Pamantasan ng Lungsod ng Pasig';
@@ -86,11 +90,15 @@ function EventDetailsPage({ onNavigate, eventData }) {
   const timeEnd   = eventData?.time_end   || '';
 
   useEffect(() => {
-    if (event_ID) loadAttendance();
-  }, [event_ID]);
-
-  useEffect(() => {
-    if (event_ID) loadSetupData();
+    if (!event_ID) return;
+    (async () => {
+      const setupExists = await loadSetupData();
+      if (setupExists) {
+        await loadAttendance();
+      } else {
+        setRecords([]);
+      }
+    })();
   }, [event_ID]);
 
   // Safety cleanup for modal backdrop
@@ -130,9 +138,21 @@ function EventDetailsPage({ onNavigate, eventData }) {
       setAllEmployees(activeEmployees);
       setAllDepartments(deptArr);
       setSelectedEmployeeIds(new Set(ids.map(Number)));
-      setEventActive((setupData?.is_active ?? eventData?.is_active ?? 1) === 1);
+      const setupExists = Array.isArray(ids) && ids.length > 0;
+      setHasSetup(setupExists);
+      // Prefer explicit `status` when provided by the API; fallback to is_active
+      if (setupData && (setupData?.status ?? null) !== null) {
+        setEventStatus(setupData.status);
+        setEventActive((setupData.status === 'Activated'));
+      } else {
+        const isActiveVal = (setupData?.is_active ?? eventData?.is_active ?? 1) === 1;
+        setEventActive(isActiveVal);
+        setEventStatus(eventData?.status ?? (isActiveVal ? 'Activated' : 'Deactivated'));
+      }
+      return setupExists;
     } catch (e) {
       console.error('Failed to load event setup data', e);
+      setHasSetup(false);
     }
   };
 
@@ -158,6 +178,8 @@ function EventDetailsPage({ onNavigate, eventData }) {
     try {
       setSavingSetup(true);
       await setupEventEmployees(event_ID, Array.from(selectedEmployeeIds));
+      // Refresh setup info so `hasSetup` and button state update immediately
+      await loadSetupData();
       setShowSetupModal(false);
       await loadAttendance();
     } catch (e) {
@@ -168,10 +190,16 @@ function EventDetailsPage({ onNavigate, eventData }) {
   };
 
   const handleActivate = async () => {
+    if (!hasSetup) {
+      alert('Please set up event first');
+      return;
+    }
+
     try {
       setUpdatingStatus(true);
       await activateEvent(event_ID);
       setEventActive(true);
+      setEventStatus('Activated');
       await loadSetupData();
     } catch (e) {
       alert(e?.message || 'Failed to activate event.');
@@ -185,6 +213,7 @@ function EventDetailsPage({ onNavigate, eventData }) {
       setUpdatingStatus(true);
       await deactivateEvent(event_ID);
       setEventActive(false);
+      setEventStatus('Deactivated');
       await loadSetupData();
     } catch (e) {
       alert(e?.message || 'Failed to deactivate event.');
@@ -534,9 +563,10 @@ function EventDetailsPage({ onNavigate, eventData }) {
       <div className="page-header-section">
         <h1 className="page-title">Event Details ({eventName})</h1>
         <div className="d-flex align-items-center gap-2">
-          <Badge bg={eventActive ? 'success' : 'secondary'}>
-            {eventActive ? 'Activated' : 'Deactivated'}
-          </Badge>
+            {(() => {
+              const variant = eventStatus === 'Activated' ? 'success' : (eventStatus === 'Completed' ? 'info' : 'secondary');
+              return <Badge bg={variant}>{eventStatus || 'Unknown'}</Badge>;
+            })()}
           <Button onClick={() => onNavigate('events')}>Back to Events</Button>
         </div>
       </div>
@@ -575,7 +605,7 @@ function EventDetailsPage({ onNavigate, eventData }) {
             <div>
               <h5>Attendance Records</h5>
             </div>
-            <Button onClick={handleExportLog} disabled={exporting}>
+            <Button onClick={handleExportLog} disabled={exporting || !hasSetup}>
               {exporting ? 'Exporting…' : 'Export PDF'}
             </Button>
           </div>
@@ -655,7 +685,7 @@ function EventDetailsPage({ onNavigate, eventData }) {
                 {updatingStatus ? 'Updating...' : 'Deactivate'}
               </Button>
             ) : (
-              <Button variant="success" onClick={handleActivate} disabled={updatingStatus}>
+              <Button variant="success" onClick={handleActivate} disabled={updatingStatus || !hasSetup}>
                 {updatingStatus ? 'Updating...' : 'Activate'}
               </Button>
             )}

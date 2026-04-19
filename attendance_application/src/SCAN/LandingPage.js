@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { Container, Row, Col, Card, Button, Badge, Modal, Form } from 'react-bootstrap';
 import './LandingPage.css';
-import { getEvents, getEmployees, markAttendance, getEmployeePhotos } from '../api';
+import { getEvents, getEmployees, getEmployeePhotos, markAttendance, getAttendance } from '../api';
 import LoginPage from './Adminlogin';
 import * as faceapi from 'face-api.js';
 
@@ -28,6 +28,7 @@ function EmployeePage({ onBack, onNavigateAdmin }) {
   const [recognizedUser, setRecognizedUser] = useState(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [attendanceType, setAttendanceType] = useState('');
+  const [attendanceSubmitting, setAttendanceSubmitting] = useState(false);
   const videoRef = useRef(null);
   const [stream, setStream] = useState(null);
   const [isDetecting, setIsDetecting] = useState(false);
@@ -347,16 +348,14 @@ useEffect(() => {
         if (!recognizedUser || recognizedUser.employeeId !== newUser.employeeId) {
           setRecognizedUser(newUser);
           setRecognitionConfidence(confidencePercent);
-          setShowConfirmButtons(false);
-
-          if (recognitionTimer) clearTimeout(recognitionTimer);
-
-          const timer = setTimeout(() => {
-            setShowConfirmButtons(true);
-            setIsScanning(false);   // Pause scanning
-          }, 2800);   // Slightly faster confirmation
-
-          setRecognitionTimer(timer);
+          // Immediately pause scanning when a match is found
+          setIsScanning(false);
+          // Auto-submit attendance for this detected user
+          try {
+            autoSubmitAttendance(newUser);
+          } catch (e) {
+            console.error('Auto attendance failed to start', e);
+          }
         }
       } else {
         setCurrentDetectedName('');
@@ -434,48 +433,7 @@ const stopCamera = () => {
 };
 
 
-  const submitAttendance = async (type) => {
-    if (!recognizedUser) {
-      alert('No employee recognized yet.');
-      return;
-    }
-
-    if (!selectedEvent) {
-      alert('Please select an event first.');
-      return;
-    }
-
-    try {
-      const response = await markAttendance({
-        employee_id: recognizedUser.employeeId || recognizedUser.id,
-        event_id: selectedEvent,
-        attendance_type: type,
-      });
-
-      if (response && (response.success || !response.error)) {
-        setAttendanceType(type);
-        setShowConfirmation(true);
-        setTimeout(() => {
-          setShowConfirmation(false);
-          resetToInitialState();
-        }, 2000);
-      } else {
-        // Show the error message from the server (e.g. "Already checked in")
-        alert(response?.message || `Failed to ${type.toLowerCase()}. Please try again.`);
-      }
-    } catch (error) {
-      console.error('Failed to record attendance:', error);
-      alert(error.message || 'Server error. Please check your connection.');
-    }
-  };
-
-  const handleCheckIn = async () => {
-    await submitAttendance('Check In');
-  };
-
-  const handleCheckOut = async () => {
-    await submitAttendance('Check Out');
-  };
+  // Check-in/out functionality removed temporarily.
 
   const handleScanDifferent = () => {
     setRecognizedUser(null);
@@ -872,49 +830,14 @@ const stopCamera = () => {
                         </div>
                       )}
 
-                      {/* Show Check In / Check Out buttons only after confirmation delay */}
-                      {showConfirmButtons ? (
-                        <>
-                          <p className="text-success text-center fw-bold mb-3">
-                            ✅ Confirmed. Please choose action:
-                          </p>
-                          <Row className="g-3 mb-3">
-                            <Col sm={6}>
-                              <Button 
-                                variant="success" 
-                                className="w-100 py-3 fw-bold fs-5" 
-                                onClick={handleCheckIn}
-                              >
-                                <i className="bi bi-box-arrow-in-right me-2"></i>Check In
-                              </Button>
-                            </Col>
-                            <Col sm={6}>
-                              <Button 
-                                variant="danger" 
-                                className="w-100 py-3 fw-bold fs-5" 
-                                onClick={handleCheckOut}
-                              >
-                                <i className="bi bi-box-arrow-right me-2"></i>Check Out
-                              </Button>
-                            </Col>
-                          </Row>
-                        </>
-                      ) : (
-                        <div className="text-center py-3">
-                          <div className="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
-                          <span className="text-muted">Verifying identity... Please wait 3 seconds</span>
-                        </div>
-                      )}
+                      {/* Check In / Check Out buttons removed. */}
 
                       <div className="d-grid">
                         <Button
                           variant="outline-secondary"
                           size="lg"
                           onClick={() => {
-                              if (recognitionTimer) clearTimeout(recognitionTimer);
-                              
                               setRecognizedUser(null);
-                              setShowConfirmButtons(false);
                               setRecognitionConfidence(0);
                               setCurrentDetectedName('');
                               setCurrentConfidence(0);
@@ -942,9 +865,8 @@ const stopCamera = () => {
                   <li className="mb-1">Select an event from the dropdown menu above</li>
                   <li className="mb-1">Click <strong>"Scan Face"</strong> to activate face recognition</li>
                   <li className="mb-1">Position your face clearly in front of the camera</li>
-                  <li className="mb-1">Wait for the system to recognize your face (3-5 seconds)</li>
+                  <li className="mb-1">System will recognize your face automatically</li>
                   <li className="mb-1">Verify the event shown is correct</li>
-                  <li>Choose <strong>"Check In"</strong> or <strong>"Check Out"</strong> to record attendance</li>
                 </ol>
               </Card.Body>
             </Card>
