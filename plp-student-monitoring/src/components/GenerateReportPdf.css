@@ -1,0 +1,7 @@
+/* Ensure college abbreviations are properly displayed */
+.college-abbrev {
+  font-weight: bold;
+  color: #01311d;
+  min-width: 50px;
+  display: inline-block;
+}

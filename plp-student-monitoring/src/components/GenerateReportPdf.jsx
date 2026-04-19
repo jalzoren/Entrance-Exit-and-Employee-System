@@ -2,7 +2,7 @@ import React, { useRef, forwardRef, useImperativeHandle } from 'react';
 import html2pdf from 'html2pdf.js';
 import '../componentscss/GenerateReportPdf.css'; // Import the CSS file
 
-const GenerateReportPdf = forwardRef(({ reportData, filters }, ref) => {
+const GenerateReportPdf = forwardRef(({ reportData }, ref) => {
   const reportRef = useRef(null);
 
   // Generate PDF function with proper margins
@@ -56,30 +56,18 @@ const GenerateReportPdf = forwardRef(({ reportData, filters }, ref) => {
   });
 
   const {
-    totalStudents = 5500,
-    totalCapacity = 10000,
-    collegeData = [
-      { name: 'CCS', count: 2400, percentage: 80 },
-      { name: 'CAS', count: 540, percentage: 90 },
-      { name: 'CON', count: 1250, percentage: 50 },
-      { name: 'CBA', count: 540, percentage: 90 },
-      { name: 'COE', count: 200, percentage: 50 },
-      { name: 'CHIM', count: 540, percentage: 90 },
-      { name: 'CCED', count: 1000, percentage: 100 }
-    ],
-    methodData = [
-      { name: 'Face Recognition', percentage: 35, count: 3500 },
-      { name: 'Manual Input', percentage: 65, count: 6500 }
-    ],
-    successData = [
-      { method: 'Facial Recognition', attempts: 300, successRate: 80, successCount: 240 },
-      { method: 'Manual Input', attempts: 100, successRate: 100, successCount: 100 }
-    ],
+    totalStudents = 0,
+    totalCapacity = 0,
+    dateRange = 'All Time',
+    collegeData = [],
+    methodData = [],
+    successData = [],
     trafficData = { 
-      highest: 'Wednesday (1,240 entries)', 
-      lowest: 'Sunday (180 entries)', 
-      peakHour: '8:15 AM (320 entries)' 
+      highest: 'N/A', 
+      lowest: 'N/A', 
+      peakHour: 'N/A' 
     },
+    trafficChartData = [],
     studentLogs = []
   } = reportData;
 
@@ -190,25 +178,29 @@ const GenerateReportPdf = forwardRef(({ reportData, filters }, ref) => {
             </div>
 
             <div style={{ flex: 1 }}>
-              <h3 className="pdf-chart-title">Chart 1: Distribution of Students by College</h3>
+              <h3 className="pdf-chart-title">Chart 1: Distribution of Students by Department</h3>
               
-              {collegeData.map((college, idx) => (
-                <div key={idx} className="pdf-progress-bar-container">
-                  <div className="pdf-progress-label">
-                    <span>{college.name}</span>
-                    <span>{college.count.toLocaleString()} ({college.percentage}%)</span>
+              {collegeData && collegeData.length > 0 ? (
+                collegeData.map((college, idx) => (
+                  <div key={idx} className="pdf-progress-bar-container" title={college.fullName || college.name}>
+                    <div className="pdf-progress-label">
+                      <span style={{ fontWeight: 'bold', minWidth: '60px' }}>{college.name}</span>
+                      <span>{college.count.toLocaleString()} ({college.percentage}%)</span>
+                    </div>
+                    <div className="pdf-progress-bar-bg">
+                      <div 
+                        className="pdf-progress-bar-fill"
+                        style={{ 
+                          width: `${college.percentage}%`, 
+                          backgroundColor: getGreenColor(college.percentage)
+                        }}
+                      ></div>
+                    </div>
                   </div>
-                  <div className="pdf-progress-bar-bg">
-                    <div 
-                      className="pdf-progress-bar-fill"
-                      style={{ 
-                        width: `${college.percentage}%`, 
-                        backgroundColor: getGreenColor(college.percentage)
-                      }}
-                    ></div>
-                  </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p style={{ color: '#999', fontSize: '12px' }}>No department data available. Please ensure students have department information in the system.</p>
+              )}
             </div>
           </div>
         </div>
@@ -216,32 +208,47 @@ const GenerateReportPdf = forwardRef(({ reportData, filters }, ref) => {
         {/* ========== DAILY TRAFFIC TREND TABLE ========== */}
         <div className="pdf-section-spacing">
           <h3 className="pdf-section-title">Daily Traffic Trend (Entries and Exits)</h3>
+          <p style={{ fontSize: '12px', color: '#666', marginBottom: '12px' }}>
+            <strong>Date Range:</strong> {dateRange}
+          </p>
           
           <div style={{ overflowX: 'auto' }}>
             <table className="pdf-table">
               <thead>
                 <tr>
-                  <th>Day</th>
+                  <th>Date/Day</th>
                   <th>Entrances</th>
                   <th>Exits</th>
                 </tr>
               </thead>
               <tbody>
-                <tr><td style={{ textAlign: 'center' }}>Monday</td><td style={{ textAlign: 'center' }}>1,240</td><td style={{ textAlign: 'center' }}>1,221</td></tr>
-                <tr><td style={{ textAlign: 'center' }}>Tuesday</td><td style={{ textAlign: 'center' }}>1,421</td><td style={{ textAlign: 'center' }}>1,229</td></tr>
-                <tr><td style={{ textAlign: 'center' }}>Wednesday</td><td style={{ textAlign: 'center' }}>1,478</td><td style={{ textAlign: 'center' }}>1,200</td></tr>
-                <tr><td style={{ textAlign: 'center' }}>Thursday</td><td style={{ textAlign: 'center' }}>1,389</td><td style={{ textAlign: 'center' }}>1,218</td></tr>
-                <tr><td style={{ textAlign: 'center' }}>Friday</td><td style={{ textAlign: 'center' }}>1,189</td><td style={{ textAlign: 'center' }}>1,118</td></tr>
-                <tr><td style={{ textAlign: 'center' }}>Saturday</td><td style={{ textAlign: 'center' }}>800</td><td style={{ textAlign: 'center' }}>750</td></tr>
-                <tr><td style={{ textAlign: 'center' }}>Sunday</td><td style={{ textAlign: 'center' }}>500</td><td style={{ textAlign: 'center' }}>480</td></tr>
+                {trafficChartData && trafficChartData.length > 0 ? (
+                  trafficChartData.map((day, index) => (
+                    <tr key={index}>
+                      <td style={{ textAlign: 'center' }}>{day.date}</td>
+                      <td style={{ textAlign: 'center' }}>{day.entrance.toLocaleString()}</td>
+                      <td style={{ textAlign: 'center' }}>{day.exit.toLocaleString()}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="3" style={{ textAlign: 'center', color: '#999' }}>No traffic data available</td>
+                  </tr>
+                )}
               </tbody>
-              <tfoot>
-                <tr style={{ backgroundColor: '#e8f5e9', fontWeight: 'bold' }}>
-                  <td style={{ padding: '12px 8px', textAlign: 'center', color: '#01311d' }}>Total</td>
-                  <td style={{ padding: '12px 8px', textAlign: 'center', color: '#01311d' }}>8,017</td>
-                  <td style={{ padding: '12px 8px', textAlign: 'center', color: '#01311d' }}>7,716</td>
-                </tr>
-              </tfoot>
+              {trafficChartData && trafficChartData.length > 0 && (
+                <tfoot>
+                  <tr style={{ backgroundColor: '#e8f5e9', fontWeight: 'bold' }}>
+                    <td style={{ padding: '12px 8px', textAlign: 'center', color: '#01311d' }}>Total</td>
+                    <td style={{ padding: '12px 8px', textAlign: 'center', color: '#01311d' }}>
+                      {trafficChartData.reduce((sum, day) => sum + day.entrance, 0).toLocaleString()}
+                    </td>
+                    <td style={{ padding: '12px 8px', textAlign: 'center', color: '#01311d' }}>
+                      {trafficChartData.reduce((sum, day) => sum + day.exit, 0).toLocaleString()}
+                    </td>
+                  </tr>
+                </tfoot>
+              )}
             </table>
           </div>
           
@@ -255,7 +262,7 @@ const GenerateReportPdf = forwardRef(({ reportData, filters }, ref) => {
               <span style={{ fontSize: '12px', color: '#333' }}>{trafficData.lowest}</span>
             </div>
             <div>
-              <span className="pdf-insight-text">Peak Hour Today: </span>
+              <span className="pdf-insight-text">Peak Hour: </span>
               <span style={{ fontSize: '12px', color: '#333' }}>{trafficData.peakHour}</span>
             </div>
           </div>
@@ -276,16 +283,22 @@ const GenerateReportPdf = forwardRef(({ reportData, filters }, ref) => {
                 </tr>
               </thead>
               <tbody>
-                {successData.map((item, idx) => (
-                  <tr key={idx}>
-                    <td style={{ textAlign: 'left' }}>{idx + 1}</td>
-                    <td style={{ textAlign: 'left' }}>{item.method}</td>
-                    <td style={{ textAlign: 'right' }}>{item.attempts}</td>
-                    <td style={{ textAlign: 'right' }}>
-                      {item.successRate}% ({item.successCount}/{item.attempts})
-                    </td>
+                {successData && successData.length > 0 ? (
+                  successData.map((item, idx) => (
+                    <tr key={idx}>
+                      <td style={{ textAlign: 'left' }}>{idx + 1}</td>
+                      <td style={{ textAlign: 'left' }}>{item.method}</td>
+                      <td style={{ textAlign: 'right' }}>{item.attempts.toLocaleString()}</td>
+                      <td style={{ textAlign: 'right' }}>
+                        {item.successRate}% ({item.successCount.toLocaleString()}/{item.attempts.toLocaleString()})
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="4" style={{ textAlign: 'center', color: '#999' }}>No success rate data available</td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
@@ -295,22 +308,26 @@ const GenerateReportPdf = forwardRef(({ reportData, filters }, ref) => {
         <div className="pdf-section-spacing">
           <h3 className="pdf-section-title">Chart 2: Distribution of Students by Method of Entry</h3>
           
-          {methodData.map((method, idx) => (
-            <div key={idx} className="pdf-method-bar">
-              <div className="pdf-method-label">
-                <span>{method.name}</span>
-                <span>{method.percentage}% ({method.count.toLocaleString()})</span>
+          {methodData && methodData.length > 0 ? (
+            methodData.map((method, idx) => (
+              <div key={idx} className="pdf-method-bar">
+                <div className="pdf-method-label">
+                  <span>{method.name}</span>
+                  <span>{method.percentage}% ({method.count.toLocaleString()})</span>
+                </div>
+                <div className="pdf-method-bar-bg">
+                  <div style={{ 
+                    width: `${method.percentage}%`, 
+                    height: '100%', 
+                    backgroundColor: idx === 0 ? '#2E7D32' : '#D99201',
+                    borderRadius: '3px'
+                  }}></div>
+                </div>
               </div>
-              <div className="pdf-method-bar-bg">
-                <div style={{ 
-                  width: `${method.percentage}%`, 
-                  height: '100%', 
-                  backgroundColor: idx === 0 ? '#2E7D32' : '#D99201',
-                  borderRadius: '3px'
-                }}></div>
-              </div>
-            </div>
-          ))}
+            ))
+          ) : (
+            <p style={{ color: '#999', fontSize: '12px' }}>No method data available</p>
+          )}
         </div>
 
         {/* ========== STUDENT LOGS TABLE ========== */}
@@ -331,28 +348,33 @@ const GenerateReportPdf = forwardRef(({ reportData, filters }, ref) => {
                 </tr>
               </thead>
               <tbody>
-                {studentLogs.length > 0 ? (
-                  studentLogs.map((log, index) => (
+                {studentLogs && studentLogs.length > 0 ? (
+                  studentLogs.slice(0, 20).map((log, index) => (
                     <tr key={index}>
                       <td>{log.no || index + 1}</td>
                       <td>{log.dateTime || ''}</td>
-                      <td>{log.studentId || ''}</td>
-                      <td>{log.name || ''}</td>
-                      <td>{log.department || ''}</td>
-                      <td>{log.action ? `[${log.action}]` : '[Entrance] [Exit]'}</td>
+                      <td>{log.studentId || 'N/A'}</td>
+                      <td>{log.name || 'Unknown'}</td>
+                      <td>{log.department || 'N/A'}</td>
+                      <td>{log.action || 'Entry'}</td>
                       <td>{log.method || 'Face Recognition'}</td>
                     </tr>
                   ))
                 ) : (
-                  <>
-                    <tr><td>1</td><td>2026-01-26 08:15:00</td><td>2024-00001</td><td>Juan Dela Cruz</td><td>CCS</td><td>[Entrance]</td><td>Face Recognition</td></tr>
-                    <tr><td>2</td><td>2026-01-26 17:30:00</td><td>2024-00001</td><td>Juan Dela Cruz</td><td>CCS</td><td>[Exit]</td><td>Face Recognition</td></tr>
-                    <tr><td>3</td><td>2026-01-27 09:00:00</td><td>2024-00123</td><td>Maria Santos</td><td>CAS</td><td>[Entrance]</td><td>Manual Input</td></tr>
-                  </>
+                  <tr>
+                    <td colSpan="7" style={{ textAlign: 'center', color: '#999', padding: '20px' }}>
+                      No student logs available for this report
+                    </td>
+                  </tr>
                 )}
               </tbody>
             </table>
           </div>
+          {studentLogs && studentLogs.length > 20 && (
+            <p style={{ fontSize: '11px', color: '#666', marginTop: '8px', fontStyle: 'italic' }}>
+              Showing first 20 of {studentLogs.length} records. See full report for complete data.
+            </p>
+          )}
         </div>
         {/* ========== FOOTER ========== */}
 <div className="pdf-footer">

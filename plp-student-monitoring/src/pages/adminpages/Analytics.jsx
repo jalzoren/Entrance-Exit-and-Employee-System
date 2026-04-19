@@ -10,6 +10,24 @@ import { useLogContext } from '../../context/LogContext';
 
 const AUTH_COLORS = ['#01311d', '#d99201'];
 
+// College/Department name mapping for consistent display
+const COLLEGE_ABBREVIATIONS = {
+  'College of Computer Studies': 'CCS',
+  'College of Nursing': 'CON',
+  'College of Engineering': 'COE',
+  'College of Arts and Sciences': 'CAS',
+  'College of Arts and Science': 'CAS',
+  'College of Business and Accountancy': 'CBA',
+  'College of Education': 'CCED',
+  'College of International Hospitality Management': 'CHIM',
+  'College of Hospitality Management': 'CHIM',
+  'General': 'GEN'
+};
+
+const getCollegeName = (department) => {
+  return COLLEGE_ABBREVIATIONS[department] || department.substring(0, 15).toUpperCase();
+};
+
 function Analytics() {
   const { logs, studentsInside } = useLogContext();
   
@@ -121,20 +139,28 @@ function Analytics() {
     
     logs.forEach(log => {
       if (!log.failed) {
-        const college = log.collegeDept || 'General';
-        if (collegeMap.has(college)) {
-          collegeMap.set(college, collegeMap.get(college) + 1);
-        } else {
-          collegeMap.set(college, 1);
+        // Use actual department from log, exclude 'General' or empty entries
+        const college = log.collegeDept && log.collegeDept.trim() && log.collegeDept !== 'General' 
+          ? log.collegeDept 
+          : null;
+        
+        // Only count entries with actual department data
+        if (college) {
+          if (collegeMap.has(college)) {
+            collegeMap.set(college, collegeMap.get(college) + 1);
+          } else {
+            collegeMap.set(college, 1);
+          }
         }
       }
     });
     
-    const totalRecords = logs.filter(log => !log.failed).length;
+    const totalRecords = Array.from(collegeMap.values()).reduce((sum, count) => sum + count, 0);
     
-    return Array.from(collegeMap, ([collegeName, presenceNow], id) => ({
+    return Array.from(collegeMap, ([fullCollegeName, presenceNow], id) => ({
       id: id + 1,
-      collegeName,
+      collegeName: getCollegeName(fullCollegeName),
+      fullCollegeName: fullCollegeName,
       presenceNow,
       totalStudents: presenceNow * 2, // Estimated total based on current presence
       percentage: totalRecords > 0 ? Math.round((presenceNow / totalRecords) * 100) : 0,
@@ -242,15 +268,26 @@ function Analytics() {
     // Calculate college distribution from filtered logs
     const collegeMap = new Map();
     filteredLogs.forEach(log => {
-      const college = log.collegeDept || 'General';
-      collegeMap.set(college, (collegeMap.get(college) || 0) + 1);
+      // Use actual department from log, exclude 'General' or empty entries
+      const college = log.collegeDept && log.collegeDept.trim() && log.collegeDept !== 'General'
+        ? log.collegeDept
+        : null;
+      
+      // Only count entries with actual department data
+      if (college) {
+        collegeMap.set(college, (collegeMap.get(college) || 0) + 1);
+      }
     });
     
-    const collegeDataForPdf = Array.from(collegeMap, ([name, count]) => ({
-      name: name.substring(0, 15).toUpperCase(),
+    // Calculate total based only on records with actual departments
+    const totalWithDept = Array.from(collegeMap.values()).reduce((sum, count) => sum + count, 0);
+    
+    const collegeDataForPdf = Array.from(collegeMap, ([fullName, count]) => ({
+      name: getCollegeName(fullName),
+      fullName: fullName,
       count,
-      percentage: filteredLogs.length > 0 ? Math.round((count / filteredLogs.length) * 100) : 0
-    }));
+      percentage: totalWithDept > 0 ? Math.round((count / totalWithDept) * 100) : 0
+    })).sort((a, b) => b.count - a.count);
     
     // Calculate method distribution
     const methodMap = new Map();
@@ -307,7 +344,7 @@ function Analytics() {
       }),
       studentId: log.studentId,
       name: log.name,
-      department: log.collegeDept || 'General',
+      department: log.collegeDept || 'N/A',
       action: log.action === 'ENTRY' ? 'Entrance' : 'Exit',
       method: log.method === 'FACE' ? 'Face Recognition' : 'Manual Input'
     }));
@@ -579,13 +616,13 @@ function Analytics() {
 
             <section className="chart-section">
               <div className="section-header">
-                <h2>College Distribution (Current Campus Population)</h2>
+                <h2>Department Distribution (Current Campus Population)</h2>
                 <button className="info-btn" title="More information">ℹ</button>
               </div>
               <CollegeDistributionChart data={collegeData} />
               <div className="campus-summary">
                 <p>
-                  <strong>Total students currently on campus:</strong>{' '}
+                  <strong>Total students by department:</strong>{' '}
                   {collegeData.reduce((sum, college) => sum + college.presenceNow, 0).toLocaleString()} students
                 </p>
               </div>
@@ -594,17 +631,17 @@ function Analytics() {
                   <thead>
                     <tr>
                       <th>No.</th>
-                      <th>College</th>
+                      <th>Department</th>
                       <th>Present Now</th>
                       <th>Total Students</th>
-                      <th>% of Campus</th>
+                      <th>% of Total</th>
                     </tr>
                   </thead>
                   <tbody>
                     {currentCollegeData.map((college, index) => (
                       <tr key={college.id}>
                         <td>{indexOfFirstRecord + index + 1}</td>
-                        <td>{college.collegeName}</td>
+                        <td title={college.fullCollegeName}>{college.collegeName}</td>
                         <td>{college.presenceNow.toLocaleString()}</td>
                         <td>{college.totalStudents.toLocaleString()}</td>
                         <td>{college.percentage}%</td>
