@@ -52,6 +52,11 @@ function EmployeePage({ onBack, onNavigateAdmin }) {
   const DETECTION_INTERVAL = 250; // 250ms = ~4 detections per second (good balance)
   const [isScanning, setIsScanning] = useState(true);   // Controls whether we run recognition
 
+  // --- Cooldown Tracking Refs ---
+  const lastFaceIdRef = useRef(null);
+  const lastScanTimeRef = useRef(0);
+  const SCAN_COOLDOWN = 10000; // 10 seconds
+
   const handleManualIdKey = (digit) => {
     setManualError('');
     setManualSearched(false);
@@ -103,6 +108,18 @@ function EmployeePage({ onBack, onNavigateAdmin }) {
         lastAction: null,
         photo: null
       };
+
+      // --- Cooldown Logic for Manual Entry ---
+      const now = Date.now();
+      if (newUser.employeeId === lastFaceIdRef.current && (now - lastScanTimeRef.current < SCAN_COOLDOWN)) {
+        setManualError('This employee recently scanned. Please wait a few seconds.');
+        return;
+      }
+
+      // Update tracking
+      lastFaceIdRef.current = newUser.employeeId;
+      lastScanTimeRef.current = now;
+
       setRecognizedUser(newUser);
       setManualError('');
       // Automatically trigger attendance after a short delay for manual entry too
@@ -360,6 +377,18 @@ useEffect(() => {
       if (bestMatch && bestScore > MIN_SIMILARITY) {
         const detectedName = `${bestMatch.employee_firstName} ${bestMatch.employee_LastName}`;
         const confidencePercent = Math.round(bestScore * 100);
+        const employeeId = bestMatch.employee_ID;
+
+        // --- Cooldown Logic ---
+        const now = Date.now();
+        if (employeeId === lastFaceIdRef.current && (now - lastScanTimeRef.current < SCAN_COOLDOWN)) {
+          // Still in cooldown for this specific person
+          return;
+        }
+
+        // Update tracking
+        lastFaceIdRef.current = employeeId;
+        lastScanTimeRef.current = now;
 
         setCurrentDetectedName(detectedName);
         setCurrentConfidence(confidencePercent);
