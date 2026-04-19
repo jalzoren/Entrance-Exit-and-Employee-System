@@ -39,7 +39,8 @@ function EventsPage({ onNavigate }) {
     event_date: '',
     event_time: '',
     time_end: '',
-    description: ''
+    description: '',
+    scan_mode: 'check_in'
   });
 
 
@@ -99,7 +100,8 @@ function EventsPage({ onNavigate }) {
       event_date: '',
       event_time: '',
       time_end: '',
-      description: ''
+      description: '',
+      scan_mode: 'check_in'
     });
     setShowCreateModal(true);
   };
@@ -127,7 +129,8 @@ function EventsPage({ onNavigate }) {
       event_date: extractDate(ev.event_date) || '',
       event_time: extractTime(ev.event_time) || '',
       time_end: extractTime(ev.time_end) || '',
-      description: ev.description || ''
+      description: ev.description || '',
+      scan_mode: ev.scan_mode || 'check_in'
     });
     setShowCreateModal(true);
   };

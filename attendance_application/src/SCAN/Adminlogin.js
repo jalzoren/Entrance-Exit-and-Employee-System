@@ -309,7 +309,7 @@ export default function LoginPage() {
                     <div style={{ position:"relative", marginBottom:18 }}>
                       <input
                         type="text"
-                        placeholder="e.g. 23-00001"
+                        placeholder="e.g. 230000123"
                         value={username}
                         onChange={e => { setUsername(e.target.value); setErrorMsg(""); }}
                         onKeyDown={e => e.key === "Enter" && handleLogin()}

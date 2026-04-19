@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { Container, Row, Col, Card, Button, Badge, Modal, Form } from 'react-bootstrap';
 import './LandingPage.css';
-import { getEvents, getEmployees, getEmployeePhotos } from '../api';
+import { getEvents, getEmployees, getEmployeePhotos, markAttendance, getEventSetup } from '../api';
 import LoginPage from './Adminlogin';
 import * as faceapi from 'face-api.js';
 
@@ -28,6 +28,8 @@ function EmployeePage({ onBack, onNavigateAdmin }) {
   const [recognizedUser, setRecognizedUser] = useState(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [attendanceType, setAttendanceType] = useState('');
+  const [attendanceStatus, setAttendanceStatus] = useState(null); // 'success' or 'error'
+  const [attendanceMsg, setAttendanceMsg] = useState('');
   const videoRef = useRef(null);
   const [stream, setStream] = useState(null);
   const [isDetecting, setIsDetecting] = useState(false);
@@ -92,7 +94,7 @@ function EmployeePage({ onBack, onNavigateAdmin }) {
     });
 
     if (found) {
-      setRecognizedUser({
+      const newUser = {
         name: `${found.employee_firstName} ${found.employee_LastName}`,
         id: found.employee_code,
         department: found.department_name,
@@ -100,8 +102,13 @@ function EmployeePage({ onBack, onNavigateAdmin }) {
         employeeId: found.employee_ID,
         lastAction: null,
         photo: null
-      });
+      };
+      setRecognizedUser(newUser);
       setManualError('');
+      // Automatically trigger attendance after a short delay for manual entry too
+      setTimeout(() => {
+        handleMarkAttendance(newUser);
+      }, 500);
     } else {
       setManualError('No employee found with that ID. Please try again.');
       setRecognizedUser(null);
@@ -153,71 +160,95 @@ function EmployeePage({ onBack, onNavigateAdmin }) {
     return () => clearInterval(timer);
   }, []);
 
-useEffect(() => {
-  const loadInitialData = async () => {
-    try {
-      setDataLoading(true);
-      setDataError('');
+  useEffect(() => {
+    const loadInitialData = async () => {
+      try {
+        setDataLoading(true);
+        setDataError('');
 
-      const [eventsData, employeesData] = await Promise.all([
-        getEvents({ archived: 0, is_active: 1 }),
-        getEmployees(),
-      ]);
+        const [eventsData, employeesData] = await Promise.all([
+          getEvents({ archived: 0, is_active: 1 }),
+          getEmployees(),
+        ]);
 
-      // Events
-      const eventsArr = Array.isArray(eventsData) ? eventsData : (eventsData?.data ?? []);
-      if (Array.isArray(eventsArr)) {
-        const formattedEvents = eventsArr.map(event => ({
-          id: event.event_ID,
-          name: event.event_name,
-          time: event.event_time ?? event.time ?? '',
-          description: event.description ?? event.event_desc ?? '',
-          type: event.eventtype_name ?? event.eventtype ?? '',
-        }));
-        setAvailableEvents(formattedEvents);
-      }
+        // Events
+        const eventsArr = Array.isArray(eventsData) ? eventsData : (eventsData?.data ?? []);
+        if (Array.isArray(eventsArr)) {
+          const formattedEvents = eventsArr.map(event => ({
+            id: event.event_ID,
+            name: event.event_name,
+            time: event.event_time ?? event.time ?? '',
+            description: event.description ?? event.event_desc ?? '',
+            type: event.eventtype_name ?? event.eventtype ?? '',
+            scanMode: event.scan_mode || 'check_in',
+          }));
+          setAvailableEvents(formattedEvents);
+        }
 
-      // Employees - Basic info first
-      let empArr = Array.isArray(employeesData) ? employeesData : (employeesData?.data ?? []);
-      const activeEmps = (Array.isArray(empArr) ? empArr : []).filter(e => e.is_archived != 1);
+        // Employees - Basic info first
+        let empArr = Array.isArray(employeesData) ? employeesData : (employeesData?.data ?? []);
+        const activeEmps = (Array.isArray(empArr) ? empArr : []).filter(e => e.is_archived != 1);
 
-      console.log(`Loaded ${activeEmps.length} active employees (basic info)`);
+        console.log(`Loaded ${activeEmps.length} active employees (basic info)`);
 
-      // Now fetch embeddings for all active employees
-      const employeesWithEmbeddings = await Promise.all(
-        activeEmps.map(async (emp) => {
-          try {
-            const photosData = await getEmployeePhotos(emp.employee_ID);
-            const photos = Array.isArray(photosData) ? photosData : (photosData?.data ?? []);
+        // Now fetch embeddings for all active employees
+        const employeesWithEmbeddings = await Promise.all(
+          activeEmps.map(async (emp) => {
+            try {
+              const photosData = await getEmployeePhotos(emp.employee_ID);
+              const photos = Array.isArray(photosData) ? photosData : (photosData?.data ?? []);
 
-            // Take the first embedding (or combine multiple if you want)
-            if (photos.length > 0 && photos[0].embedding) {
-              return {
-                ...emp,
-                embedding: photos[0].embedding   // array of 128 numbers
-              };
+              // Take the first embedding (or combine multiple if you want)
+              if (photos.length > 0 && photos[0].embedding) {
+                return {
+                  ...emp,
+                  embedding: photos[0].embedding   // array of 128 numbers
+                };
+              }
+              return emp; // no embedding
+            } catch (err) {
+              console.warn(`Failed to load embedding for employee ${emp.employee_code}`, err);
+              return emp;
             }
-            return emp; // no embedding
-          } catch (err) {
-            console.warn(`Failed to load embedding for employee ${emp.employee_code}`, err);
-            return emp;
-          }
-        })
-      );
+          })
+        );
 
-      setEmployees(employeesWithEmbeddings);
-      console.log("Final employees with embeddings:", employeesWithEmbeddings.length);
+        setEmployees(employeesWithEmbeddings);
+        console.log("Final employees with embeddings:", employeesWithEmbeddings.length);
 
-    } catch (error) {
-      console.error('Failed to load initial data:', error);
-      setDataError(error.message || 'Failed to load events or employees.');
-    } finally {
-      setDataLoading(false);
-    }
-  };
+      } catch (error) {
+        console.error('Failed to load initial data:', error);
+        setDataError(error.message || 'Failed to load events or employees.');
+      } finally {
+        setDataLoading(false);
+      }
+    };
 
-  loadInitialData();
-}, []);
+    loadInitialData();
+    
+    // Refresh events every 10 seconds to sync with Admin changes
+    const eventTimer = setInterval(async () => {
+      try {
+        const eventsData = await getEvents({ archived: 0, is_active: 1 });
+        const eventsArr = Array.isArray(eventsData) ? eventsData : (eventsData?.data ?? []);
+        if (Array.isArray(eventsArr)) {
+          const formattedEvents = eventsArr.map(event => ({
+            id: event.event_ID,
+            name: event.event_name,
+            time: event.event_time ?? event.time ?? '',
+            description: event.description ?? event.event_desc ?? '',
+            type: event.eventtype_name ?? event.eventtype ?? '',
+            scanMode: event.scan_mode || 'check_in',
+          }));
+          setAvailableEvents(formattedEvents);
+        }
+      } catch (e) {
+        console.warn("Failed to auto-refresh events", e);
+      }
+    }, 10000);
+
+    return () => clearInterval(eventTimer);
+  }, []);
 
 
   useEffect(() => {
@@ -349,6 +380,8 @@ useEffect(() => {
           setRecognitionConfidence(confidencePercent);
           // Immediately pause scanning when a match is found
           setIsScanning(false);
+          // Automatically trigger attendance marking
+          handleMarkAttendance(newUser);
         }
       } else {
         setCurrentDetectedName('');
@@ -409,24 +442,80 @@ const startCamera = async () => {
 };
 
 const stopCamera = () => {
-  if (stream) {
-    stream.getTracks().forEach(track => track.stop());
-    setStream(null);
-  }
-  const video = videoRef.current;
-  if (video) video.srcObject = null;
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
+    }
+    const video = videoRef.current;
+    if (video) video.srcObject = null;
 
-  setCameraActive(false);
-  setRecognizedUser(null);
-  setShowConfirmButtons(false);
-  setRecognitionConfidence(0);
-  setCurrentDetectedName('');
-  setCurrentConfidence(0);
-  setIsScanning(true);        // Reset for next time
-};
+    setCameraActive(false);
+    setRecognizedUser(null);
+    setShowConfirmButtons(false);
+    setRecognitionConfidence(0);
+    setCurrentDetectedName('');
+    setCurrentConfidence(0);
+    setIsScanning(true);        // Reset for next time
+  };
 
 
-  // Check-in/out functionality removed temporarily.
+  const handleMarkAttendance = async (user = recognizedUser) => {
+    if (!user || !selectedEvent) return;
+
+    try {
+      setAttendanceStatus('loading');
+      setShowConfirmation(true);
+
+      // --- CRITICAL: Refresh event details to get latest scan_mode ---
+        const freshEvent = await getEventSetup(selectedEvent);
+        const dbScanMode = freshEvent?.scan_mode || 'check_in';
+        
+        // STRICT REQUIREMENT: Prioritize localStorage for persistence
+        const currentMode = localStorage.getItem(`attendanceMode_${selectedEvent}`) || dbScanMode;
+        const mode = currentMode === 'check_out' ? 'Check Out' : 'Check In';
+        
+        setAttendanceType(mode);
+      
+      const res = await markAttendance({
+        employee_id: user.employeeId,
+        event_id: selectedEvent,
+        attendance_type: mode
+      });
+
+      setAttendanceStatus('success');
+      setAttendanceMsg(res?.message || `${mode} Successful!`);
+      
+      // Auto close after 3 seconds and reset scanner
+      setTimeout(() => {
+        setShowConfirmation(false);
+        setAttendanceStatus(null);
+        setAttendanceMsg('');
+        setRecognizedUser(null);
+        setRecognitionConfidence(0);
+        setCurrentDetectedName('');
+        setCurrentConfidence(0);
+        setIsScanning(true);
+      }, 3000);
+
+    } catch (error) {
+      console.error('Attendance marking failed:', error);
+      setAttendanceStatus('error');
+      setAttendanceMsg(error.message || 'Failed to mark attendance.');
+      
+      // Auto close after 4 seconds but let the user see the error
+      setTimeout(() => {
+        setShowConfirmation(false);
+        setAttendanceStatus(null);
+        setAttendanceMsg('');
+        setRecognizedUser(null);
+        setRecognitionConfidence(0);
+        setCurrentDetectedName('');
+        setCurrentConfidence(0);
+        setIsScanning(true);
+      }, 4000);
+    }
+  };
+
 
   const handleScanDifferent = () => {
     setRecognizedUser(null);
@@ -730,7 +819,7 @@ const stopCamera = () => {
                         <i className="bi bi-person-badge me-2"></i>Employee ID
                       </div>
                       <div className={`manual-id-display ${manualError ? 'manual-id-error' : ''}`}>
-                        {manualId || <span className="manual-id-placeholder">e.g. 23-00001</span>}
+                        {manualId || <span className="manual-id-placeholder">e.g. 230000123</span>}
                       </div>
                       {manualError && (
                         <div className="manual-error-msg">
@@ -823,8 +912,6 @@ const stopCamera = () => {
                         </div>
                       )}
 
-                      {/* Check In / Check Out buttons removed. */}
-
                       <div className="d-grid">
                         <Button
                           variant="outline-secondary"
@@ -872,27 +959,61 @@ const stopCamera = () => {
         show={showConfirmation} 
         centered
         backdrop="static"
-        className="confirmation-modal"
+        className={`confirmation-modal ${attendanceStatus === 'error' ? 'error-modal' : ''}`}
       >
         <Modal.Body className="text-center py-5">
-          <div className="success-icon mb-3">
-            <i className="bi bi-check-circle-fill"></i>
-          </div>
-          <h3 className="mb-3 fw-bold">{attendanceType} Successful!</h3>
-          <h4 className="text-success mb-2">{recognizedUser?.name}</h4>
-          {selectedEventDetails && (
-            <p className="text-primary mb-2 fs-5">
-              <i className="bi bi-calendar-event me-2"></i>
-              {selectedEventDetails.name}
-            </p>
-          )}
-          <p className="text-muted fs-5 mb-0">{formatTime(new Date())}</p>
-          <div className="mt-4">
-            <div className="spinner-border spinner-border-sm text-success" role="status">
-              <span className="visually-hidden">Processing...</span>
+          {attendanceStatus === 'loading' && (
+            <div className="py-4">
+              <div className="spinner-border text-primary mb-3" style={{ width: '3rem', height: '3rem' }} role="status">
+                <span className="visually-hidden">Loading...</span>
+              </div>
+              <h3 className="fw-bold">Processing...</h3>
             </div>
-            <p className="small text-muted mt-2">Returning to camera...</p>
-          </div>
+          )}
+
+          {attendanceStatus === 'success' && (
+            <>
+              <div className="success-icon mb-3">
+                <i className="bi bi-check-circle-fill"></i>
+              </div>
+              <h3 className="mb-3 fw-bold">{attendanceMsg}</h3>
+              <h4 className="text-success mb-2">{recognizedUser?.name}</h4>
+              {selectedEventDetails && (
+                <p className="text-primary mb-2 fs-5">
+                  <i className="bi bi-calendar-event me-2"></i>
+                  {selectedEventDetails.name}
+                </p>
+              )}
+              <p className="text-muted fs-5 mb-0">{formatTime(new Date())}</p>
+              <div className="mt-4">
+                <div className="spinner-border spinner-border-sm text-success" role="status">
+                  <span className="visually-hidden">Processing...</span>
+                </div>
+                <p className="small text-muted mt-2">Returning to camera...</p>
+              </div>
+            </>
+          )}
+
+          {attendanceStatus === 'error' && (
+            <>
+              <div className="error-icon mb-3 text-danger">
+                <i className="bi bi-x-circle-fill" style={{ fontSize: '4rem' }}></i>
+              </div>
+              <h3 className="mb-3 fw-bold text-danger">Attendance Failed</h3>
+              <p className="fs-5 text-muted mb-4">{attendanceMsg}</p>
+              <Button 
+                variant="outline-danger" 
+                onClick={() => {
+                  setShowConfirmation(false);
+                  setAttendanceStatus(null);
+                  setAttendanceMsg('');
+                  setIsScanning(true);
+                }}
+              >
+                Close & Try Again
+              </Button>
+            </>
+          )}
         </Modal.Body>
       </Modal>
 

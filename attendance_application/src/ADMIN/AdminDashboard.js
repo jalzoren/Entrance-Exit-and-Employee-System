@@ -461,7 +461,13 @@ function AdminDashboard({ onLogout }) {
           {currentPage.page==='dashboard'        && renderDashboard()}
           {currentPage.page==='employees'        && <EmployeesPage />}
           {currentPage.page==='events'           && <EventsPage onNavigate={(page, data) => navigateToPage(page, data)} />}
-          {currentPage.page==='eventDetails'     && <EventDetailsPage eventData={currentPage.data} onNavigate={page => navigateToPage(page)} />}
+          {currentPage.page==='eventDetails'     && (
+            <EventDetailsPage 
+              eventData={currentPage.data} 
+              onNavigate={page => navigateToPage(page)} 
+              onUpdateData={(updatedData) => setCurrentPage({ ...currentPage, data: { ...currentPage.data, ...updatedData } })}
+            />
+          )}
           {currentPage.page==='entryExit'        && <EntryExitPage />}
           {currentPage.page==='settings'         && (
             <Settingspage onBrandingChange={handleBrandingChange} />

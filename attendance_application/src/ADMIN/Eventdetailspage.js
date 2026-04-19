@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Row, Col, Card, Button, Modal, Form, Badge } from 'react-bootstrap';
-import { getEventAttendance, getEmployees, getDepartments, getEventSetup, setupEventEmployees, activateEvent, deactivateEvent } from '../api';
+import { getEventAttendance, getEmployees, getDepartments, getEventSetup, setupEventEmployees, activateEvent, deactivateEvent, updateEvent } from '../api';
 import './ccs/event.css';
 
 const PLP_LOGO_KEY   = 'plp_logo';
@@ -55,7 +55,10 @@ function loadImageAsBase64(url) {
   });
 }
 
-function EventDetailsPage({ onNavigate, eventData }) {
+function EventDetailsPage({ onNavigate, eventData, onUpdateData }) {
+
+  const event_ID  = eventData?.event_ID;
+  const eventName = eventData?.event_name || 'Event';
 
   const [records, setRecords]           = useState([]);
   const [searchTerm, setSearchTerm]     = useState('');
@@ -72,7 +75,23 @@ function EventDetailsPage({ onNavigate, eventData }) {
   const [eventStatus, setEventStatus]   = useState(
     eventData?.status ?? ((eventData?.is_active ?? 1) === 1 ? 'Activated' : 'Deactivated')
   );
+  const [scanMode, setScanMode] = useState(null);
   const [hasSetup, setHasSetup] = useState(false);
+
+  // Load mode from localStorage on init
+  useEffect(() => {
+    const savedMode = localStorage.getItem(`attendanceMode_${event_ID}`);
+    if (savedMode) {
+      setScanMode(savedMode);
+    } else {
+      setScanMode(eventData?.scan_mode || 'check_in');
+    }
+  }, [event_ID, eventData]);
+
+  // Status Modal for toggles
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [statusModalType, setStatusModalType] = useState('success'); // 'success' or 'error'
+  const [statusModalMsg, setStatusModalMsg] = useState('');
 
   const plpLogo         = localStorage.getItem(PLP_LOGO_KEY) || '';
   const institutionName = localStorage.getItem(NAME_KEY) || 'Pamantasan ng Lungsod ng Pasig';
@@ -81,8 +100,6 @@ function EventDetailsPage({ onNavigate, eventData }) {
     catch { return {}; }
   })();
 
-  const event_ID  = eventData?.event_ID;
-  const eventName = eventData?.event_name || 'Event';
   const eventDate = eventData?.event_date || '';
   const eventType = eventData?.eventtype_name || '';
   const location  = eventData?.location_name || '';
@@ -140,6 +157,15 @@ function EventDetailsPage({ onNavigate, eventData }) {
       setSelectedEmployeeIds(new Set(ids.map(Number)));
       const setupExists = Array.isArray(ids) && ids.length > 0;
       setHasSetup(setupExists);
+
+      // Sync scan mode from fresh API data only if no local override
+      if (setupData?.scan_mode) {
+        const localSaved = localStorage.getItem(`attendanceMode_${event_ID}`);
+        if (!localSaved) {
+          setScanMode(setupData.scan_mode);
+        }
+      }
+
       // Prefer explicit `status` when provided by the API; fallback to is_active
       if (setupData && (setupData?.status ?? null) !== null) {
         setEventStatus(setupData.status);
@@ -217,6 +243,48 @@ function EventDetailsPage({ onNavigate, eventData }) {
       await loadSetupData();
     } catch (e) {
       alert(e?.message || 'Failed to deactivate event.');
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
+
+  const handleUpdateScanMode = async (newMode) => {
+    try {
+      setUpdatingStatus(true);
+      const updateData = {
+        ...eventData,
+        event_name: eventData.event_name,
+        eventtype_ID: eventData.eventtype_ID,
+        location_ID: eventData.location_ID,
+        event_date: eventData.event_date,
+        event_time: eventData.event_time,
+        time_end: eventData.time_end,
+        description: eventData.description,
+        scan_mode: newMode
+      };
+      await updateEvent(event_ID, updateData);
+      
+      // Mandatory LocalStorage Persistence
+      localStorage.setItem(`attendanceMode_${event_ID}`, newMode);
+      setScanMode(newMode);
+      
+      // Update the parent's (AdminDashboard) state too so it's persisted across tabs
+      if (onUpdateData) {
+        onUpdateData({ scan_mode: newMode });
+      }
+      
+      // Show Success Feedback
+      setStatusModalType('success');
+      setStatusModalMsg(`Scanning mode successfully switched to ${newMode === 'check_in' ? 'Check-In' : 'Check-Out'}.`);
+      setShowStatusModal(true);
+      
+      // Auto-hide modal after 2 seconds
+      setTimeout(() => setShowStatusModal(false), 2000);
+      
+    } catch (e) {
+      setStatusModalType('error');
+      setStatusModalMsg(e?.message || 'Failed to update scan mode.');
+      setShowStatusModal(true);
     } finally {
       setUpdatingStatus(false);
     }
@@ -605,9 +673,32 @@ function EventDetailsPage({ onNavigate, eventData }) {
             <div>
               <h5>Attendance Records</h5>
             </div>
-            <Button onClick={handleExportLog} disabled={exporting || !hasSetup}>
-              {exporting ? 'Exporting…' : 'Export PDF'}
-            </Button>
+            <div className="d-flex align-items-center gap-2">
+              <span className="fw-bold me-2" style={{ fontSize: '14px' }}>Mode:</span>
+              <Button
+                variant="none"
+                onClick={() => handleUpdateScanMode('check_in')}
+                disabled={updatingStatus}
+                size="sm"
+                className={`btn-mode-toggle btn-mode-checkin ${scanMode === 'check_in' ? 'active' : 'inactive'}`}
+              >
+                Check In
+              </Button>
+              <Button
+                variant="none"
+                onClick={() => handleUpdateScanMode('check_out')}
+                disabled={updatingStatus}
+                size="sm"
+                className={`btn-mode-toggle btn-mode-checkout ${scanMode === 'check_out' ? 'active' : 'inactive'}`}
+              >
+                Check Out
+              </Button>
+              <div className="ms-3">
+                <Button onClick={handleExportLog} disabled={exporting || !hasSetup} className="btn-export-pdf">
+                  {exporting ? 'Exporting…' : 'Export PDF'}
+                </Button>
+              </div>
+            </div>
           </div>
 
           <Row className="g-2 mb-3">
@@ -752,6 +843,29 @@ function EventDetailsPage({ onNavigate, eventData }) {
             {savingSetup ? 'Saving...' : 'Complete'}
           </Button>
         </Modal.Footer>
+      </Modal>
+
+      {/* Success/Error Feedback Modal */}
+      <Modal 
+        show={showStatusModal} 
+        onHide={() => setShowStatusModal(false)} 
+        centered 
+        size="sm"
+        backdrop="static"
+      >
+        <Modal.Body className="text-center py-4">
+          <div className="mb-3">
+            {statusModalType === 'success' ? (
+              <i className="bi bi-check-circle-fill text-success" style={{ fontSize: '3rem' }}></i>
+            ) : (
+              <i className="bi bi-x-circle-fill text-danger" style={{ fontSize: '3rem' }}></i>
+            )}
+          </div>
+          <h5 className={statusModalType === 'success' ? 'text-success' : 'text-danger'}>
+            {statusModalType === 'success' ? 'Success' : 'Error'}
+          </h5>
+          <p className="mb-0 text-muted">{statusModalMsg}</p>
+        </Modal.Body>
       </Modal>
 
     </div>

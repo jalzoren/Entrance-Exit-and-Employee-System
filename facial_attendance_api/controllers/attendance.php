@@ -215,10 +215,11 @@ if ($method === 'POST') {
                 exit;
             }
 
-            if ($existing["time_out"]) {
+            $isAlreadyCheckedOut = !empty($existing["time_out"]) && $existing["time_out"] !== '0000-00-00 00:00:00';
+            if ($isAlreadyCheckedOut) {
                 echo json_encode([
                     "error" => true,
-                    "message" => "Already checked out"
+                    "message" => "Already checked out for this event"
                 ]);
                 exit;
             }

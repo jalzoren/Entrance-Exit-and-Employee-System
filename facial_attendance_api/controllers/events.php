@@ -26,6 +26,12 @@ function ensureEventSetupSchema($conn) {
     } catch (Exception $e) { }
 
     try {
+        if (!columnExists($conn, "events", "scan_mode")) {
+            $conn->exec("ALTER TABLE events ADD COLUMN scan_mode VARCHAR(20) NOT NULL DEFAULT 'check_in'");
+        }
+    } catch (Exception $e) { }
+
+    try {
         $conn->exec("
             CREATE TABLE IF NOT EXISTS event_target_employees (
                 target_ID INT AUTO_INCREMENT PRIMARY KEY,
@@ -55,9 +61,9 @@ if ($method === 'GET') {
         try {
             $hasStatusCol = columnExists($conn, "events", "status");
             if ($hasStatusCol) {
-                $eventStmt = $conn->prepare("SELECT event_ID, COALESCE(is_active, 1) AS is_active, COALESCE(status, '') AS status FROM events WHERE event_ID = ?");
+                $eventStmt = $conn->prepare("SELECT event_ID, COALESCE(is_active, 1) AS is_active, COALESCE(status, '') AS status, scan_mode FROM events WHERE event_ID = ?");
             } else {
-                $eventStmt = $conn->prepare("SELECT event_ID, COALESCE(is_active, 1) AS is_active FROM events WHERE event_ID = ?");
+                $eventStmt = $conn->prepare("SELECT event_ID, COALESCE(is_active, 1) AS is_active, scan_mode FROM events WHERE event_ID = ?");
             }
             $eventStmt->execute([$event_id]);
             $eventRow = $eventStmt->fetch(PDO::FETCH_ASSOC);
@@ -69,6 +75,7 @@ if ($method === 'GET') {
             $out = [
                 "event_ID" => $event_id,
                 "is_active" => (int)($eventRow["is_active"] ?? 0),
+                "scan_mode" => $eventRow["scan_mode"] ?? "check_in",
                 "employee_ids" => array_map("intval", $targets ?: [])
             ];
             if (!empty($eventRow) && array_key_exists('status', $eventRow)) {
@@ -150,6 +157,7 @@ if ($method === 'GET') {
                 ev.description,
                 ev.eventtype_ID,
                 ev.location_ID,
+                ev.scan_mode,
                 et.eventtype_name AS eventtype_name,
                 l.location_name   AS location_name,
                 " . $statusSelect . "
@@ -161,7 +169,7 @@ if ($method === 'GET') {
             LEFT JOIN location   l ON ev.location_ID   = l.location_ID
             LEFT JOIN attendance a ON ev.event_ID      = a.event_ID
             $whereClause
-            GROUP BY ev.event_ID, ev.event_name, ev.event_date, ev.event_time, ev.time_end, ev.description, ev.eventtype_ID, ev.location_ID, et.eventtype_name, l.location_name
+            GROUP BY ev.event_ID, ev.event_name, ev.event_date, ev.event_time, ev.time_end, ev.description, ev.eventtype_ID, ev.location_ID, ev.scan_mode, et.eventtype_name, l.location_name
             ORDER BY ev.event_date DESC, ev.event_time DESC
         ";
         $stmt = $conn->prepare($q1);
@@ -325,9 +333,10 @@ if ($method === 'POST') {
                 event_time,
                 time_end,
                 description,
+                scan_mode,
                 is_active
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, 0)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)
         ";
         $stmt = $conn->prepare($query1);
         $stmt->execute([
@@ -337,7 +346,8 @@ if ($method === 'POST') {
             $data["event_date"],
             $data["event_time"],
             $time_end,
-            $data["description"] ?? null
+            $data["description"] ?? null,
+            $data["scan_mode"] ?? "check_in"
         ]);
         echo json_encode([
             "success" => true,
@@ -565,7 +575,8 @@ if ($method === 'PUT') {
                 event_date   = ?,
                 event_time   = ?,
                 time_end     = ?,
-                description  = ?
+                description  = ?,
+                scan_mode    = ?
             WHERE event_ID   = ?
         ";
         $stmt = $conn->prepare($query1);
@@ -577,6 +588,7 @@ if ($method === 'PUT') {
             $data["event_time"],
             $time_end,
             $data["description"] ?? null,
+            $data["scan_mode"] ?? "check_in",
             $event_id
         ]);
 
