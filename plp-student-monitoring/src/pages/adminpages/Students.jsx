@@ -201,6 +201,48 @@ function Students() {
     refreshAll();
   };
 
+  const handleArchiveRegular = async () => {
+    const count = students.filter(s => s.status && s.status.toLowerCase() === 'regular').length;
+    if (count === 0) {
+      alert('No Regular students to archive.');
+      return;
+    }
+    if (!window.confirm(`Are you sure you want to Archive all Regular Students?`)) return;
+
+    try {
+      setLoading(true);
+      const resp = await axios.put("http://localhost:5000/api/students/archive-by-status", { status: "Regular" });
+      alert(resp.data.message || `Archived ${count} Regular students`);
+      refreshAll();
+    } catch (err) {
+      console.error("Bulk archive failed:", err);
+      alert(`Archive failed: ${err.response?.data?.message || err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleArchiveIrregular = async () => {
+    const count = students.filter(s => s.status && s.status.toLowerCase() === 'irregular').length;
+    if (count === 0) {
+      alert('No Irregular students to archive.');
+      return;
+    }
+    if (!window.confirm(`Are you sure you want to Archive all Irregular Students?`)) return;
+
+    try {
+      setLoading(true);
+      const resp = await axios.put("http://localhost:5000/api/students/archive-by-status", { status: "Irregular" });
+      alert(resp.data.message || `Archived ${count} Irregular students`);
+      refreshAll();
+    } catch (err) {
+      console.error("Bulk archive failed:", err);
+      alert(`Archive failed: ${err.response?.data?.message || err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // ── Helpers ───────────────────────────────────────────────────────────────
   const formatFullName = (student) => {
     if (!student) return "";
@@ -377,6 +419,14 @@ function Students() {
           <button type="button" className="action-button add-button" onClick={handleAddClick}>
             <FiPlus className="button-icon" />
             Add
+          </button>
+
+          <button type="button" className="action-button archive-button" onClick={handleArchiveRegular}>
+            Archive All Regular
+          </button>
+
+          <button type="button" className="action-button archive-button" onClick={handleArchiveIrregular}>
+            Archive All Irregular
           </button>
         </div>
 

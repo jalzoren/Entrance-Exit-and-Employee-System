@@ -298,6 +298,35 @@ router.get("/students", async (req, res) => {
 
 });
 
+
+/* --------------------------------------------------
+BULK ARCHIVE BY STATUS
+-------------------------------------------------- */
+router.put("/students/archive-by-status", async (req, res) => {
+  const { status } = req.body;
+  if (!status || (status !== "Regular" && status !== "Irregular")) {
+    return res.status(400).json({ message: "Invalid status. Must be 'Regular' or 'Irregular'." });
+  }
+
+  try {
+    const [result] = await db.query(
+      `UPDATE students
+         SET status = 'Inactive', updated_at = CURRENT_TIMESTAMP
+       WHERE LOWER(status) = LOWER(?)`,
+      [status]
+    );
+
+    res.json({
+      message: `Archived ${result.affectedRows} ${result.affectedRows === 1 ? "student" : "students"}`,
+      count: result.affectedRows
+    });
+  } catch (err) {
+    console.error("BULK ARCHIVE ERROR:", err);
+    res.status(500).json({ message: "Bulk archive failed" });
+  }
+});
+
+
 /* --------------------------------------------------
 UPDATE STUDENT STATUS
 -------------------------------------------------- */
@@ -362,6 +391,8 @@ router.put("/students/:student_id", async (req, res) => {
     });
   }
 });
+
+
 
 /* --------------------------------------------------
 GET ARCHIVED STUDENTS
