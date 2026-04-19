@@ -1,0 +1,427 @@
+/* GenerateReportPdf.css - Styles for PDF Report Component */
+
+/* Container Styles */
+.pdf-container {
+  min-height: 100vh;
+  background: #e0e0e0;
+  padding: 0;
+  margin: 0;
+  font-family: 'Arial', 'Helvetica', sans-serif;
+}
+
+/* Main Report Container */
+.pdf-report {
+  max-width: 900px;
+  margin: 0 auto;
+  background: white;
+  font-family: 'Arial', 'Helvetica', sans-serif;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Header Section */
+.pdf-header {
+  padding: 30px 30px 20px 30px;
+}
+/* Logos Row */
+.pdf-logos-row {
+  display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    margin-bottom: 20px;
+    gap: 15px;
+}
+
+.pdf-left-logos {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  width: auto;
+  flex-shrink: 0;
+}
+
+.pdf-logo-box {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.pdf-logo-img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
+
+/* For logos that are wider than tall */
+.pdf-logo-img-wide {
+  width: 100%;
+  height: auto;
+  max-height: 100%;
+}
+
+/* For logos that are taller than wide */
+.pdf-logo-img-tall {
+  width: auto;
+  height: 100%;
+  max-width: 100%;
+}
+
+/* Center Text - prevents stretching */
+.pdf-center-text {
+  text-align: right;
+  flex: 1;
+  min-width: 0;
+  padding: 0 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 5px;
+}
+
+.pdf-university-name {
+  font-size: 18px;
+  font-weight: bolder;
+  color: #01311d;
+  letter-spacing: 1px;
+  border-bottom: 1px solid #01311d;
+  display: inline-block;
+  font-family: 'Cinzel', sans-serif;
+  padding-bottom: 3px;
+}
+
+.pdf-system-title {
+  font-size: 11px;
+  color: #01311d;
+  font-family: 'Cinzel', sans-serif;
+  font-weight: bold;
+}
+
+/* Logo placeholder */
+.pdf-logo-placeholder {
+  width: 100%;
+  height: 100%;
+  background: #f0f0f0;
+  border: 1px solid #ccc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: #999;
+}
+
+
+
+
+/* Title Row */
+.pdf-title-row {
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-end;
+  margin-bottom: 40px;
+}
+
+.pdf-main-title {
+  font-size: 38px;
+  font-weight: bold;
+  margin: 0;
+  letter-spacing: 1px;
+  color: #01311d;
+  font-family: 'Oswald', serif;
+}
+
+.pdf-subtitle {
+  color: #555;
+  font-size: 10px;
+  line-height: 1.4;
+  margin: 0;
+  text-align: right;
+  max-width: 45%;
+}
+
+/* Stats Section */
+.pdf-stats-section {
+     display: flex;
+    gap: 30px;
+    align-items: center;
+    justify-content: center;
+}
+
+.pdf-stats-left {
+  flex: 0 0 35%;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* Green Boxes */
+.pdf-green-box {
+  background-color: rgba(1, 49, 29, 0.85);
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.pdf-green-box-small {
+  background-color: rgba(1, 49, 29, 0.85);
+  border-radius: 10px;
+  padding: 15px;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pdf-big-number {
+  font-size: 48px;
+  font-weight: bold;
+  color: white;
+  margin-bottom: 10px;
+}
+
+/* Section Titles */
+.pdf-section-title {
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 20px;
+  color: #01311d;
+}
+
+.pdf-chart-title {
+  font-size: 14px;
+  font-weight: bold;
+  margin-bottom: 15px;
+  margin-top: 0;
+  color: #01311d;
+}
+
+/* Progress Bars */
+.pdf-progress-bar-container {
+  margin-bottom: 12px;
+}
+
+.pdf-progress-label {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+  font-size: 10px;
+  font-weight: bold;
+  color: #333;
+}
+
+.pdf-progress-bar-bg {
+  width: 100%;
+  height: 18px;
+  background-color: #e0e0e0;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.pdf-progress-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+}
+
+/* Tables */
+.pdf-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.pdf-table th {
+  padding: 12px 8px;
+  text-align: center;
+  font-weight: bold;
+  color: white;
+  background-color: #01311d;
+}
+
+.pdf-table td {
+  padding: 10px 8px;
+  color: #333;
+}
+
+.pdf-table-left th {
+  text-align: left;
+}
+
+.pdf-table-left td {
+  text-align: left;
+}
+
+.pdf-table-right th {
+  text-align: right;
+}
+
+.pdf-table-right td {
+  text-align: right;
+}
+
+/* Method Bars */
+.pdf-method-bar {
+  margin-bottom: 15px;
+}
+
+.pdf-method-label {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+  font-size: 12px;
+  font-weight: bold;
+  color: #333;
+}
+
+.pdf-method-bar-bg {
+  width: 100%;
+  height: 20px;
+  background-color: #e0e0e0;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+/* Insights Box */
+.pdf-insights-box {
+  margin-top: 20px;
+  background: #e8f5e9;
+  padding: 15px;
+  border-radius: 8px;
+  border-left: 4px solid #2e7d32;
+}
+
+.pdf-insight-text {
+  font-size: 12px;
+  font-weight: bold;
+  color: #01311d;
+}
+
+/* Section Spacing */
+.pdf-section-spacing {
+  padding: 25px 30px;
+}
+
+.pdf-last-section {
+  padding: 25px 30px 35px 30px;
+}
+
+/* Print Styles */
+@media print {
+  body {
+    margin: 0;
+    padding: 0;
+  }
+  
+  .pdf-report {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+  }
+  
+  .pdf-container {
+    background: white;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .pdf-header {
+    padding: 20px;
+  }
+  
+  .pdf-section-spacing,
+  .pdf-last-section {
+    padding: 15px 20px;
+  }
+  
+  .pdf-green-box,
+  .pdf-green-box-small {
+    box-shadow: none;
+    border: 1px solid #01311d;
+  }
+  
+  .pdf-insights-box {
+    background: #f0f0f0;
+    border-left: 4px solid #01311d;
+  }
+}
+
+/* Footer Styles - Minimalist */
+.pdf-footer {
+  margin-top: 25px;
+  padding: 15px 30px;
+  background: #fcfbf4;
+  border-top: 1px solid #e0e0e0;
+}
+
+.pdf-footer-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.pdf-footer-left {
+  flex: 2;
+}
+
+.pdf-footer-right {
+  flex: 1;
+  text-align: right;
+}
+
+.pdf-footer-text {
+  font-size: 8.5px;
+  color: #666;
+  font-weight: 500;
+}
+
+.pdf-footer-separator {
+  display: inline-block;
+  width: 3px;
+  height: 3px;
+  background-color: #548772;
+  border-radius: 50%;
+  margin: 0 8px;
+  vertical-align: middle;
+}
+
+.pdf-footer-right .pdf-footer-text {
+  font-weight: 600;
+  color: #01311d;
+}
+
+@media (max-width: 600px) {
+  .pdf-footer {
+    padding: 12px 20px;
+  }
+  
+  .pdf-footer-content {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .pdf-footer-left,
+  .pdf-footer-right {
+    text-align: center;
+  }
+}
+
+@media print {
+  .pdf-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-top: 1px solid #ccc;
+  }
+}
