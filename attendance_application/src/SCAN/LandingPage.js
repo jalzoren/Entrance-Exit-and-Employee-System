@@ -128,7 +128,7 @@ function EmployeePage({ onBack, onNavigateAdmin }) {
       setManualError('');
       // Automatically trigger attendance after a short delay for manual entry too
       setTimeout(() => {
-        handleMarkAttendance(newUser);
+        handleMarkAttendance(newUser, 'manual');
       }, 500);
     } else {
       setManualError('No employee found with that ID. Please try again.');

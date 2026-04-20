@@ -2,7 +2,7 @@
 header("Content-Type: application/json");
 header("Access-Control-Allow-Origin: *");
 
-require_once("../config/database.php");
+require_once(__DIR__ . "/../config/database.php");
 
 try {
     // Schema Resilience: check if department or departments table exists
@@ -22,7 +22,8 @@ try {
             e.employee_code,
             CONCAT(e.employee_firstName, ' ', e.employee_LastName) AS fullName,
             d.department_name,
-            l.location_name AS location
+            l.location AS location,
+            a.method
         FROM attendance a
         JOIN employees e ON a.employee_ID = e.employee_ID
         LEFT JOIN $deptTable d ON e.department_ID = d.department_ID
@@ -38,7 +39,8 @@ try {
             e.employee_code,
             CONCAT(e.employee_firstName, ' ', e.employee_LastName) AS fullName,
             d.department_name,
-            l.location_name AS location
+            l.location AS location,
+            a.method
         FROM attendance a
         JOIN employees e ON a.employee_ID = e.employee_ID
         LEFT JOIN $deptTable d ON e.department_ID = d.department_ID

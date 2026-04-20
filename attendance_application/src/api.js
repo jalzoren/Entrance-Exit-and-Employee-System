@@ -164,12 +164,14 @@ export const markAttendance = async ({
   employee_id,
   event_id,
   attendance_type,
+  method,
 }) => {
   try {
     const { data } = await api.post("/attendance.php", {
       employee_id,
       event_id,
       attendance_type,
+      method,
     });
     return data;
   } catch (error) {

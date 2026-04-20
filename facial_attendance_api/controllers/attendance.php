@@ -6,13 +6,13 @@ header("Access-Control-Allow-Headers: Content-Type");
 
 require_once("../config/database.php");
 
-$method = $_SERVER['REQUEST_METHOD'];
+$request_method = $_SERVER['REQUEST_METHOD'];
 
 
 // ======================================================
 // GET ATTENDANCE (OPTIONAL FILTER BY event_id)
 // ======================================================
-if ($method === 'GET') {
+if ($request_method === 'GET') {
 
     $event_id = $_GET["event_id"] ?? null;
 
@@ -26,10 +26,17 @@ if ($method === 'GET') {
                 a.time_in,
                 a.time_out,
                 a.status,
+                a.method,
                 e.employee_code,
-                CONCAT(e.employee_firstName, ' ', e.employee_LastName) AS fullName
+                CONCAT(e.employee_firstName, ' ', e.employee_LastName) AS fullName,
+                d.department_name,
+                ev.event_name,
+                l.location AS location_name
             FROM attendance a
             JOIN employees e ON a.employee_ID = e.employee_ID
+            LEFT JOIN department d ON e.department_ID = d.department_ID
+            LEFT JOIN events ev ON a.event_ID = ev.event_ID
+            LEFT JOIN location l ON ev.location_ID = l.location_ID
         ";
 
         if ($event_id) {
@@ -62,7 +69,7 @@ if ($method === 'GET') {
 // ======================================================
 // MARK ATTENDANCE (CHECK IN / CHECK OUT)
 // ======================================================
-if ($method === 'POST') {
+if ($request_method === 'POST') {
 
     $data = json_decode(file_get_contents("php://input"), true);
 
