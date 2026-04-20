@@ -368,7 +368,7 @@ function EventsPage({ onNavigate }) {
                         <>
                           <div className="attendance-number">{attended}</div>
                           <div className="attendance-label">Attended</div>
-                          <InfoTooltip text={tooltipText} />
+                          <InfoTooltip text={tooltipText} placement="left" />
                         </>
                       );
                     })()}

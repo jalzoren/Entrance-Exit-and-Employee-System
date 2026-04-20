@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import './ccs/settings.css';
 //Settingspage.js
-
+ 
 import {
   getDepartments, getPositions, getLocations,
   addDepartment, addPosition, addLocation,
@@ -9,36 +9,36 @@ import {
   updatePosition, deletePosition,
   updateLocation, deleteLocation,
 } from '../api';
-
+ 
 const TAB_CONFIG = [
   { key: 'branding',    label: 'Branding',    icon: 'bi-palette-fill' },
   { key: 'departments', label: 'Departments', icon: 'bi-diagram-3-fill' },
   { key: 'positions',   label: 'Positions',   icon: 'bi-person-badge-fill' },
   { key: 'locations',   label: 'Locations',   icon: 'bi-geo-alt-fill' },
 ];
-
+ 
 const PLP_LOGO_KEY   = 'plp_logo';
 const DEPT_LOGOS_KEY = 'dept_logos';
 const NAME_KEY       = 'institution_name';
-
+ 
 // ── Reusable Modal Component ─────────────────────────────────────────────────
 function SettingsModal({ modal, onConfirm, onCancel }) {
   const inputRef = useRef(null);
-
+ 
   useEffect(() => {
     if (modal?.type === 'input' && inputRef.current) {
       inputRef.current.focus();
       inputRef.current.select();
     }
   }, [modal]);
-
+ 
   if (!modal) return null;
-
+ 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && modal.type === 'input') onConfirm(inputRef.current?.value);
     if (e.key === 'Escape') onCancel();
   };
-
+ 
   return (
     <div className="settings-modal-overlay" onClick={onCancel}>
       <div className="settings-modal" onClick={e => e.stopPropagation()} onKeyDown={handleKeyDown}>
@@ -70,11 +70,11 @@ function SettingsModal({ modal, onConfirm, onCancel }) {
     </div>
   );
 }
-
+ 
 // ── Logo Upload Box ───────────────────────────────────────────────────────────
 function LogoUploadBox({ label, hint, previewUrl, onFileChange, onClear }) {
   const fileRef = useRef(null);
-
+ 
   return (
     <div className="logo-upload-box">
       <div
@@ -113,10 +113,10 @@ function LogoUploadBox({ label, hint, previewUrl, onFileChange, onClear }) {
           </>
         )}
       </div>
-
+ 
       <p className="logo-upload-hint" style={{ textAlign: 'center', fontWeight: 600, color: '#374151', marginBottom: 2 }}>{label}</p>
       <p className="logo-upload-hint">{hint || 'PNG or JPG · Max 2MB'}</p>
-
+ 
       <input
         ref={fileRef}
         type="file"
@@ -131,7 +131,7 @@ function LogoUploadBox({ label, hint, previewUrl, onFileChange, onClear }) {
           reader.readAsDataURL(file);
         }}
       />
-
+ 
       {previewUrl && onClear && (
         <button
           onClick={onClear}
@@ -146,19 +146,19 @@ function LogoUploadBox({ label, hint, previewUrl, onFileChange, onClear }) {
     </div>
   );
 }
-
+ 
 // ── DepartmentLogos sub-panel ─────────────────────────────────────────────────
-function DepartmentLogosPanel({ departments }) {
+function DepartmentLogosPanel({ departments, openModal }) {
   const [deptLogos, setDeptLogos] = useState(() => {
     try { return JSON.parse(localStorage.getItem(DEPT_LOGOS_KEY) || '{}'); }
     catch { return {}; }
   });
   const [saveSuccess, setSaveSuccess] = useState(false);
-
+ 
   const handleLogoChange = (deptName, dataUrl) => {
     setDeptLogos(prev => ({ ...prev, [deptName]: dataUrl }));
   };
-
+ 
   const handleRemoveLogo = (deptName) => {
     setDeptLogos(prev => {
       const next = { ...prev };
@@ -166,13 +166,23 @@ function DepartmentLogosPanel({ departments }) {
       return next;
     });
   };
-
-  const handleSave = () => {
+ 
+  const handleSave = async () => {
+    const confirmed = await openModal({
+      type: 'confirm',
+      variant: 'primary',
+      icon: 'bi-check-circle',
+      title: 'Save Department Logos',
+      message: 'Save the logos for all departments? This will update the college logos used in attendance exports.',
+      confirmLabel: 'Save Logos',
+      confirmIcon: 'bi-check-lg',
+    });
+    if (!confirmed) return;
     localStorage.setItem(DEPT_LOGOS_KEY, JSON.stringify(deptLogos));
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 2000);
   };
-
+ 
   if (!departments || departments.length === 0) {
     return (
       <div className="list-empty">
@@ -181,7 +191,7 @@ function DepartmentLogosPanel({ departments }) {
       </div>
     );
   }
-
+ 
   return (
     <div>
       <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 20 }}>
@@ -225,44 +235,44 @@ function DepartmentLogosPanel({ departments }) {
     </div>
   );
 }
-
+ 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function Settingspage({ onBrandingChange }) {
   const [activeTab, setActiveTab] = useState('branding');
   const [departments, setDepartments] = useState([]);
   const [positions,   setPositions]   = useState([]);
   const [locations,   setLocations]   = useState([]);
-
+ 
   const [deptSearch, setDeptSearch] = useState('');
   const [posSearch,  setPosSearch]  = useState('');
   const [locSearch,  setLocSearch]  = useState('');
-
+ 
   const [plpLogo,         setPlpLogo]         = useState(() => localStorage.getItem(PLP_LOGO_KEY) || null);
   const [institutionName, setInstitutionName] = useState(() => localStorage.getItem(NAME_KEY) || 'College / Institution Name');
   const [saveSuccess,     setSaveSuccess]     = useState(false);
-
+ 
   const [modal,        setModal]        = useState(null);
   const [modalResolve, setModalResolve] = useState(null);
-
+ 
   const openModal = (config) => new Promise(resolve => {
     setModal(config);
     setModalResolve({ fn: resolve });
   });
-
+ 
   const handleModalConfirm = (value) => {
     setModal(null);
     modalResolve?.fn(value !== undefined ? value : true);
   };
-
+ 
   const handleModalCancel = () => {
     setModal(null);
     modalResolve?.fn(null);
   };
-
+ 
   const refreshDepartments = async () => { const d = await getDepartments(); setDepartments(Array.isArray(d) ? d : []); };
   const refreshPositions   = async () => { const p = await getPositions();   setPositions(Array.isArray(p)   ? p : []); };
   const refreshLocations   = async () => { const l = await getLocations();   setLocations(Array.isArray(l)   ? l : []); };
-
+ 
   useEffect(() => {
     (async () => {
       try {
@@ -273,7 +283,7 @@ export default function Settingspage({ onBrandingChange }) {
       } catch (e) { console.error('Failed to load settings data', e); }
     })();
   }, []);
-
+ 
   const handleBrandingSave = async () => {
     const result = await openModal({
       type: 'confirm',
@@ -291,9 +301,9 @@ export default function Settingspage({ onBrandingChange }) {
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 2000);
   };
-
+ 
   const typeLabels = { departments: 'Department', positions: 'Position', locations: 'Location' };
-
+ 
   const handleAdd = async (type) => {
     const label = typeLabels[type];
     const name = await openModal({
@@ -315,7 +325,7 @@ export default function Settingspage({ onBrandingChange }) {
     if (type === 'positions')   { await addPosition(  { position_name:   name.trim() }); await refreshPositions(); }
     if (type === 'locations')   { await addLocation(  { location_name:   name.trim() }); await refreshLocations(); }
   };
-
+ 
   const handleEdit = async (type, item) => {
     const label     = typeLabels[type];
     const nameField = type === 'departments' ? 'department_name' : type === 'positions' ? 'position_name' : 'location_name';
@@ -332,7 +342,7 @@ export default function Settingspage({ onBrandingChange }) {
     if (type === 'positions')   { await updatePosition(  item.position_ID,   { position_name:   newName.trim() }); await refreshPositions(); }
     if (type === 'locations')   { await updateLocation(  item.location_ID,   { location_name:   newName.trim() }); await refreshLocations(); }
   };
-
+ 
   const handleRemove = async (type, item) => {
     const label     = typeLabels[type];
     const nameField = type === 'departments' ? 'department_name' : type === 'positions' ? 'position_name' : 'location_name';
@@ -347,7 +357,7 @@ export default function Settingspage({ onBrandingChange }) {
     if (type === 'positions')   { await deletePosition(  item.position_ID);   await refreshPositions(); }
     if (type === 'locations')   { await deleteLocation(  item.location_ID);   await refreshLocations(); }
   };
-
+ 
   const renderList = (type, items, search, setSearch, nameField, iconClass) => {
     const filtered = items.filter(i => i[nameField]?.toLowerCase().includes(search.toLowerCase()));
     return (
@@ -396,29 +406,29 @@ export default function Settingspage({ onBrandingChange }) {
       </>
     );
   };
-
+ 
   const panelMeta = {
     branding:    { title: 'Branding',    desc: 'Customize your institution logo and name' },
     departments: { title: 'Departments', desc: 'Manage department records used across the system' },
     positions:   { title: 'Positions',   desc: 'Manage employee position types' },
     locations:   { title: 'Locations',   desc: 'Manage event and entry/exit locations' },
   };
-
+ 
   // ── Logo file input ref for Branding tab ──
   const logoFileRef = useRef(null);
-
+ 
   return (
     <div className="settings-page">
-
+ 
       <SettingsModal modal={modal} onConfirm={handleModalConfirm} onCancel={handleModalCancel} />
-
+ 
       <div className="settings-page-header">
         <h1 className="settings-page-title">Settings</h1>
         <p className="settings-page-subtitle">Manage your system configuration and preferences</p>
       </div>
-
+ 
       <div className="settings-layout">
-
+ 
         {/* ── Sidebar ── */}
         <aside className="settings-sidebar">
           <span className="settings-sidebar-label">Configuration</span>
@@ -433,7 +443,7 @@ export default function Settingspage({ onBrandingChange }) {
             </button>
           ))}
         </aside>
-
+ 
         {/* ── Panel ── */}
         <div className="settings-panel">
           <div className="settings-panel-header">
@@ -442,13 +452,13 @@ export default function Settingspage({ onBrandingChange }) {
               <p className="settings-panel-desc">{panelMeta[activeTab].desc}</p>
             </div>
           </div>
-
+ 
           <div className="settings-panel-body">
-
+ 
             {/* ── BRANDING TAB ── */}
             {activeTab === 'branding' && (
               <div style={{ display: 'flex', gap: 32, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-
+ 
                 {/* Left: Logo preview circle */}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
                   <div
@@ -496,11 +506,11 @@ export default function Settingspage({ onBrandingChange }) {
                       </>
                     )}
                   </div>
-
+ 
                   <span style={{ fontSize: 12, color: '#9ca3af', textAlign: 'center', lineHeight: 1.5 }}>
                     PNG or JPG<br />Max 2MB
                   </span>
-
+ 
                   {plpLogo && (
                     <button
                       onClick={() => setPlpLogo(null)}
@@ -513,7 +523,7 @@ export default function Settingspage({ onBrandingChange }) {
                       <i className="bi bi-x-lg me-1"></i>Remove
                     </button>
                   )}
-
+ 
                   <input
                     ref={logoFileRef}
                     type="file"
@@ -528,10 +538,10 @@ export default function Settingspage({ onBrandingChange }) {
                     }}
                   />
                 </div>
-
+ 
                 {/* Right: Upload input + Institution Name */}
                 <div style={{ flex: 1, minWidth: 260, display: 'flex', flexDirection: 'column', gap: 24 }}>
-
+ 
                   {/* Upload Logo file picker */}
                   <div>
                     <p style={{ fontSize: 14, fontWeight: 600, color: '#111827', marginBottom: 8 }}>Upload Logo</p>
@@ -559,7 +569,7 @@ export default function Settingspage({ onBrandingChange }) {
                     </label>
                     <p style={{ fontSize: 12, color: '#9ca3af', marginTop: 6 }}>Supported formats: PNG, JPG, SVG</p>
                   </div>
-
+ 
                   {/* Institution Name */}
                   <div>
                     <p style={{ fontSize: 14, fontWeight: 600, color: '#111827', marginBottom: 8 }}>Institution Name</p>
@@ -586,11 +596,11 @@ export default function Settingspage({ onBrandingChange }) {
                       This name appears in the sidebar and reports
                     </p>
                   </div>
-
+ 
                 </div>
               </div>
             )}
-
+ 
             {/* ── DEPARTMENTS TAB ── */}
             {activeTab === 'departments' && (
               <div>
@@ -599,17 +609,18 @@ export default function Settingspage({ onBrandingChange }) {
                   <p style={{ fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                     Department / College Logos
                   </p>
-                  <DepartmentLogosPanel departments={departments} />
+                  <DepartmentLogosPanel departments={departments} openModal={openModal} />
                 </div>
               </div>
             )}
-
+ 
             {activeTab === 'positions' && renderList('positions', positions, posSearch, setPosSearch, 'position_name', 'bi-person-badge')}
             {activeTab === 'locations' && renderList('locations', locations, locSearch, setLocSearch, 'location_name', 'bi-geo-alt')}
-
+ 
           </div>
         </div>
       </div>
     </div>
   );
 }
+ 

@@ -1,86 +1,111 @@
 // InfoTooltip.js
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
+import ReactDOM from "react-dom";
 import "./InfoTooltip.css";
-
-export default function InfoTooltip({ text = "", mobileToggle = true }) {
+ 
+export default function InfoTooltip({ text = "", mobileToggle = true, placement: forcedPlacement = null }) {
   const [visible, setVisible] = useState(false);
-  const [placement, setPlacement] = useState("right"); // "right" or "left"
-  const containerRef = useRef(null);
-
-  const decidePlacement = () => {
+  const [coords,  setCoords]  = useState({ top: 0, left: 0, placement: "right" });
+  const containerRef          = useRef(null);
+ 
+  const computeCoords = useCallback(() => {
     const el = containerRef.current;
     if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const spaceRight = window.innerWidth - rect.right;
-    const tooltipEstimate = 240; // conservative width estimate
-    setPlacement(spaceRight < tooltipEstimate ? "left" : "right");
-  };
-
+    const rect          = el.getBoundingClientRect();
+    const tooltipWidth  = 260;
+    const tooltipHeight = 36;
+    const gap           = 10;
+ 
+    // use forced placement if provided, otherwise auto-detect
+    const placement = forcedPlacement
+      ? forcedPlacement
+      : (window.innerWidth - rect.right < tooltipWidth + gap ? "left" : "right");
+ 
+    let top  = rect.top + rect.height / 2 - tooltipHeight / 2;
+    let left = placement === "right"
+      ? rect.right + gap
+      : rect.left - tooltipWidth - gap;
+    top = Math.max(8, Math.min(top, window.innerHeight - tooltipHeight - 8));
+    setCoords({ top, left, placement });
+  }, [forcedPlacement]);
+ 
+  const show = useCallback(() => { computeCoords(); setVisible(true);  }, [computeCoords]);
+  const hide = useCallback(() => setVisible(false), []);
+ 
+  // attach hover listeners to the closest card ancestor
   useEffect(() => {
-    decidePlacement();
-    const onResize = () => decidePlacement();
-    window.addEventListener("resize", onResize);
-    window.addEventListener("scroll", onResize, true);
+    const el = containerRef.current;
+    if (!el) return;
+    const card = el.closest('.stat-card, .analytics-card, .gateway-card, .event-item-card, .stat-card-glass');
+    if (!card) return;
+    card.addEventListener('mouseenter', show);
+    card.addEventListener('mouseleave', hide);
     return () => {
-      window.removeEventListener("resize", onResize);
-      window.removeEventListener("scroll", onResize, true);
+      card.removeEventListener('mouseenter', show);
+      card.removeEventListener('mouseleave', hide);
     };
-  }, [visible]);
-
-  const show = () => {
-    decidePlacement();
-    setVisible(true);
-  };
-  const hide = () => setVisible(false);
-  const toggle = () => setVisible((v) => !v);
-
+  }, [show, hide]);
+ 
+  // recompute on scroll/resize while visible
+  useEffect(() => {
+    if (!visible) return;
+    window.addEventListener("resize", computeCoords);
+    window.addEventListener("scroll", computeCoords, true);
+    return () => {
+      window.removeEventListener("resize", computeCoords);
+      window.removeEventListener("scroll", computeCoords, true);
+    };
+  }, [visible, computeCoords]);
+ 
+  // close on outside click
   useEffect(() => {
     if (!visible) return;
     const handler = (e) => {
-      if (containerRef.current && !containerRef.current.contains(e.target)) {
+      if (containerRef.current && !containerRef.current.contains(e.target))
         setVisible(false);
-      }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [visible]);
-
+ 
+  const toggle = () => {
+    if (!visible) { computeCoords(); setVisible(true); }
+    else setVisible(false);
+  };
+ 
+  const tooltip = visible
+    ? ReactDOM.createPortal(
+        <div
+          className={`tooltip-text show ${coords.placement}`}
+          role="tooltip"
+          style={{ top: coords.top, left: coords.left }}
+        >
+          {text}
+        </div>,
+        document.body
+      )
+    : null;
+ 
   return (
-    <span
-      className="info-tooltip-container"
-      ref={containerRef}
-      // mouse events
-      onMouseEnter={show}
-      onMouseLeave={hide}
-      onFocus={show}
-      onBlur={hide}
-      // make the entire container the interactive element
-      tabIndex={0}
-      role="button"
-      aria-label={text ? `Info: ${text}` : "More info"}
-      onClick={(e) => {
-        if (mobileToggle) {
-          e.stopPropagation();
-          toggle();
-        }
-      }}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          toggle();
-        }
-      }}
-    >
-      {/* No visual icon here — the container itself is the trigger */}
-      <div
-        className={`tooltip-text ${visible ? "show" : ""} ${
-          placement === "left" ? "left" : "right"
-        }`}
-        role="tooltip"
-        aria-hidden={!visible}
+    <>
+      <span
+        className="info-tooltip-container"
+        ref={containerRef}
+        tabIndex={0}
+        role="button"
+        aria-label={text ? `Info: ${text}` : "More info"}
+        onFocus={show}
+        onBlur={hide}
+        onClick={(e) => {
+          if (mobileToggle) { e.stopPropagation(); toggle(); }
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); }
+        }}
       >
-        {text}
-      </div>
-    </span>
+        {/* hover is handled by the parent card via closest() */}
+      </span>
+      {tooltip}
+    </>
   );
 }
