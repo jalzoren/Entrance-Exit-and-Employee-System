@@ -47,7 +47,7 @@ const MailIcon = () => (
 const LOGO_KEY = 'plp_logo';
 const NAME_KEY = 'institution_name';
 
-export default function LoginPage() {
+export default function LoginPage({ onBackToScanner }) {
   const [time, setTime] = useState(new Date());
   
   // ── Branding (logo + name) ─────────────────────────────────────────────
@@ -75,6 +75,17 @@ export default function LoginPage() {
   const [showLanding, setShowLanding] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false); // ── NEW: navigate to AdminDashboard
 
+  // ── Handle Escape key to close login overlay ──
+  useEffect(() => {
+    const handleEscapeKey = (e) => {
+      if (e.key === 'Escape' && onBackToScanner) {
+        onBackToScanner();
+      }
+    };
+    window.addEventListener('keydown', handleEscapeKey);
+    return () => window.removeEventListener('keydown', handleEscapeKey);
+  }, [onBackToScanner]);
+
   useEffect(() => {
     const t = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(t);
@@ -84,6 +95,17 @@ export default function LoginPage() {
     const s = setInterval(() => setScanLine(p => (p + 1) % 100), 30);
     return () => clearInterval(s);
   }, []);
+
+  useEffect(() => {
+    if (showAdmin) {
+      document.body.classList.remove('overlay-active');
+    } else {
+      document.body.classList.add('overlay-active');
+    }
+    return () => {
+      document.body.classList.remove('overlay-active');
+    };
+  }, [showAdmin]);
 
   const formatTime = (d) => {
     let h = d.getHours(), m = d.getMinutes(), s = d.getSeconds();
@@ -187,7 +209,7 @@ export default function LoginPage() {
   if (showLanding) return <LandingPage onNavigateAdmin={() => { setShowLanding(false); setShowAdmin(false); }} />;
 
   // ── Navigate to AdminDashboard ──
-  if (showAdmin) return <AdminDashboard onLogout={() => { setShowAdmin(false); setView("login"); setUsername(""); setPassword(""); setErrorMsg(""); }} />;
+  if (showAdmin) return <AdminDashboard onLogout={() => { setShowAdmin(false); setView("login"); setUsername(""); setPassword(""); setErrorMsg(""); onBackToScanner(); }} />;
 
   // Logo sizes
   const LOGO_SIZE = 100;

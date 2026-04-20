@@ -263,6 +263,14 @@ function EmployeePage({ onBack, onNavigateAdmin }) {
 
   const [availableEvents, setAvailableEvents] = useState([]);
 
+  // ── Cleanup overflow on component unmount ──
+  useEffect(() => {
+    return () => {
+      // Just ensure we're clean on unmount
+      document.body.style.overflow = '';
+    };
+  }, []);
+
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
@@ -366,6 +374,17 @@ function EmployeePage({ onBack, onNavigateAdmin }) {
       setSelectedEvent(availableEvents[0].id.toString());
     }
   }, [availableEvents, selectedEvent]);
+
+  useEffect(() => {
+    if (showAdminLogin) {
+      document.body.classList.add('overlay-active');
+    } else {
+      document.body.classList.remove('overlay-active');
+    }
+    return () => {
+      document.body.classList.remove('overlay-active');
+    };
+  }, [showAdminLogin]);
 
   const formatDate = (date) => {
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
@@ -688,9 +707,10 @@ const stopCamera = () => {
 
   return (
     <div className="app-container" style={{
-      backgroundImage: `url(${process.env.PUBLIC_URL}/BG.png)`
+      background: "linear-gradient(160deg, rgba(6,35,22,0.72) 0%, rgba(21,92,54,0.55) 100%), url('https://images.unsplash.com/photo-1568992687947-868a62a9f521?w=1920') center/cover fixed no-repeat",
+      backgroundColor: "#0d3a22"
     }}>
-      <div className="background-overlay"></div>
+
 
    
       <div className="logo-container logo-left">

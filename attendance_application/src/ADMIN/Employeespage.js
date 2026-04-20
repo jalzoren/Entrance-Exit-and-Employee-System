@@ -677,6 +677,7 @@ const closeCamera = () => {
                     <td>
                       <div className="action-btn-group">
                         <Button
+                          variant="secondary"
                           className="btn-emp-edit"
                           size="sm"
                           onClick={() => openEditModal(emp)}
@@ -685,15 +686,16 @@ const closeCamera = () => {
                           Edit
                         </Button>
                         <Button
+                          variant="secondary"
                           className="btn-emp-qr"
                           size="sm"
-                          style={{ backgroundColor: '#0d47a1', color: '#fff', border: 'none' }}
                           onClick={() => openQRModal(emp)}
                           title="View QR Code"
                         >
                           QR
                         </Button>
                         <Button
+                          variant="secondary"
                           className="btn-emp-archive"
                           size="sm"
                           onClick={() => askArchive(emp)}

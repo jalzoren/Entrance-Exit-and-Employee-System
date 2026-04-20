@@ -784,50 +784,68 @@
 .btn-emp-qr,
 .btn-emp-archive {
   border: none !important;
-  border-radius: 8px !important;
-  padding: 5px 12px !important;
-  font-size: 12px !important;
+  border-radius: 12px !important;
+  padding: 10px 20px !important;
+  font-size: 14px !important;
   font-weight: 700 !important;
-  color: #ffffff !important;
   letter-spacing: 0.2px;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
-/* ── Edit & Archive — green style ── */
-.btn-emp-edit,
-.btn-emp-archive {
-  background: #28a745 !important;
-  box-shadow: 0 2px 6px rgba(40, 167, 69, 0.30);
+/* ── Edit — green gradient, matches Settings ── */
+.btn-emp-edit {
+  background: linear-gradient(135deg, #1a5f2e 0%, #28a745 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(40, 167, 69, 0.35);
+  border: 1px solid rgba(40, 167, 69, 0.4) !important;
 }
 
 .btn-emp-edit:hover,
-.btn-emp-edit:focus,
-.btn-emp-archive:hover,
-.btn-emp-archive:focus {
-  background: #218838 !important;
+.btn-emp-edit:focus {
+  color: #ffffff !important;
   transform: translateY(-1px);
-  box-shadow: 0 4px 10px rgba(40, 167, 69, 0.40);
+  box-shadow: 0 6px 20px rgba(40, 167, 69, 0.45);
+  border-color: rgba(40, 167, 69, 0.6) !important;
 }
 
-/* ── QR — dark blue style ── */
+/* ── Archive — blue gradient ── */
+.btn-emp-archive {
+  background: linear-gradient(135deg, #1e5a9f 0%, #3b82f6 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
+  border: 1px solid rgba(59, 130, 246, 0.4) !important;
+}
+
+.btn-emp-archive:hover,
+.btn-emp-archive:focus {
+  color: #ffffff !important;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.45);
+  border-color: rgba(59, 130, 246, 0.6) !important;
+}
+
+/* ── QR — cream/white style ── */
 .btn-emp-qr,
 .action-btn-group .btn-emp-qr {
-  background-color: #0d47a1 !important;
-  background: #0d47a1 !important;
-  box-shadow: 0 2px 6px rgba(13, 71, 161, 0.30) !important;
-  color: #ffffff !important;
+  background: linear-gradient(135deg, #f5f1ed 0%, #faf8f5 100%) !important;
+  color: #333333 !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12) !important;
+  border: 1px solid #e8e1d8 !important;
 }
 
 .btn-emp-qr:hover,
 .btn-emp-qr:focus,
 .action-btn-group .btn-emp-qr:hover,
 .action-btn-group .btn-emp-qr:focus {
-  background-color: #0a3d91 !important;
-  background: #0a3d91 !important;
+  background: linear-gradient(135deg, #ede7e0 0%, #f5f1ed 100%) !important;
+  color: #333333 !important;
   transform: translateY(-1px) !important;
-  box-shadow: 0 4px 10px rgba(13, 71, 161, 0.40) !important;
-  color: #ffffff !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15) !important;
+  border-color: #ddd5cb !important;
 }
 
 /* Modal cancel — neutral grey */

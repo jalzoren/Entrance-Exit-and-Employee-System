@@ -377,6 +377,7 @@ function EventsPage({ onNavigate }) {
                   {/* Actions — distinct colours so they can't be confused */}
                   <div className="action-btn-group ms-3">
                     <Button
+                      variant="secondary"
                       className="btn-event-edit"
                       size="sm"
                       onClick={(e) => {
@@ -387,6 +388,7 @@ function EventsPage({ onNavigate }) {
                       Edit
                     </Button>
                     <Button
+                      variant="secondary"
                       className="btn-event-archive"
                       size="sm"
                       onClick={(e) => askArchive(event, e)}
