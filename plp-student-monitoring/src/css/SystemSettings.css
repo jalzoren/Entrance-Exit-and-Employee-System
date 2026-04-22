@@ -142,7 +142,7 @@
 
 .setting-description {
   display: block;
-  font-size: 12px;
+  font-size: 15px;
   color: #666;
   line-height: 1.4;
 }
@@ -1238,7 +1238,7 @@ input:checked + .slider:before {
   .setting-description,
   .number-input,
   .time-input {
-    font-size: 12px;
+    font-size: 15px;
   }
   
   .ep-table {

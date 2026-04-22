@@ -16,6 +16,7 @@ const visitorExitRoute    = require('./routes/visitor-exit');
 const programRoutes = require('./routes/programs');
 const analyticsRoute = require('./routes/analytics');
 const { router: timeRouter } = require('./src/time');
+const settingsRoute = require('./routes/systemSettings');
 
 const PORT = process.env.PORT || 5000;
 
@@ -28,6 +29,7 @@ app.use("/api", recognizeRoute);
 app.use('/api', programRoutes);
 app.use('/api/time', timeRouter);
 app.use('/api/analytics', analyticsRoute);
+app.use('/api/settings', settingsRoute);
 
 app.use('/api/manualentry', manualEntryRoute);
 app.use('/api/qrscan', qrScanRoute);
@@ -50,6 +52,7 @@ app.listen(PORT, () => {
   console.log('   POST /api/manualentry          → [Manual Entry]');
   console.log('   POST /api/qrscan               → [QR Scan]');
   console.log('   POST /api/visitor              → [Visitor Entry]');
+  console.log('   PUT /api/settings              → [System Settings]');
   console.log('═══════════════════════════════════════════════════════════════');
 });
 // .env file content (for reference):

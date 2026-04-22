@@ -1,48 +1,26 @@
+// SystemSettings.jsx
 import React, { useState } from 'react';
-import GeneralSettings from './GeneralSettings';
-import EditProgramTab from './EditProgramTab';
-import ArchivedStudents from './ArchivedStudents';
-import ArchivedPrograms from './ArchivedPrograms';
+import GeneralSettings     from './GeneralSettings';   // ← now contains Gate + Academic Year
+import EditProgramTab      from './EditProgramTab';
+import ArchivedStudents    from './ArchivedStudents';
+import ArchivedPrograms    from './ArchivedPrograms';
 import ArchivedDepartments from './ArchivedDepartments';
-import Irregular from './Irregular';
-import DepartmentsTab from './DepartmentsTab'; // Import the new component
+import DepartmentsTab      from './DepartmentsTab';
 import "../../../css/SystemSettings.css";
+import "../../../css/GeneralSettings.css";
 
-function SystemSettings() {
-  const [activeTab, setActiveTab] = useState('General Settings');
-  const [settings, setSettings] = useState({
-    recognitionConfidence: 85,
-    rescanCooldown: 5,
-    manualInputTimeLimit: 30,
-    recognitionTimeout: 10,
-    entryWindowStart: '06:00',
-    entryWindowEnd: '21:00',
-    exitWindowStart: '06:00',
-    exitWindowEnd: '23:00',
-    blockEntryOutsideWindow: true,
-  });
-
-  const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setSettings((prev) => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
-  };
-
-  const handleSaveSettings = () => {
-    alert('Settings saved successfully!');
-  };
-
-const allTabs = [
+const TABS = [
   'General Settings',
   'Departments',
   'Programs',
-  'Regular and Irregular',   // ← kept here but will be hidden
   'Archived Students',
   'Archived Programs',
-  'Archived Departments'
+  'Archived Departments',
 ];
 
-// Filter out the tab you want to hide
-const tabs = allTabs.filter(tab => tab !== 'Regular and Irregular');
+function SystemSettings() {
+  const [activeTab, setActiveTab] = useState('General Settings');
+
   return (
     <div>
       <header className="header-card">
@@ -52,11 +30,13 @@ const tabs = allTabs.filter(tab => tab !== 'Regular and Irregular');
 
       <div className="system-settings">
         <div className="settings-container">
+
+          {/* ── Tab bar ── */}
           <div className="settings-tabs">
-            {tabs.map((tab) => (
-              <button 
-                key={tab} 
-                className={`tab ${activeTab === tab ? 'active' : ''}`} 
+            {TABS.map(tab => (
+              <button
+                key={tab}
+                className={`tab ${activeTab === tab ? 'active' : ''}`}
                 onClick={() => setActiveTab(tab)}
               >
                 {tab}
@@ -64,26 +44,12 @@ const tabs = allTabs.filter(tab => tab !== 'Regular and Irregular');
             ))}
           </div>
 
-          {activeTab === 'General Settings' && (
-            <GeneralSettings 
-              settings={settings} 
-              onInputChange={handleInputChange} 
-              onSave={handleSaveSettings} 
-            />
-          )}
-
-          {activeTab === 'Departments' && <DepartmentsTab />}
-
-          {activeTab === 'Programs' && <EditProgramTab />}
-
-
-       
-       
-       {/**  {activeTab === 'Regular and Irregular' && <Irregular />}*/} 
-                    {activeTab === 'Archived Students' && <ArchivedStudents />}
-
-          {activeTab === 'Archived Programs' && <ArchivedPrograms />}
-
+          {/* ── Tab content ── */}
+          {activeTab === 'General Settings'    && <GeneralSettings />}
+          {activeTab === 'Departments'          && <DepartmentsTab />}
+          {activeTab === 'Programs'             && <EditProgramTab />}
+          {activeTab === 'Archived Students'    && <ArchivedStudents />}
+          {activeTab === 'Archived Programs'    && <ArchivedPrograms />}
           {activeTab === 'Archived Departments' && <ArchivedDepartments />}
 
         </div>

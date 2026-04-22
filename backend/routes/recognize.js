@@ -3,12 +3,52 @@ const express = require("express");
 const router  = express.Router();
 const axios   = require("axios");
 const pool    = require("../src/db");
-const { cosineSimilarity } = require("../src/utils");
-const { getTodayPhRange }  = require("../src/time");
+const { cosineSimilarity }        = require("../src/utils");
+const { getTodayPhRange, getPhTime } = require("../src/time"); // ← added getPhTime
 
+// ─────────────────────────────────────────────────────────────────────────────
+// HELPER: check if the gate is open for the given mode
+// Uses pool (not db) — consistent with the rest of this file
+// ─────────────────────────────────────────────────────────────────────────────
+async function isGateOpen(mode) {
+  const startKey = mode === 'ENTRY' ? 'gate_entry_start' : 'gate_exit_start';
+  const endKey   = mode === 'ENTRY' ? 'gate_entry_end'   : 'gate_exit_end';
+
+  const [rows] = await pool.query(                            // ← pool, not db
+    "SELECT `key`, value FROM system_settings WHERE `key` IN (?, ?, ?)",
+    [startKey, endKey, 'block_outside_window']
+  );
+
+  const s = rows.reduce((acc, r) => { acc[r.key] = r.value; return acc; }, {});
+
+  // If enforcement is disabled, always allow
+  if (s.block_outside_window !== 'true') return true;
+
+  const now  = await getPhTime(pool);                         // ← getPhTime now imported
+  const hhmm = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+  const start = mode === 'ENTRY' ? s.gate_entry_start : s.gate_exit_start;
+  const end   = mode === 'ENTRY' ? s.gate_entry_end   : s.gate_exit_end;
+
+  return hhmm >= start && hhmm <= end;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /api/recognize
+// ─────────────────────────────────────────────────────────────────────────────
 router.post("/recognize", async (req, res) => {
   try {
     const { image, mode } = req.body;
+
+    // ── Gate check (moved inside handler where req/res are available) ──
+    const open = await isGateOpen(mode);                      // ← inside handler
+    if (!open) {
+      return res.status(403).json({
+        recognized: false,
+        message: `The ${mode === 'ENTRY' ? 'entry' : 'exit'} gate is currently closed.`,
+        action:  'GATE_CLOSED',
+      });
+    }
 
     // ── Step 1: Send image to Python FastAPI ──────────────────────────
     const pyResponse = await axios.post("http://127.0.0.1:8000/generate-embedding", {
@@ -69,7 +109,7 @@ router.post("/recognize", async (req, res) => {
     const lastAction = lastLogRows.length ? lastLogRows[0].action : null;
     console.log(`[recognize] student ${matchedStudent} lastAction today: ${lastAction ?? 'none'}`);
 
-    // ── Step 6: Validate against mode ─────────────────────────────────
+    // ── Step 6: Validate against mode ────────────────────────────────
     if (mode === 'ENTRY' && lastAction === 'ENTRY') {
       return res.json({ recognized: true, validated: false, message: `You've already entered the school.` });
     }
