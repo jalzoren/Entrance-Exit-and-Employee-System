@@ -74,7 +74,6 @@ export default function Sidebar() {
     else if (user?.role === 'EEMS Admin') {
       return [
         { icon: <FiHome />, label: "Dashboard", path: "/dashboard" },
-        // 👈 Student Management REMOVED for EEMS Admin
         { icon: <FiMonitor />, label: "Real-Time Monitor", path: "/monitor" },
         { icon: <FiFileText />, label: "Entry-Exit Records", path: "/records" },
         { icon: <FiBarChart2 />, label: "Analytics & Reports", path: "/analytics" },
