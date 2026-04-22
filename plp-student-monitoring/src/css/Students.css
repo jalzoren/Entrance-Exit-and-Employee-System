@@ -199,6 +199,49 @@
   background-color: var(--color-primary);
 }
 
+.archive-button {
+  background-color: var(--color-primary-dark);
+  color: white;
+}
+
+.archive-button:hover:not(:disabled) {
+  background-color: var(--color-primary);
+}
+
+.archive-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.archive-buttons-section {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px var(--color-shadow-soft);
+  margin-bottom: 20px;
+}
+
+.archive-section-title {
+  margin: 0 0 15px 0;
+  color: var(--color-text-dark);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.archive-buttons-group {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.archive-buttons-group .archive-button {
+  flex: 1;
+  min-width: 200px;
+  padding: 10px 15px;
+  font-size: 14px;
+}
+
 .button-icon {
   font-size: 16px;
 }

@@ -1,11 +1,37 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { MdRestore } from 'react-icons/md';
+import { BsFillPeopleFill, BsPersonDash } from 'react-icons/bs';
 import '../../../css/GlobalModal.css';
 import '../../../css/SystemSettings.css';
 
 const ROWS_PER_PAGE = 10;
+const ALL_STATUSES = ['LOA', 'Dropout', 'Kickout', 'Graduated', 'Transferred'];
+
+// ─── Status helpers ───────────────────────────────────────────────────────────
+function statusBadgeClass(status) {
+  if (!status) return 'unknown';
+  switch (status) {
+    case 'LOA':        return 'status-loa';
+    case 'Dropout':    return 'status-dropout';
+    case 'Kickout':    return 'status-kickout';
+    case 'Graduated':  return 'status-graduated';
+    case 'Transferred':return 'status-transferred';
+    case 'Regular':    return 'status-regular';
+    case 'Irregular':  return 'status-irregular';
+    case 'Inactive':   return 'status-inactive';
+    default:           return 'unknown';
+  }
+}
+
+// ─── Batch-year helper ────────────────────────────────────────────────────────
+// "23-00298"  →  "2023"
+function batchYearFromId(studentId) {
+  const prefix = studentId?.split('-')[0];
+  if (!prefix || prefix.length !== 2) return null;
+  return `20${prefix}`;
+}
 
 function Archive() {
   const [search, setSearch] = useState('');
@@ -24,6 +50,25 @@ function Archive() {
   const [restoreYearLevel, setRestoreYearLevel] = useState('');
   const [restoreStatus, setRestoreStatus] = useState('');
   const [restoring, setRestoring] = useState(false);
+
+  // ── Derived data ──────────────────────────────────────────────────────────
+  // Stats calculation
+  const stats = useMemo(() => ({
+    total: archivedStudents.length,
+    loa: archivedStudents.filter(s => s.status === 'LOA').length,
+    dropout: archivedStudents.filter(s => s.status === 'Dropout').length,
+    kickout: archivedStudents.filter(s => s.status === 'Kickout').length,
+    graduated: archivedStudents.filter(s => s.status === 'Graduated').length,
+    transferred: archivedStudents.filter(s => s.status === 'Transferred').length,
+  }), [archivedStudents]);
+
+  // Batch year options
+  const batchYearOptions = useMemo(() => {
+    const set = new Set(
+      archivedStudents.map(s => batchYearFromId(s.student_id)).filter(Boolean)
+    );
+    return [...set].sort((a, b) => b - a);
+  }, [archivedStudents]);
 
   // ── Fetch departments from backend ────────────────────────────
   useEffect(() => {
@@ -158,15 +203,6 @@ function Archive() {
     }
   };
 
-  const getStatusBadgeClass = (status) => {
-    switch(status.toLowerCase()) {
-      case 'regular': return 'status-regular';
-      case 'irregular': return 'status-irregular';
-      case 'inactive': return 'status-inactive';
-      default: return '';
-    }
-  };
-
   return (
     <div className="archive-tab">
       {/* Search and Filter Bar */}
@@ -196,9 +232,12 @@ function Archive() {
           style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '14px' }}
         >
           <option value="">All Status</option>
-          <option value="Regular">Regular</option>
-          <option value="Irregular">Irregular</option>
-          <option value="Inactive">Inactive</option>
+          <option value="LOA">LOA</option>
+          <option value="Dropout">Dropout</option>
+          <option value="Kickout">Kickout</option>
+          <option value="Graduated">Graduated</option>
+          <option value="Transferred">Transferred</option>
+
         </select>
         <span className="result-count">Total: {filtered.length}</span>
       </div>
@@ -244,7 +283,7 @@ function Archive() {
                     </td>
                     <td>{student.year_level}</td>
                     <td>
-                      <span className={`status-badge ${getStatusBadgeClass(student.status)}`}>
+                      <span className={`status-badge ${statusBadgeClass(student.status)}`}>
                         {student.status}
                       </span>
                     </td>

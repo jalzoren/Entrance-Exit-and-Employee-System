@@ -226,6 +226,8 @@ CREATE TABLE `students` (
   `program_name` varchar(200) DEFAULT NULL,
   `year_level` int(11) NOT NULL,
   `status` enum('Regular','Irregular','LOA','Dropout','Kickout','Graduated','Transferred','Inactive') NOT NULL DEFAULT 'Regular',
+  `is_archived` tinyint(1) NOT NULL DEFAULT 0,
+  `archived_status` varchar(50) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT current_timestamp(),
   `updated_at` datetime DEFAULT NULL ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;

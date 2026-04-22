@@ -6,7 +6,7 @@ import ImportStudent   from "../../components/ImportStudents";
 import EditStudent     from "../../components/EditStudent";
 import axios from "axios";
 
-import { FiDownload, FiPlus, FiFilter } from "react-icons/fi";
+import { FiDownload, FiPlus, FiFilter, FiArchive } from "react-icons/fi";
 import {
   BsPersonFillExclamation,
   BsPersonFillCheck,
@@ -263,18 +263,44 @@ function Students() {
   };
 
   // ── Bulk archive ──────────────────────────────────────────────────────────
+  const ARCHIVABLE_STATUSES = ["LOA", "Dropout", "Kickout", "Graduated", "Transferred"];
+
   const handleArchiveByStatus = async (status) => {
+    // Validate status
+    if (!status || !ARCHIVABLE_STATUSES.includes(status)) {
+      alert(`Invalid status: ${status}`);
+      return;
+    }
+
     const count = students.filter(s => s.status === status).length;
-    if (count === 0) { alert(`No ${status} students to archive.`); return; }
-    if (!window.confirm(`Archive all ${status} students? This sets their status to Inactive.`)) return;
+    if (count === 0) {
+      alert(`No ${status} students to archive.`);
+      return;
+    }
+
+    if (!window.confirm(`Archive all ${count} ${status} student${count > 1 ? "s" : ""}? Their original status will be preserved.`)) {
+      return;
+    }
+
     try {
       setLoading(true);
       const res = await axios.put("/api/students/archive-by-status", { status });
+      
+      // Immediately remove archived students from the local state for instant UI feedback
+      setStudents(prevStudents => 
+        prevStudents.filter(s => s.status !== status)
+      );
+      
       alert(res.data.message || `Archived ${count} students`);
+      // Refresh all data from backend to ensure consistency
       refreshAll();
     } catch (err) {
       alert(`Archive failed: ${err.response?.data?.message || err.message}`);
-    } finally { setLoading(false); }
+      // Refresh on error to ensure UI is in sync with backend
+      refreshAll();
+    } finally {
+      setLoading(false);
+    }
   };
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -490,6 +516,28 @@ function Students() {
           <button className="action-button add-button" onClick={handleAdd}>
             <FiPlus className="button-icon" /> Add
           </button>
+        </div>
+
+        {/* ── Archive buttons section ── */}
+        <div className="archive-buttons-section">
+          <h4 className="archive-section-title">Archive Students by Status:</h4>
+          <div className="archive-buttons-group">
+            <button className="action-button archive-button" onClick={() => handleArchiveByStatus("LOA")}>
+              <FiArchive className="button-icon" /> Archive all LOA students
+            </button>
+            <button className="action-button archive-button" onClick={() => handleArchiveByStatus("Dropout")}>
+              <FiArchive className="button-icon" /> Archive all Dropout students
+            </button>
+            <button className="action-button archive-button" onClick={() => handleArchiveByStatus("Kickout")}>
+              <FiArchive className="button-icon" /> Archive all Kickout students
+            </button>
+            <button className="action-button archive-button" onClick={() => handleArchiveByStatus("Graduated")}>
+              <FiArchive className="button-icon" /> Archive all Graduated students
+            </button>
+            <button className="action-button archive-button" onClick={() => handleArchiveByStatus("Transferred")}>
+              <FiArchive className="button-icon" /> Archive all Transferred students
+            </button>
+          </div>
         </div>
 
         {/* ── Face legend ── */}
