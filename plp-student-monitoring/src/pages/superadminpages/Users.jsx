@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react"; // ✅ ONLY ONE React import at the top
 import "../../css/Users.css";
-import { FiPlus, FiEdit2, FiTrash2 } from "react-icons/fi";
+import { FiPlus, FiEdit2, FiTrash2, FiUsers, FiShield, FiUserCheck } from "react-icons/fi";
 import AddUser from "../../components/AddUser";
 import EditUser from "../../components/EditUser";
 import Swal from 'sweetalert2';
@@ -24,7 +24,7 @@ function Users() {
     try {
       setLoading(true);
       const response = await fetch('http://localhost:5000/api/users', {
-        credentials: 'include' // 👈 ADD THIS
+        credentials: 'include'
       });
       if (!response.ok) {
         throw new Error('Failed to fetch users');
@@ -79,6 +79,14 @@ function Users() {
     fetchUsers();
   }, []);
 
+  // ── Stats for role counts ────────────────────────────────────────────────
+  const stats = {
+    total: users.length,
+    superAdmin: users.filter(u => u.role === "Super Admin").length,
+    eemsAdmin: users.filter(u => u.role === "EEMS Admin").length,
+    eamsAdmin: users.filter(u => u.role === "EAMS Admin").length,
+  };
+
   const handleUserAdded = (newUser) => {
     const nameParts = newUser.fullname.split(', ');
     const lastName = nameParts[0] || '';
@@ -118,7 +126,7 @@ function Users() {
   };
 
   const handleEdit = (email) => {
-    console.log("Editing user with email:", email); // Debug log
+    console.log("Editing user with email:", email);
     setSelectedUserEmail(email);
     setShowEditUser(true);
   };
@@ -200,7 +208,7 @@ function Users() {
       
       const response = await fetch(`http://localhost:5000/api/users/${encodeURIComponent(email)}`, {
         method: 'DELETE',
-        credentials: 'include' // 👈 ADD THIS
+        credentials: 'include'
       });
       
       if (!response.ok) {
@@ -251,158 +259,191 @@ function Users() {
 
   return (
     <div>
-
-    
       <header className="header-card">
         <h1>USER MANAGEMENT</h1>
         <p className="subtitle">Dashboard / User Management</p>
       </header>
 
       <hr className="header-divider" />
-    <div className="user-management">
 
-      <div className="controls">
-        <select
-          className="filter-select"
-          value={roleFilter}
-          onChange={(e) => setRoleFilter(e.target.value)}
-        >
-          <option value="">All Roles</option>
-          <option value="EEMS Admin">EEMS Admin</option>
-          <option value="EAMS Admin">EAMS Admin</option>
-          <option value="Super Admin">Super Admin</option>
-        </select>
+      {/* ── STAT CARDS ── */}
+      <div className="stats-container users-stats">
+        <div className="stat-card total-users">
+          <div className="stat-icon"><FiUsers /></div>
+          <div className="stat-details">
+            <h3>Total Users</h3>
+            <p className="stat-number">{stats.total}</p>
+          </div>
+        </div>
 
-        <input
-          type="text"
-          className="search-input"
-          placeholder="Search by name or email"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
+        <div className="stat-card super-admin">
+          <div className="stat-icon"><FiShield /></div>
+          <div className="stat-details">
+            <h3>Super Admin</h3>
+            <p className="stat-number">{stats.superAdmin}</p>
+          </div>
+        </div>
 
-        <button
-          className="action-button add-button"
-          onClick={() => setShowAddUser(true)}
-        >
-          <FiPlus className="button-icon" />
-          Add User
-        </button>
+        <div className="stat-card eems-admin">
+          <div className="stat-icon"><FiUserCheck /></div>
+          <div className="stat-details">
+            <h3>EEMS Admin</h3>
+            <p className="stat-number">{stats.eemsAdmin}</p>
+          </div>
+        </div>
+
+        <div className="stat-card eams-admin">
+          <div className="stat-icon"><FiUserCheck /></div>
+          <div className="stat-details">
+            <h3>EAMS Admin</h3>
+            <p className="stat-number">{stats.eamsAdmin}</p>
+          </div>
+        </div>
       </div>
 
-      <div className="table-container">
-        {loading ? (
-          <div className="loading">
-            <div className="spinner"></div>
-            <p>Loading users...</p>
-          </div>
-        ) : error ? (
-          <div className="error">{error}</div>
-        ) : (
-          <table className="user-table">
-            <thead>
-              <tr>
-                <th>No.</th>
-                <th>Full Name</th>
-                <th>Email</th>
-                <th>Role</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {currentUsers.length > 0 ? (
-                currentUsers.map((user, index) => (
-                  <tr key={user.email}>
-                    <td>{indexOfFirstRecord + index + 1}</td>
-                    <td>{user.full_name}</td>
-                    <td>{user.email}</td>
-                    <td>
-                      <span className={`role-badge role-${user.role.replace(/\s+/g, '-').toLowerCase()}`}>
-                        {user.role}
-                      </span>
-                    </td>
-                    <td className="action-cell">
-                      <button
-                        className="edit-btn"
-                        onClick={() => handleEdit(user.email)}
-                        title="Edit User"
-                      >
-                        <FiEdit2 /> Edit
-                      </button>
-                      <button
-                        className="delete-btn"
-                        onClick={() => handleDelete(user.email)}
-                        title="Delete User"
-                      >
-                        <FiTrash2 /> Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="5" className="no-data">
-                    No users found
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        )}
-      </div>
-
-      {!loading && !error && filteredUsers.length > 0 && (
-        <div className="pagination">
-          <button
-            className="pagination-button"
-            onClick={() => handlePageChange(currentPage - 1)}
-            disabled={currentPage === 1}
+      <div className="user-management">
+        <div className="controls">
+          <select
+            className="filter-select"
+            value={roleFilter}
+            onChange={(e) => setRoleFilter(e.target.value)}
           >
-            ← Previous
-          </button>
+            <option value="">All Roles</option>
+            <option value="EEMS Admin">EEMS Admin</option>
+            <option value="EAMS Admin">EAMS Admin</option>
+            <option value="Super Admin">Super Admin</option>
+          </select>
 
-          <div className="page-numbers">
-            {Array.from({ length: totalPages }, (_, i) => (
-              <button
-                key={i + 1}
-                className={`page-number ${
-                  currentPage === i + 1 ? "active" : ""
-                }`}
-                onClick={() => handlePageChange(i + 1)}
-              >
-                {i + 1}
-              </button>
-            ))}
-          </div>
+          <input
+            type="text"
+            className="search-input"
+            placeholder="Search by name or email"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
 
           <button
-            className="pagination-button"
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
+            className="action-button add-button"
+            onClick={() => setShowAddUser(true)}
           >
-            Next →
+            <FiPlus className="button-icon" />
+            Add User
           </button>
         </div>
-      )}
 
-      {showAddUser && (
-        <AddUser 
-          onClose={() => setShowAddUser(false)}
-          onUserAdded={handleUserAdded}
-        />
-      )}
+        <div className="table-container">
+          {loading ? (
+            <div className="loading">
+              <div className="spinner"></div>
+              <p>Loading users...</p>
+            </div>
+          ) : error ? (
+            <div className="error">{error}</div>
+          ) : (
+            <table className="user-table">
+              <thead>
+                <tr>
+                  <th>No.</th>
+                  <th>Full Name</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {currentUsers.length > 0 ? (
+                  currentUsers.map((user, index) => (
+                    <tr key={user.email}>
+                      <td>{indexOfFirstRecord + index + 1}</td>
+                      <td>{user.full_name}</td>
+                      <td>{user.email}</td>
+                      <td>
+                        <span className={`role-badge role-${user.role.replace(/\s+/g, '-').toLowerCase()}`}>
+                          {user.role}
+                        </span>
+                      </td>
+                      <td className="action-cell">
+                        <button
+                          className="edit-btn"
+                          onClick={() => handleEdit(user.email)}
+                          title="Edit User"
+                        >
+                          <FiEdit2 /> Edit
+                        </button>
+                        <button
+                          className="delete-btn"
+                          onClick={() => handleDelete(user.email)}
+                          title="Delete User"
+                        >
+                          <FiTrash2 /> Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="5" className="no-data">
+                      No users found
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          )}
+        </div>
 
-      {showEditUser && selectedUserEmail && (
-        <EditUser
-          onClose={() => {
-            setShowEditUser(false);
-            setSelectedUserEmail(null);
-          }}
-          onUserUpdated={handleUserUpdated}
-          userEmail={selectedUserEmail}
-        />
-      )}
-    </div>
+        {!loading && !error && filteredUsers.length > 0 && (
+          <div className="pagination">
+            <button
+              className="pagination-button"
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+            >
+              ← Previous
+            </button>
+
+            <div className="page-numbers">
+              {Array.from({ length: totalPages }, (_, i) => (
+                <button
+                  key={i + 1}
+                  className={`page-number ${
+                    currentPage === i + 1 ? "active" : ""
+                  }`}
+                  onClick={() => handlePageChange(i + 1)}
+                >
+                  {i + 1}
+                </button>
+              ))}
+            </div>
+
+            <button
+              className="pagination-button"
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+            >
+              Next →
+            </button>
+          </div>
+        )}
+
+        {showAddUser && (
+          <AddUser 
+            onClose={() => setShowAddUser(false)}
+            onUserAdded={handleUserAdded}
+          />
+        )}
+
+        {showEditUser && selectedUserEmail && (
+          <EditUser
+            onClose={() => {
+              setShowEditUser(false);
+              setSelectedUserEmail(null);
+            }}
+            onUserUpdated={handleUserUpdated}
+            userEmail={selectedUserEmail}
+          />
+        )}
+      </div>
     </div>
   );
 }
