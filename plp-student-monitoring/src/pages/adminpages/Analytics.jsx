@@ -7,7 +7,7 @@ import {
 import '../../css/Analytics.css';
 import GenerateReportFilter from '../../components/GenerateReportFilter';
 import GenerateReportPdf from '../../components/GenerateReportPdf';
-import { reportToXml, xmlToReport, downloadXml } from '../../utils/xmlReportUtils';
+import { reportToXml, xmlToReport, downloadXml, downloadHtml, xmlToHtml, openXmlReportWindow } from '../../utils/xmlReportUtils';
 import * as timeUtils from '../../utils/timeUtils';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -253,6 +253,34 @@ function Analytics() {
   };
 
   const handleDownloadPDF = () => pdfRef.current?.generatePDF();
+
+  const handleDownloadHtml = async () => {
+    if (!filteredReportData?._xml) {
+      alert('No XML data available');
+      return;
+    }
+    try {
+      const htmlString = await xmlToHtml(filteredReportData._xml);
+      const date = new Date().toISOString().slice(0, 10);
+      downloadHtml(htmlString, `eems-report-${date}.html`);
+    } catch (err) {
+      console.error('Error downloading HTML:', err);
+      alert('Failed to download HTML report');
+    }
+  };
+
+  const handleViewHtmlReport = async () => {
+    if (!filteredReportData?._xml) {
+      alert('No XML data available');
+      return;
+    }
+    try {
+      openXmlReportWindow(filteredReportData._xml);
+    } catch (err) {
+      console.error('Error opening report window:', err);
+      alert('Failed to open report window');
+    }
+  };
 
   const handleClosePdfPreview = () => {
     setShowPdfPreview(false);
@@ -504,6 +532,14 @@ function Analytics() {
                 padding: '10px 20px', backgroundColor: '#f5f5f5',
                 border: 'none', borderRadius: '6px', cursor: 'pointer',
               }}>Close</button>
+              <button
+                onClick={handleViewHtmlReport}
+                title="View HTML report in new window"
+                style={{
+                  padding: '10px 20px', backgroundColor: '#4a90d9', color: 'white',
+                  border: 'none', borderRadius: '6px', cursor: 'pointer',
+                }}
+              >View HTML Report</button>
               {filteredReportData?._xml && (
                 <button
                   onClick={() => {
@@ -516,6 +552,14 @@ function Analytics() {
                   }}
                 >Download XML</button>
               )}
+              <button
+                onClick={handleDownloadHtml}
+                title="Download as HTML file"
+                style={{
+                  padding: '10px 20px', backgroundColor: '#d99201', color: 'white',
+                  border: 'none', borderRadius: '6px', cursor: 'pointer',
+                }}
+              >Download HTML</button>
               <button onClick={handleDownloadPDF} style={{
                 padding: '10px 20px', backgroundColor: '#548772', color: 'white',
                 border: 'none', borderRadius: '6px', cursor: 'pointer',

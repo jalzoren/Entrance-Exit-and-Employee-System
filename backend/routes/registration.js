@@ -282,9 +282,11 @@ router.get("/students", async (req, res) => {
         program_name,
         year_level,
         status,
+        is_archived,
         created_at,
         updated_at
       FROM students
+      WHERE is_archived = 0
       ORDER BY created_at DESC
     `);
 
@@ -308,20 +310,26 @@ BULK ARCHIVE BY STATUS
 -------------------------------------------------- */
 router.put("/students/archive-by-status", async (req, res) => {
   const { status } = req.body;
-  if (!status || (status !== "Regular" && status !== "Irregular")) {
-    return res.status(400).json({ message: "Invalid status. Must be 'Regular' or 'Irregular'." });
+  
+  // Allowed archive statuses
+  const ARCHIVABLE_STATUSES = ["LOA", "Dropout", "Kickout", "Graduated", "Transferred"];
+  
+  if (!status || !ARCHIVABLE_STATUSES.includes(status)) {
+    return res.status(400).json({ 
+      message: `Invalid status. Allowed archive statuses: ${ARCHIVABLE_STATUSES.join(", ")}` 
+    });
   }
 
   try {
     const [result] = await db.query(
       `UPDATE students
-         SET status = 'Inactive', updated_at = CURRENT_TIMESTAMP
+         SET is_archived = 1, archived_status = ?, updated_at = CURRENT_TIMESTAMP
        WHERE LOWER(status) = LOWER(?)`,
-      [status]
+      [status, status]
     );
 
     res.json({
-      message: `Archived ${result.affectedRows} ${result.affectedRows === 1 ? "student" : "students"}`,
+      message: `Archived ${result.affectedRows} ${result.affectedRows === 1 ? "student" : "students"} with status ${status}`,
       count: result.affectedRows
     });
   } catch (err) {
@@ -354,7 +362,7 @@ router.put("/students/:student_id", async (req, res) => {
       `UPDATE students
        SET first_name = ?, last_name = ?, middle_name = ?,
            extension_name = ?, college_department = ?, program_name = ?,
-           year_level = ?, status = ?,
+           year_level = ?, status = ?, is_archived = 0, archived_status = NULL,
            updated_at = CURRENT_TIMESTAMP
        WHERE student_id = ?`,
       [
@@ -401,11 +409,12 @@ router.get("/archived-students", async (req, res) => {
         college_department,
         program_name,
         year_level,
-        status,
+        COALESCE(archived_status, status) as status,
+        is_archived,
         created_at,
         updated_at
       FROM students
-      WHERE status = 'Inactive'
+      WHERE is_archived = 1
       ORDER BY updated_at DESC
     `);
 

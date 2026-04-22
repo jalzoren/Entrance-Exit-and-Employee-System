@@ -231,9 +231,9 @@
   white-space: nowrap;
 }
 
-.action-badge.entry {
+.action-badge.entrance {
   background-color: #d4edda;
-  color: var(--color-primary-dark);
+  color: #155724;
 }
 
 .action-badge.exit {

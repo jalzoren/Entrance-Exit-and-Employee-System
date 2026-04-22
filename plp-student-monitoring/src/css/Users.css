@@ -591,3 +591,153 @@
   color: white;
   white-space: nowrap;
 }
+
+/* ====================== USER STAT CARDS (Matching Students Page) ====================== */
+
+.stats-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+  margin: 25px 0 30px 0;
+  padding: 0 2rem;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 12px;
+  padding: 24px 20px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e9ecef;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.stat-icon {
+  font-size: 42px;
+  width: 70px;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.stat-details {
+  flex: 1;
+}
+
+.stat-details h3 {
+  margin: 0 0 6px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-number {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.stat-sub {
+  font-size: 11px;
+  color: #888;
+  margin: 2px 0 0;
+}
+
+/* ===== CARD SPECIFIC STYLES WITH LEFT BORDER ===== */
+
+/* Total Users - Green theme */
+.stat-card.total-users {
+  border-left: 5px solid #548772;
+}
+.stat-card.total-users .stat-icon {
+  background-color: #e8f5e9;
+  color: #548772;
+}
+.stat-card.total-users .stat-number {
+  color: #548772;
+}
+
+/* Super Admin - Dark Red theme */
+.stat-card.super-admin {
+  border-left: 5px solid #c62828;
+}
+.stat-card.super-admin .stat-icon {
+  background-color: #ffebee;
+  color: #c62828;
+}
+.stat-card.super-admin .stat-number {
+  color: #c62828;
+}
+
+/* EEMS Admin - Blue theme */
+.stat-card.eems-admin {
+  border-left: 5px solid #1976d2;
+}
+.stat-card.eems-admin .stat-icon {
+  background-color: #e3f2fd;
+  color: #1976d2;
+}
+.stat-card.eems-admin .stat-number {
+  color: #1976d2;
+}
+
+/* EAMS Admin - Orange theme */
+.stat-card.eams-admin {
+  border-left: 5px solid #f57c00;
+}
+.stat-card.eams-admin .stat-icon {
+  background-color: #fff3e0;
+  color: #f57c00;
+}
+.stat-card.eams-admin .stat-number {
+  color: #f57c00;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .stats-container {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin: 20px 0 25px 0;
+    padding: 0 1rem;
+  }
+  
+  .stat-card {
+    padding: 20px 16px;
+    gap: 14px;
+  }
+  
+  .stat-icon {
+    font-size: 36px;
+    width: 60px;
+    height: 60px;
+  }
+  
+  .stat-number {
+    font-size: 28px;
+  }
+  
+  .stat-details h3 {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-container {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+}

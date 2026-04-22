@@ -14,29 +14,28 @@ function Records() {
   const { logs } = useLogContext();
   const pdfRef = useRef(null);
 
-  // Get successful logs only (exclude failed attempts)
-  const allRecords = useMemo(() => {
-    return logs
-      .filter(log => !log.failed)
-      .map((log, index) => ({
-        ...log,
-        dateTime: new Date(log.timestamp).toLocaleString('en-US', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-          hour12: true
-        }),
-        collegeDept: log.collegeDept || 'BSIT',
-        yearLevel: log.yearLevel || '3rd Year',
-        action: log.action === 'ENTRY' ? 'Entrance' : 'Exit',
-        method: log.method === 'FACE' ? 'Face Recognition' : 'Manual Entry'
-      }))
-      .reverse();
-  }, [logs]);
-
+const allRecords = useMemo(() => {
+  return logs
+    .filter(log => !log.failed)
+    .map((log, index) => ({
+      ...log,
+      dateTime: new Date(log.timestamp).toLocaleString('en-US', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+      }),
+      collegeDept: log.collegeDept || 'Not Specified',
+      yearLevel: log.yearLevel || 'Not Specified',  // This displays the year level
+      action: log.action === 'ENTRY' ? 'Entrance' : 'Exit',
+      method: log.method === 'FACE' ? 'Face Recognition' : 
+              log.method === 'QR' ? 'QR Code' : 'Manual Entry'
+    }))
+    .reverse();
+}, [logs]);
   // Function to apply filters and prepare report data
   const handleApplyFilters = (filters) => {
     console.log('Applying filters:', filters);

@@ -97,10 +97,10 @@ function AppRoutes() {
           </ProtectedRoute>
         } />
         <Route path="/students" element={
-          <ProtectedRoute allowedRoles={['EEMS Admin', 'EAMS Admin', 'Super Admin']}>
-            <Students />
-          </ProtectedRoute>
-        } />
+        <ProtectedRoute allowedRoles={['EAMS Admin', 'Super Admin']}>
+          <Students />
+        </ProtectedRoute>
+      } />
         <Route path="/analytics" element={
           <ProtectedRoute allowedRoles={['EEMS Admin', 'EAMS Admin', 'Super Admin']}>
             <Analytics />

@@ -1,5 +1,5 @@
 // src/components/Sidebar.jsx
-import React, { useState } from "react"; // Remove useEffect
+import React, { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   FiHome,
@@ -18,7 +18,7 @@ import { useAuth } from "../context/AuthContext";
 
 export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(true);
-  const { user, logout } = useAuth(); // Get user from AuthContext
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   const toggleSidebar = () => setIsOpen((prev) => !prev);
@@ -60,11 +60,29 @@ export default function Sidebar() {
         { icon: <FiBarChart2 />, label: "Attendance Reports", path: "/employee-reports" },
       ];
     } 
-    // Regular admins (EEMS/EAMS) get limited menu
-    else {
+    // EAMS Admin gets Student Management
+    else if (user?.role === 'EAMS Admin') {
       return [
         { icon: <FiHome />, label: "Dashboard", path: "/dashboard" },
         { icon: <FiUsers />, label: "Student Management", path: "/students" },
+        { icon: <FiMonitor />, label: "Real-Time Monitor", path: "/monitor" },
+        { icon: <FiFileText />, label: "Entry-Exit Records", path: "/records" },
+        { icon: <FiBarChart2 />, label: "Analytics & Reports", path: "/analytics" },
+      ];
+    }
+    // EEMS Admin gets NO Student Management
+    else if (user?.role === 'EEMS Admin') {
+      return [
+        { icon: <FiHome />, label: "Dashboard", path: "/dashboard" },
+        { icon: <FiMonitor />, label: "Real-Time Monitor", path: "/monitor" },
+        { icon: <FiFileText />, label: "Entry-Exit Records", path: "/records" },
+        { icon: <FiBarChart2 />, label: "Analytics & Reports", path: "/analytics" },
+      ];
+    }
+    // Default fallback (should not happen)
+    else {
+      return [
+        { icon: <FiHome />, label: "Dashboard", path: "/dashboard" },
         { icon: <FiMonitor />, label: "Real-Time Monitor", path: "/monitor" },
         { icon: <FiFileText />, label: "Entry-Exit Records", path: "/records" },
         { icon: <FiBarChart2 />, label: "Analytics & Reports", path: "/analytics" },
@@ -78,8 +96,6 @@ export default function Sidebar() {
   };
 
   const menuItems = getMenuItems();
-
-  // No loading check needed since AuthContext handles it
 
   return (
     <>

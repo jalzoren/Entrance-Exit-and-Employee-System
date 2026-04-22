@@ -252,6 +252,118 @@ export function xmlToReport(xmlString) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// XSLT TRANSFORMATION
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Apply an XSLT transformation to an XML string.
+ * Uses the browser's built-in XSLTProcessor API (supported in all modern browsers).
+ *
+ * @param {string} xmlString  - The XML content to transform
+ * @param {string} xsltString - The XSLT stylesheet content
+ * @returns {string}          - The transformed HTML string
+ * @throws {Error}            - If XML or XSLT parsing fails
+ */
+export function applyXsltTransform(xmlString, xsltString) {
+  try {
+    // Parse XML
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(xmlString, 'application/xml');
+    
+    if (xmlDoc.querySelector('parsererror')) {
+      throw new Error('Failed to parse XML: ' + xmlDoc.querySelector('parsererror').textContent);
+    }
+
+    // Parse XSLT
+    const xsltDoc = parser.parseFromString(xsltString, 'application/xml');
+    
+    if (xsltDoc.querySelector('parsererror')) {
+      throw new Error('Failed to parse XSLT: ' + xsltDoc.querySelector('parsererror').textContent);
+    }
+
+    // Create processor and apply transformation
+    const processor = new XSLTProcessor();
+    processor.importStylesheet(xsltDoc);
+    const resultDoc = processor.transformToDocument(xmlDoc);
+
+    // Serialize result to string
+    const serializer = new XMLSerializer();
+    return serializer.serializeToString(resultDoc);
+  } catch (err) {
+    console.error('[xmlReportUtils.applyXsltTransform] Error:', err.message);
+    throw err;
+  }
+}
+
+/**
+ * Transform XML report to HTML using the embedded XSLT stylesheet.
+ * This is a convenience wrapper that fetches the XSLT and applies it.
+ *
+ * @param {string} xmlString - The XML content to transform
+ * @returns {Promise<string>} - The transformed HTML string
+ */
+export async function xmlToHtml(xmlString) {
+  try {
+    // Fetch the XSLT stylesheet
+    const xsltPath = new URL('eems-report.xslt', import.meta.url).href;
+    const response = await fetch(xsltPath);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch XSLT: HTTP ${response.status}`);
+    }
+    
+    const xsltString = await response.text();
+    
+    // Apply transformation
+    return applyXsltTransform(xmlString, xsltString);
+  } catch (err) {
+    console.error('[xmlReportUtils.xmlToHtml] Error:', err.message);
+    throw err;
+  }
+}
+
+/**
+ * Get the embedded XSLT stylesheet as a string.
+ * Useful for inspection or manual transformation operations.
+ *
+ * @returns {Promise<string>} - The XSLT content
+ */
+export async function getXsltStylesheet() {
+  try {
+    const xsltPath = new URL('eems-report.xslt', import.meta.url).href;
+    const response = await fetch(xsltPath);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch XSLT: HTTP ${response.status}`);
+    }
+    
+    return await response.text();
+  } catch (err) {
+    console.error('[xmlReportUtils.getXsltStylesheet] Error:', err.message);
+    throw err;
+  }
+}
+
+/**
+ * Transform XML to HTML and open in a new window for preview/printing.
+ * Useful for PDF export workflows.
+ *
+ * @param {string} xmlString - The XML content to transform
+ * @param {string} windowName - Optional window name (default: 'eems-report')
+ */
+export async function openXmlReportWindow(xmlString, windowName = 'eems-report') {
+  try {
+    const htmlString = await xmlToHtml(xmlString);
+    const newWindow = window.open('', windowName, 'width=1000,height=800');
+    newWindow.document.write(htmlString);
+    newWindow.document.close();
+  } catch (err) {
+    console.error('[xmlReportUtils.openXmlReportWindow] Error:', err.message);
+    alert('Failed to open report window. Check console for details.');
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // DOWNLOAD HELPER
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -263,6 +375,22 @@ export function xmlToReport(xmlString) {
  */
 export function downloadXml(xmlString, filename = 'eems-report.xml') {
   const blob = new Blob([xmlString], { type: 'application/xml' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * Trigger a browser download of the HTML (transformed from XML via XSLT) as .html file.
+ *
+ * @param {string} htmlString
+ * @param {string} filename  - e.g. "eems-report-2026-04-20.html"
+ */
+export function downloadHtml(htmlString, filename = 'eems-report.html') {
+  const blob = new Blob([htmlString], { type: 'text/html;charset=utf-8' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
   a.href     = url;
