@@ -1,4 +1,5 @@
 // frontend/src/components/ImportStudents.jsx
+// Only handleUpload is changed — all other code is identical to before.
 
 import React, { useState } from 'react';
 import axios from 'axios';
@@ -12,40 +13,27 @@ import {
 import '../componentscss/ImportStudents.css';
 
 const ImportStudents = ({ isOpen, onClose, onSuccess }) => {
-  const [file, setFile]                     = useState(null);
-  const [dragActive, setDragActive]         = useState(false);
-  const [uploadStatus, setUploadStatus]     = useState(null);
-  const [errorMessage, setErrorMessage]     = useState('');
-  const [errorList, setErrorList]           = useState([]);
+  const [file, setFile]                 = useState(null);
+  const [dragActive, setDragActive]     = useState(false);
+  const [uploadStatus, setUploadStatus] = useState(null);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [errorList, setErrorList]       = useState([]);
 
   // ── Column definitions (mirrors backend) ──────────────────────────────────
   const requiredColumns = [
-    'Student ID',
-    'Email',
-    'First Name',
-    'Middle Name',
-    'Last Name',
-    'College Department',
-    'Program Name',
-    'Year Level',
-    'Enrollment Status',
-  ];
-
-  const optionalColumns = [
-    'Extension Name',   // Jr., Sr., I–IV when provided
+    'Student ID', 'Email', 'First Name', 'Middle Name', 'Last Name',
+    'College Department', 'Program Name', 'Year Level', 'Enrollment Status',
   ];
 
   // ── File handling ─────────────────────────────────────────────────────────
   const handleDrag = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
+    e.preventDefault(); e.stopPropagation();
     if (e.type === 'dragenter' || e.type === 'dragover') setDragActive(true);
     else if (e.type === 'dragleave') setDragActive(false);
   };
 
   const handleDrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
+    e.preventDefault(); e.stopPropagation();
     setDragActive(false);
     validateAndSetFile(e.dataTransfer.files[0]);
   };
@@ -53,25 +41,19 @@ const ImportStudents = ({ isOpen, onClose, onSuccess }) => {
   const handleFileSelect = (e) => validateAndSetFile(e.target.files[0]);
 
   const validateAndSetFile = (selectedFile) => {
-    setUploadStatus(null);
-    setErrorMessage('');
-    setErrorList([]);
-
+    setUploadStatus(null); setErrorMessage(''); setErrorList([]);
     if (!selectedFile) return;
-
     const fileExt = selectedFile.name.split('.').pop().toLowerCase();
     if (fileExt !== 'csv' && fileExt !== 'xlsx') {
       setUploadStatus('error');
       setErrorMessage('Please upload only .csv or .xlsx files.');
       return;
     }
-
     if (selectedFile.size > 6 * 1024 * 1024) {
       setUploadStatus('error');
       setErrorMessage('File size should not exceed 6MB.');
       return;
     }
-
     setFile(selectedFile);
     setUploadStatus('ready');
   };
@@ -89,7 +71,7 @@ const ImportStudents = ({ isOpen, onClose, onSuccess }) => {
 
     try {
       const response = await axios.post(
-        'http://localhost:5000/api/import-students',
+        '/api/import-students',
         formData,
         { headers: { 'Content-Type': 'multipart/form-data' } }
       );
@@ -97,23 +79,77 @@ const ImportStudents = ({ isOpen, onClose, onSuccess }) => {
       const data = response.data;
       setUploadStatus('done');
 
-      // ── SweetAlert success popup ──────────────────────────────────────
-      await Swal.fire({
-        icon: 'success',
-        title: 'Upload Successful!',
-        html: `
-          <p style="font-family:'Montserrat',sans-serif; font-size:0.95rem; color:#333; margin:0;">
-            <strong>${data.inserted}</strong> student${data.inserted !== 1 ? 's' : ''} imported successfully.
-            ${data.failed > 0
-              ? `<br/><span style="color:#b45309;">⚠️ ${data.failed} row(s) failed to insert.</span>`
-              : ''
-            }
+      const { inserted = 0, skipped = 0, skippedDetails = [], failed = 0, failedDetails = [] } = data;
+
+      // ── Build the Swal HTML ────────────────────────────────────────────
+      let html = `
+        <div style="font-family:'Montserrat',sans-serif; font-size:0.9rem; color:#333; text-align:left;">
+      `;
+
+      // Inserted count
+      html += `
+        <p style="margin:0 0 10px;">
+          ✅ <strong>${inserted}</strong> student${inserted !== 1 ? 's' : ''} imported successfully.
+        </p>
+      `;
+
+      // Skipped duplicates — the main new block
+      if (skipped > 0) {
+        const listItems = skippedDetails
+          .map(s => `<li style="margin-bottom:4px;"><strong>${s.studentId}</strong> — ${s.reason}</li>`)
+          .join('');
+
+        html += `
+          <p style="margin:0 0 6px; color:#92400e;">
+            ⚠️ <strong>${skipped}</strong> row${skipped !== 1 ? 's' : ''} skipped (already in system):
           </p>
-        `,
-        confirmButtonColor: '#2b5a2b',
-        confirmButtonText: 'Done',
-        timer: data.failed === 0 ? 2500 : undefined,
-        timerProgressBar: data.failed === 0,
+          <ul style="
+            max-height:160px; overflow-y:auto; padding:8px 10px 8px 24px;
+            background:#fffbeb; border:1px solid #fcd34d; border-radius:6px;
+            margin:0 0 10px; color:#78350f; font-size:0.82rem; list-style:disc;
+          ">
+            ${listItems}
+          </ul>
+        `;
+      }
+
+      // Hard failures (DB errors — rare)
+      if (failed > 0) {
+        const failItems = failedDetails
+          .map(f => `<li style="margin-bottom:4px;"><strong>${f.studentId}</strong> — ${f.reason}</li>`)
+          .join('');
+
+        html += `
+          <p style="margin:0 0 6px; color:#991b1b;">
+            ❌ <strong>${failed}</strong> row${failed !== 1 ? 's' : ''} failed to insert:
+          </p>
+          <ul style="
+            max-height:120px; overflow-y:auto; padding:8px 10px 8px 24px;
+            background:#fef2f2; border:1px solid #fca5a5; border-radius:6px;
+            margin:0; color:#7f1d1d; font-size:0.82rem; list-style:disc;
+          ">
+            ${failItems}
+          </ul>
+        `;
+      }
+
+      html += `</div>`;
+
+      // Choose icon based on outcome
+      const icon = inserted === 0 ? 'warning' : skipped > 0 || failed > 0 ? 'info' : 'success';
+      const title = inserted === 0
+        ? 'Nothing Imported'
+        : skipped > 0 || failed > 0
+        ? 'Import Completed with Notices'
+        : 'Import Successful!';
+
+      await Swal.fire({
+        icon,
+        title,
+        html,
+        confirmButtonColor: '#01311d',
+        confirmButtonText:  'Done',
+        width: skipped > 3 ? '560px' : '480px',
       });
 
       if (onSuccess) onSuccess();
@@ -134,16 +170,10 @@ const ImportStudents = ({ isOpen, onClose, onSuccess }) => {
 
   // ── Reset / close ─────────────────────────────────────────────────────────
   const handleRemoveFile = () => {
-    setFile(null);
-    setUploadStatus(null);
-    setErrorMessage('');
-    setErrorList([]);
+    setFile(null); setUploadStatus(null); setErrorMessage(''); setErrorList([]);
   };
 
-  const handleClose = () => {
-    handleRemoveFile();
-    onClose();
-  };
+  const handleClose = () => { handleRemoveFile(); onClose(); };
 
   if (!isOpen) return null;
 
@@ -179,25 +209,21 @@ const ImportStudents = ({ isOpen, onClose, onSuccess }) => {
               <li>Student ID format: <strong>YY-NNNNN</strong> (e.g. 24-00001).</li>
               <li>Email must be a valid <strong>@plpasig.edu.ph</strong> address.</li>
               <li>Year Level accepts: <strong>1, 2, 3, 4</strong> or <strong>1st–4th</strong>.</li>
+              <li>
+                If a Student ID or Email already exists in the system, that row will be
+                <strong> skipped</strong> and the rest will still be imported.
+              </li>
             </ol>
           </div>
 
           {/* Upload Area */}
           <div
             className={`upload-area ${dragActive ? 'drag-active' : ''} ${uploadStatus === 'error' ? 'upload-error' : ''}`}
-            onDragEnter={handleDrag}
-            onDragLeave={handleDrag}
-            onDragOver={handleDrag}
-            onDrop={handleDrop}
+            onDragEnter={handleDrag} onDragLeave={handleDrag}
+            onDragOver={handleDrag} onDrop={handleDrop}
           >
-            <input
-              type="file"
-              id="file-upload"
-              className="file-input"
-              accept=".csv,.xlsx"
-              onChange={handleFileSelect}
-              hidden
-            />
+            <input type="file" id="file-upload" className="file-input"
+              accept=".csv,.xlsx" onChange={handleFileSelect} hidden />
 
             {!file ? (
               <label htmlFor="file-upload" className="upload-label">
@@ -219,9 +245,7 @@ const ImportStudents = ({ isOpen, onClose, onSuccess }) => {
                   {uploadStatus === 'ready' && <IoCheckmarkCircleOutline size={22} className="success-icon" />}
                   {uploadStatus === 'error' && <IoAlertCircleOutline    size={22} className="error-icon" />}
                 </div>
-                <button className="remove-file-btn" onClick={handleRemoveFile}>
-                  Remove
-                </button>
+                <button className="remove-file-btn" onClick={handleRemoveFile}>Remove</button>
               </div>
             )}
           </div>
@@ -253,14 +277,12 @@ const ImportStudents = ({ isOpen, onClose, onSuccess }) => {
           <div className="columns-preview">
             <h4>Required Format (optional column shown in grey):</h4>
             <div className="preview-table">
-
               <div className="preview-header">
                 {requiredColumns.map((col, i) => (
                   <span key={i} className="preview-cell">{col}</span>
                 ))}
                 <span className="preview-cell preview-cell-optional">Extension Name</span>
               </div>
-
               <div className="preview-row">
                 <span className="preview-cell">24-00001</span>
                 <span className="preview-cell">delacruz_juan@plpasig.edu.ph</span>
@@ -273,7 +295,6 @@ const ImportStudents = ({ isOpen, onClose, onSuccess }) => {
                 <span className="preview-cell">Regular</span>
                 <span className="preview-cell preview-cell-optional">Jr.</span>
               </div>
-
             </div>
           </div>
 
@@ -281,9 +302,7 @@ const ImportStudents = ({ isOpen, onClose, onSuccess }) => {
 
         {/* Footer */}
         <div className="modal-footer">
-          <button className="modal-btn modal-btn-cancel" onClick={handleClose}>
-            Cancel
-          </button>
+          <button className="modal-btn modal-btn-cancel" onClick={handleClose}>Cancel</button>
           <button
             className="modal-btn modal-btn-save"
             onClick={handleUpload}

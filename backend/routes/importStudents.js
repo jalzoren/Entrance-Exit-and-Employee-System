@@ -28,23 +28,19 @@ const upload = multer({
 });
 
 // ── Column definitions ────────────────────────────────────────────────────────
-// Required — import is rejected if ANY of these are missing from the file header
 const REQUIRED_COLUMNS = [
   "Student ID",
-  "Email",              // now required
+  "Email",
   "First Name",
   "Last Name",
   "Middle Name",
   "College Department",
-  "Program Name",       // now required
+  "Program Name",
   "Year Level",
   "Enrollment Status",
 ];
 
-// Optional — validated when present, silently null when absent or empty
-const OPTIONAL_COLUMNS = [
-  "Extension Name",     // e.g. Jr., Sr., II
-];
+const OPTIONAL_COLUMNS = ["Extension Name"];
 
 // ── Allowed values ────────────────────────────────────────────────────────────
 const VALID_DEPARTMENTS = [
@@ -64,7 +60,7 @@ const VALID_YEAR_LEVELS = {
   "4": 4, "4th": 4,
 };
 
-const VALID_STATUSES   = ["Inactive", "Regular", "Irregular"];
+const VALID_STATUSES   = ["Inactive", "Regular", "Irregular", "LOA", "Dropout", "Kickout", "Graduated", "Transferred"];
 const VALID_EXTENSIONS = ["", "Jr.", "Sr.", "I", "II", "III", "IV"];
 
 const STUDENT_ID_REGEX    = /^\d{2}-\d{5}$/;
@@ -85,7 +81,6 @@ const validateRow = (row, rowNumber) => {
   const enrollStatus = (row["Enrollment Status"]  || "").toString().trim();
   const extensionName = (row["Extension Name"]    || "").toString().trim();
 
-  // ── Required field presence ───────────────────────────────────────────────
   if (!studentId)    errors.push(`Row ${rowNumber}: Student ID is empty.`);
   if (!email)        errors.push(`Row ${rowNumber}: Email is empty.`);
   if (!firstName)    errors.push(`Row ${rowNumber}: First Name is empty.`);
@@ -96,75 +91,48 @@ const validateRow = (row, rowNumber) => {
   if (!yearLevel)    errors.push(`Row ${rowNumber}: Year Level is empty.`);
   if (!enrollStatus) errors.push(`Row ${rowNumber}: Enrollment Status is empty.`);
 
-  // ── Format validation ─────────────────────────────────────────────────────
-  if (studentId && !STUDENT_ID_REGEX.test(studentId)) {
-    errors.push(
-      `Row ${rowNumber}: Student ID "${studentId}" must follow format YY-NNNNN (e.g. 24-00001).`
-    );
-  }
+  if (studentId && !STUDENT_ID_REGEX.test(studentId))
+    errors.push(`Row ${rowNumber}: Student ID "${studentId}" must follow format YY-NNNNN (e.g. 24-00001).`);
 
-  if (email && !PLPASIG_EMAIL_REGEX.test(email)) {
-    errors.push(
-      `Row ${rowNumber}: Email "${email}" must be a valid @plpasig.edu.ph address ` +
-      `(e.g. delacruz_juan@plpasig.edu.ph).`
-    );
-  }
+  if (email && !PLPASIG_EMAIL_REGEX.test(email))
+    errors.push(`Row ${rowNumber}: Email "${email}" must be a valid @plpasig.edu.ph address.`);
 
-  if (collegeDept && !VALID_DEPARTMENTS.includes(collegeDept)) {
-    errors.push(
-      `Row ${rowNumber}: College Department "${collegeDept}" is invalid. ` +
-      `Valid options: ${VALID_DEPARTMENTS.join(", ")}.`
-    );
-  }
+  if (collegeDept && !VALID_DEPARTMENTS.includes(collegeDept))
+    errors.push(`Row ${rowNumber}: College Department "${collegeDept}" is invalid. Valid options: ${VALID_DEPARTMENTS.join(", ")}.`);
 
-  if (programName && programName.length > 200) {
+  if (programName && programName.length > 200)
     errors.push(`Row ${rowNumber}: Program Name exceeds the 200-character limit.`);
-  }
 
-  if (yearLevel && !(yearLevel.toLowerCase() in VALID_YEAR_LEVELS)) {
-    errors.push(
-      `Row ${rowNumber}: Year Level "${yearLevel}" is invalid. Valid options: 1, 2, 3, 4.`
-    );
-  }
+  if (yearLevel && !(yearLevel.toLowerCase() in VALID_YEAR_LEVELS))
+    errors.push(`Row ${rowNumber}: Year Level "${yearLevel}" is invalid. Valid options: 1, 2, 3, 4.`);
 
-  if (enrollStatus && !VALID_STATUSES.includes(enrollStatus)) {
-    errors.push(
-      `Row ${rowNumber}: Enrollment Status "${enrollStatus}" is invalid. ` +
-      `Valid options: ${VALID_STATUSES.join(", ")}.`
-    );
-  }
+  if (enrollStatus && !VALID_STATUSES.includes(enrollStatus))
+    errors.push(`Row ${rowNumber}: Enrollment Status "${enrollStatus}" is invalid. Valid options: ${VALID_STATUSES.join(", ")}.`);
 
-  if (extensionName && !VALID_EXTENSIONS.includes(extensionName)) {
-    errors.push(
-      `Row ${rowNumber}: Extension Name "${extensionName}" is invalid. ` +
-      `Valid options: Jr., Sr., I, II, III, IV (or leave empty).`
-    );
-  }
+  if (extensionName && !VALID_EXTENSIONS.includes(extensionName))
+    errors.push(`Row ${rowNumber}: Extension Name "${extensionName}" is invalid. Valid options: Jr., Sr., I, II, III, IV.`);
 
   return errors;
 };
 
 
 // ─── POST /api/import-students ────────────────────────────────────────────────
-
 router.post("/import-students", upload.single("file"), async (req, res) => {
   try {
-    if (!req.file) {
+    if (!req.file)
       return res.status(400).json({ message: "No file uploaded." });
-    }
 
     const workbook  = XLSX.read(req.file.buffer, { type: "buffer" });
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
     const rows      = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
 
-    if (rows.length === 0) {
+    if (rows.length === 0)
       return res.status(400).json({ message: "The uploaded file is empty." });
-    }
 
     // ── Column presence check ─────────────────────────────────────────────
     const fileColumns    = Object.keys(rows[0]);
-    const missingColumns = REQUIRED_COLUMNS.filter((col) => !fileColumns.includes(col));
+    const missingColumns = REQUIRED_COLUMNS.filter(col => !fileColumns.includes(col));
 
     if (missingColumns.length > 0) {
       return res.status(400).json({
@@ -185,55 +153,75 @@ router.post("/import-students", upload.single("file"), async (req, res) => {
       });
     }
 
-    // ── Duplicate checks within the file ─────────────────────────────────
-    const fileStudentIds  = rows.map((r) => r["Student ID"].toString().trim());
-    const duplicateIds    = fileStudentIds.filter((id, i) => fileStudentIds.indexOf(id) !== i);
+    // ── Duplicate checks within the file itself ───────────────────────────
+    const fileStudentIds  = rows.map(r => r["Student ID"].toString().trim());
+    const duplicateInFile = fileStudentIds.filter((id, i) => fileStudentIds.indexOf(id) !== i);
 
-    if (duplicateIds.length > 0) {
+    if (duplicateInFile.length > 0) {
       return res.status(400).json({
-        message: `Duplicate Student IDs found within the file: ${[...new Set(duplicateIds)].join(", ")}.`,
+        message: `Duplicate Student IDs found within the file: ${[...new Set(duplicateInFile)].join(", ")}. Please fix your file before uploading.`,
       });
     }
 
-    const fileEmails      = rows.map((r) => r["Email"].toString().trim().toLowerCase());
+    const fileEmails      = rows.map(r => r["Email"].toString().trim().toLowerCase());
     const duplicateEmails = fileEmails.filter((e, i) => fileEmails.indexOf(e) !== i);
 
     if (duplicateEmails.length > 0) {
       return res.status(400).json({
-        message: `Duplicate Emails found within the file: ${[...new Set(duplicateEmails)].join(", ")}.`,
+        message: `Duplicate Emails found within the file: ${[...new Set(duplicateEmails)].join(", ")}. Please fix your file before uploading.`,
       });
     }
 
-    // ── Database duplicate checks ─────────────────────────────────────────
+    // ── Database duplicate checks — collect skipped rows, don't reject ────
     const idPlaceholders = fileStudentIds.map(() => "?").join(", ");
-    const [existingIds]  = await db.query(
+    const [existingIdRows] = await db.query(
       `SELECT student_id FROM students WHERE student_id IN (${idPlaceholders})`,
       fileStudentIds
     );
-
-    if (existingIds.length > 0) {
-      return res.status(400).json({
-        message: `These Student IDs already exist in the database: ${existingIds.map((r) => r.student_id).join(", ")}.`,
-      });
-    }
+    const existingIdSet = new Set(existingIdRows.map(r => r.student_id));
 
     const emailPlaceholders = fileEmails.map(() => "?").join(", ");
-    const [existingEmails]  = await db.query(
+    const [existingEmailRows] = await db.query(
       `SELECT email FROM students WHERE email IN (${emailPlaceholders})`,
       fileEmails
     );
+    const existingEmailSet = new Set(existingEmailRows.map(r => r.email.toLowerCase()));
 
-    if (existingEmails.length > 0) {
-      return res.status(400).json({
-        message: `These Emails already exist in the database: ${existingEmails.map((r) => r.email).join(", ")}.`,
+    // Build the skipped list with a reason for each row
+    const skippedRows = [];
+    const rowsToInsert = [];
+
+    for (let i = 0; i < rows.length; i++) {
+      const row       = rows[i];
+      const studentId = row["Student ID"].toString().trim();
+      const email     = row["Email"].toString().trim().toLowerCase();
+
+      if (existingIdSet.has(studentId)) {
+        skippedRows.push({ studentId, reason: "Student ID already exists in the system" });
+      } else if (existingEmailSet.has(email)) {
+        skippedRows.push({ studentId, reason: `Email "${email}" already exists in the system` });
+      } else {
+        rowsToInsert.push(row);
+      }
+    }
+
+    // ── If every row would be skipped, return early with a clear message ──
+    if (rowsToInsert.length === 0) {
+      return res.status(200).json({
+        message:  "No new students were imported — all rows already exist in the system.",
+        inserted: 0,
+        failed:   0,
+        skipped:  skippedRows.length,
+        skippedDetails: skippedRows,
+        failedDetails:  [],
       });
     }
 
-    // ── Insert rows ───────────────────────────────────────────────────────
+    // ── Insert the non-duplicate rows ─────────────────────────────────────
     const insertedStudents = [];
     const failedRows       = [];
 
-    for (const row of rows) {
+    for (const row of rowsToInsert) {
       const studentId   = row["Student ID"].toString().trim();
       const email       = row["Email"].toString().trim().toLowerCase();
       const firstName   = row["First Name"].toString().trim();
@@ -267,16 +255,17 @@ router.post("/import-students", upload.single("file"), async (req, res) => {
         );
         insertedStudents.push(studentId);
       } catch (dbError) {
-        failedRows.push({ studentId, error: dbError.message });
+        failedRows.push({ studentId, reason: dbError.message });
       }
     }
 
     return res.status(200).json({
-      message:        `Import complete. ${insertedStudents.length} student(s) added successfully.`,
+      message: `Import complete. ${insertedStudents.length} student(s) added.${skippedRows.length > 0 ? ` ${skippedRows.length} skipped (already in system).` : ""}`,
       inserted:       insertedStudents.length,
       failed:         failedRows.length,
-      failedDetails:  failedRows,
-      pendingFaceReg: insertedStudents.length,
+      skipped:        skippedRows.length,
+      skippedDetails: skippedRows,    // [{ studentId, reason }]
+      failedDetails:  failedRows,     // [{ studentId, reason }]
     });
 
   } catch (error) {
@@ -287,7 +276,6 @@ router.post("/import-students", upload.single("file"), async (req, res) => {
 
 
 // ─── GET /api/pending-face-registration ──────────────────────────────────────
-
 router.get("/pending-face-registration", async (req, res) => {
   try {
     const [rows] = await db.query(
@@ -296,11 +284,10 @@ router.get("/pending-face-registration", async (req, res) => {
          SELECT DISTINCT student_id FROM student_face_embeddings
        )`
     );
-    const count = rows[0].count;
     return res.status(200).json({
-      count,
-      message: count > 0
-        ? `There are ${count} student(s) that need face registration.`
+      count: rows[0].count,
+      message: rows[0].count > 0
+        ? `There are ${rows[0].count} student(s) that need face registration.`
         : null,
     });
   } catch (error) {
@@ -311,7 +298,6 @@ router.get("/pending-face-registration", async (req, res) => {
 
 
 // ─── GET /api/students-face-status ───────────────────────────────────────────
-
 router.get("/students-face-status", async (req, res) => {
   try {
     const [rows] = await db.query(
@@ -323,7 +309,7 @@ router.get("/students-face-status", async (req, res) => {
        ) sfe ON s.student_id = sfe.student_id`
     );
     const faceStatusMap = {};
-    rows.forEach((r) => { faceStatusMap[r.student_id] = r.has_face === 1; });
+    rows.forEach(r => { faceStatusMap[r.student_id] = r.has_face === 1; });
     return res.status(200).json(faceStatusMap);
   } catch (error) {
     console.error("Face status error:", error);
@@ -333,29 +319,23 @@ router.get("/students-face-status", async (req, res) => {
 
 
 // ─── POST /api/register-face ──────────────────────────────────────────────────
-
 router.post("/register-face", async (req, res) => {
   let connection;
   try {
     const { student_id, images } = req.body;
 
-    if (!student_id || !images || images.length !== 5) {
+    if (!student_id || !images || images.length !== 5)
       return res.status(400).json({ message: "student_id and exactly 5 images are required." });
-    }
 
     const axios    = require("axios");
-    const response = await axios.post(
-      "http://127.0.0.1:8000/generate-embedding",
-      { images }
-    );
+    const response = await axios.post("http://127.0.0.1:8000/generate-embedding", { images });
 
     const embeddings =
       response.data.embeddings ||
       (response.data.embedding ? [response.data.embedding] : null);
 
-    if (!response.data.success || !embeddings || embeddings.length !== 5) {
+    if (!response.data.success || !embeddings || embeddings.length !== 5)
       return res.status(400).json({ message: "Face detection failed. Please retake photos." });
-    }
 
     const positions = ["center", "left", "right", "up", "down"];
 

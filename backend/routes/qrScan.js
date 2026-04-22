@@ -1,35 +1,9 @@
-// routes/qrScan.js
+// qrScan.js
 const express = require('express');
 const router  = express.Router();
 const db      = require('../src/db');
-const { getTodayPhRange, getPhTime } = require('../src/time'); // ← added getPhTime
+const { getTodayPhRange } = require('../src/time'); 
 
-// ─────────────────────────────────────────────────────────────────────────────
-// HELPER: check if the gate is open for the given mode
-// ─────────────────────────────────────────────────────────────────────────────
-async function isGateOpen(mode) {
-  const [rows] = await db.query(
-    "SELECT `key`, value FROM system_settings WHERE `key` IN (?, ?, ?)",
-    [
-      mode === 'ENTRY' ? 'gate_entry_start' : 'gate_exit_start',
-      mode === 'ENTRY' ? 'gate_entry_end'   : 'gate_exit_end',
-      'block_outside_window',
-    ]
-  );
-  const s = rows.reduce((acc, r) => { acc[r.key] = r.value; return acc; }, {});
-
-  if (s.block_outside_window !== 'true') return true; // enforcement off
-
-  const now  = await getPhTime(db); // ← getPhTime now imported
-  const hhmm = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-
-  const start = mode === 'ENTRY' ? s.gate_entry_start : s.gate_exit_start;
-  const end   = mode === 'ENTRY' ? s.gate_entry_end   : s.gate_exit_end;
-
-  return hhmm >= start && hhmm <= end;
-}
-
-// ── POST /api/qrscan ──────────────────────────────────────────────────────────
 router.post('/', async (req, res) => {
   const { qr_data, mode } = req.body;
 
@@ -46,22 +20,11 @@ router.post('/', async (req, res) => {
   if (!mode || !['ENTRY', 'EXIT'].includes(mode))
     return res.status(400).json({ message: 'Invalid mode. Must be ENTRY or EXIT.' });
 
+  const { now, dayStart, dayEnd } = await getTodayPhRange(db);
+  console.log('[QR Scan] PH now:', now.toString());
+
   try {
-    // ── Gate check (inside handler where req/res exist) ────────────────
-    const open = await isGateOpen(mode); // ← moved inside handler
-    if (!open) {
-      return res.status(403).json({
-        message: `The ${mode === 'ENTRY' ? 'entry' : 'exit'} gate is currently closed.`,
-        action:  'GATE_CLOSED',
-      });
-    }
-
-    // ── Get server-authoritative PH time once, reuse everywhere ───────
-    const { now, dayStart, dayEnd } = await getTodayPhRange(db);
-    console.log('[QR Scan] PH now:', now.toString());
-    console.log('[QR Scan] Window:', dayStart, '→', dayEnd);
-
-    // ══ VISITOR EXIT ══════════════════════════════════════════════════
+    // VISITOR EXIT
     if (qr_data.startsWith('VISITOR_EXIT:')) {
       if (mode !== 'EXIT')
         return res.status(400).json({ message: 'Visitor QR can only be used for EXIT.' });
@@ -79,7 +42,6 @@ router.post('/', async (req, res) => {
       await db.query(
         'UPDATE visitor_logs SET action = "EXIT", log_time = ? WHERE visitor_id = ?',
         [now, visitor.visitor_id]
-        [now, visitor.visitor_id]
       );
 
       return res.json({
@@ -95,12 +57,68 @@ router.post('/', async (req, res) => {
       });
     }
 
-    // ══ STUDENT ENTRY/EXIT ════════════════════════════════════════════
-    const match = qr_data.match(/\[([^\]]+)\]/);
-    if (!match)
-      return res.status(400).json({ message: 'Invalid QR code format. Could not read student ID.' });
-
-    const student_id = match[1].trim();
+    // STUDENT ENTRY/EXIT - Extract student ID from QR code
+    let student_id = null;
+    
+    console.log('[QR Scan] Attempting to extract student ID from:', qr_data);
+    
+    // Pattern 1: [23-00174] or [23-00174] something
+    let match = qr_data.match(/\[([^\]]+)\]/);
+    if (match) {
+      student_id = match[1].trim();
+      console.log('[QR Scan] Pattern 1 (brackets) matched:', student_id);
+    }
+    
+    // Pattern 2: Look for XX-XXXXX format (2 digits, dash, 5 digits)
+    if (!student_id) {
+      match = qr_data.match(/(\d{2}-\d{5})/);
+      if (match) {
+        student_id = match[1].trim();
+        console.log('[QR Scan] Pattern 2 (XX-XXXXX) matched:', student_id);
+      }
+    }
+    
+    // Pattern 3: Look for XXXX-XXXXX (4 digits, dash, 5 digits)
+    if (!student_id) {
+      match = qr_data.match(/(\d{4}-\d{5})/);
+      if (match) {
+        student_id = match[1].trim();
+        console.log('[QR Scan] Pattern 3 (XXXX-XXXXX) matched:', student_id);
+      }
+    }
+    
+    // Pattern 4: Just digits - could be student ID without dash
+    if (!student_id) {
+      match = qr_data.match(/(\d{7})/);
+      if (match) {
+        const digits = match[1].trim();
+        // Format as XX-XXXXX (first 2 digits, dash, last 5 digits)
+        student_id = `${digits.substring(0, 2)}-${digits.substring(2, 7)}`;
+        console.log('[QR Scan] Pattern 4 (7 digits) matched, formatted to:', student_id);
+      }
+    }
+    
+    // Pattern 5: Use entire QR data if it's just the ID
+    if (!student_id) {
+      const trimmed = qr_data.trim();
+      if (trimmed.length === 7 && /^\d+$/.test(trimmed)) {
+        student_id = `${trimmed.substring(0, 2)}-${trimmed.substring(2, 7)}`;
+        console.log('[QR Scan] Pattern 5 (7 digit string) matched, formatted to:', student_id);
+      } else if (trimmed.length === 8 && trimmed.includes('-')) {
+        student_id = trimmed;
+        console.log('[QR Scan] Pattern 5 (direct ID) matched:', student_id);
+      }
+    }
+    
+    if (!student_id) {
+      console.log('[QR Scan] Failed to extract student ID from QR data');
+      return res.status(400).json({ 
+        message: 'Invalid QR code format. Could not read student ID. Expected format: 23-00174 or [23-00174]',
+        received: qr_data
+      });
+    }
+    
+    console.log('[QR Scan] Final extracted student_id:', student_id);
 
     // Query database for student
     const [studentRows] = await db.query(
@@ -162,7 +180,7 @@ router.post('/', async (req, res) => {
       });
     }
 
-    // ── Record authentication ──────────────────────────────────────────
+    // Insert authentication record
     const [authResult] = await db.query(
       `INSERT INTO authentication (student_id, method, auth_status, timestamp)
        VALUES (?, 'QR', 'SUCCESS', ?)`,
@@ -170,8 +188,8 @@ router.post('/', async (req, res) => {
     );
     console.log('[QR Scan] Auth record inserted, ID:', authResult.insertId);
 
-    // ── Insert entry/exit log ──────────────────────────────────────────
-    await db.query(
+    // Insert into entry_exit_logs table
+    const [logResult] = await db.query(
       `INSERT INTO entry_exit_logs (student_id, auth_id, action, log_time)
        VALUES (?, ?, ?, ?)`,
       [student_id, authResult.insertId, mode, now]
