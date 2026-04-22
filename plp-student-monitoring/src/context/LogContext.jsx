@@ -19,7 +19,6 @@ export const LogProvider = ({ children }) => {
   // Calculate accurate student count based on logs (chronological order)
   const calculateStudentCount = useCallback((logEntries) => {
     let count = 0;
-    // Sort logs in chronological order (oldest first) for calculation
     const sortedLogs = [...logEntries].sort((a, b) => {
       const timeA = a.timestamp || new Date(a.time).getTime();
       const timeB = b.timestamp || new Date(b.time).getTime();
@@ -28,9 +27,9 @@ export const LogProvider = ({ children }) => {
     
     for (const log of sortedLogs) {
       if (!log.failed) {
-        if (log.action === "ENTRY") {
+        if (log.action === "ENTRY" || log.action === "Entrance") {
           count++;
-        } else if (log.action === "EXIT") {
+        } else if (log.action === "EXIT" || log.action === "Exit") {
           count = Math.max(0, count - 1);
         }
       }
@@ -47,9 +46,11 @@ export const LogProvider = ({ children }) => {
         
         if (savedLogs) {
           const parsedLogs = JSON.parse(savedLogs);
-          // Store in ascending order internally, but provide descending for display
           setLogs(parsedLogs);
           console.log(`📋 Loaded ${parsedLogs.length} logs from localStorage`);
+          if (parsedLogs.length > 0) {
+            console.log('📋 Sample log yearLevel:', parsedLogs[0].yearLevel);
+          }
         } else {
           console.log('No existing logs found, starting fresh');
           setLogs([]);
@@ -80,6 +81,7 @@ export const LogProvider = ({ children }) => {
   useEffect(() => {
     if (isInitialized) {
       localStorage.setItem('entryExitLogs', JSON.stringify(logs));
+      console.log(`💾 Saved ${logs.length} logs to localStorage`);
     }
   }, [logs, isInitialized]);
 
@@ -90,12 +92,15 @@ export const LogProvider = ({ children }) => {
     }
   }, [studentsInside, isInitialized]);
 
-  // Add a new log entry from face recognition
+  // Add a new log entry from face recognition, QR, or manual entry
   const addLog = useCallback((logData) => {
-    // Normalize action to uppercase
+    console.log('📝 addLog received:', logData);
+    console.log('📝 YearLevel received:', logData.yearLevel);
+    
+    // Normalize action
     let action = logData.action;
-    if (action === "Entrance") action = "ENTRY";
-    if (action === "Exit") action = "EXIT";
+    if (action === "Entrance" || action === "ENTRANCE") action = "ENTRY";
+    if (action === "Exit" || action === "EXIT") action = "EXIT";
     if (action !== "ENTRY" && action !== "EXIT") {
       console.error(`Invalid action: ${action}`);
       return null;
@@ -109,21 +114,28 @@ export const LogProvider = ({ children }) => {
         minute: "2-digit",
         second: "2-digit"
       }),
-      name: logData.name || "Unknown",
-      studentId: logData.studentId || "N/A",
+      name: logData.name || logData.student_name || "Unknown",
+      studentId: logData.studentId || logData.student_id || "N/A",
       action: action,
-      method: logData.method || "FACE",
+      method: logData.method || "MANUAL",
       failed: false,
       timestamp: now.toISOString(),
       date: now.toLocaleDateString(),
+      collegeDept: logData.collegeDept || logData.department || logData.college_department || "Not Specified",
+      yearLevel: logData.yearLevel || logData.year_level || "Not Specified",
+      gender: logData.gender || "Not Specified",
+      course: logData.course || "Not Specified"
     };
 
+    console.log('✅ Created log object:', newLog);
+    console.log('✅ YearLevel in new log:', newLog.yearLevel);
+
     setLogs((prevLogs) => {
-      // Add new log to the end (ascending order internally)
       const newLogs = [...prevLogs, newLog];
       const newCount = calculateStudentCount(newLogs);
       setStudentsInside(newCount);
-      console.log(`✅ ${action} logged for ${logData.name}`);
+      console.log(`✅ ${action} logged for ${logData.name} via ${newLog.method}`);
+      console.log(`📊 Total logs: ${newLogs.length}, Students inside: ${newCount}`);
       return newLogs;
     });
 
@@ -131,7 +143,7 @@ export const LogProvider = ({ children }) => {
   }, [calculateStudentCount]);
 
   // Add a failed authentication attempt
-  const addFailedLog = useCallback(() => {
+  const addFailedLog = useCallback((logData = {}) => {
     const now = new Date();
     const newLog = {
       id: Date.now(),
@@ -143,10 +155,12 @@ export const LogProvider = ({ children }) => {
       failed: true,
       timestamp: now.toISOString(),
       date: now.toLocaleDateString(),
-      name: "Unknown",
-      studentId: "N/A",
+      name: logData.name || "Unknown",
+      studentId: logData.studentId || "N/A",
       action: "FAILED",
-      method: "FACE"
+      method: logData.method || "FACE",
+      collegeDept: logData.collegeDept || "Not Specified",
+      yearLevel: logData.yearLevel || "Not Specified"
     };
 
     setLogs((prevLogs) => {
@@ -163,7 +177,7 @@ export const LogProvider = ({ children }) => {
     return [...logs].sort((a, b) => {
       const timeA = a.timestamp || new Date(a.time).getTime();
       const timeB = b.timestamp || new Date(b.time).getTime();
-      return timeB - timeA; // Descending - newest first
+      return timeB - timeA;
     });
   }, [logs]);
 
@@ -171,15 +185,14 @@ export const LogProvider = ({ children }) => {
   const getFilteredLogs = useCallback((filter = 'all') => {
     let filtered;
     if (filter === 'entrance') {
-      filtered = logs.filter(log => !log.failed && log.action === 'ENTRY');
+      filtered = logs.filter(log => !log.failed && (log.action === 'ENTRY' || log.action === 'Entrance'));
     } else if (filter === 'exit') {
-      filtered = logs.filter(log => !log.failed && log.action === 'EXIT');
+      filtered = logs.filter(log => !log.failed && (log.action === 'EXIT' || log.action === 'Exit'));
     } else if (filter === 'failed') {
       filtered = logs.filter(log => log.failed === true);
     } else {
       filtered = logs;
     }
-    // Return in descending order (newest first)
     return [...filtered].sort((a, b) => {
       const timeA = a.timestamp || new Date(a.time).getTime();
       const timeB = b.timestamp || new Date(b.time).getTime();
@@ -187,7 +200,7 @@ export const LogProvider = ({ children }) => {
     });
   }, [logs]);
 
-  // Get all logs in chronological order (oldest first - for calculation)
+  // Get all logs in chronological order
   const getAllLogs = useCallback(() => {
     return [...logs].sort((a, b) => {
       const timeA = a.timestamp || new Date(a.time).getTime();
@@ -251,12 +264,12 @@ export const LogProvider = ({ children }) => {
   const getStatistics = useCallback(() => {
     const today = new Date().toLocaleDateString();
     const todayLogs = logs.filter(log => log.date === today);
-    const todayEntries = todayLogs.filter(log => !log.failed && log.action === 'ENTRY').length;
-    const todayExits = todayLogs.filter(log => !log.failed && log.action === 'EXIT').length;
+    const todayEntries = todayLogs.filter(log => !log.failed && (log.action === 'ENTRY' || log.action === 'Entrance')).length;
+    const todayExits = todayLogs.filter(log => !log.failed && (log.action === 'EXIT' || log.action === 'Exit')).length;
     const todayFailed = todayLogs.filter(log => log.failed).length;
     
-    const totalEntries = logs.filter(log => !log.failed && log.action === 'ENTRY').length;
-    const totalExits = logs.filter(log => !log.failed && log.action === 'EXIT').length;
+    const totalEntries = logs.filter(log => !log.failed && (log.action === 'ENTRY' || log.action === 'Entrance')).length;
+    const totalExits = logs.filter(log => !log.failed && (log.action === 'EXIT' || log.action === 'Exit')).length;
     const totalFailed = logs.filter(log => log.failed).length;
     
     return {
@@ -277,7 +290,7 @@ export const LogProvider = ({ children }) => {
   }, [logs, studentsInside]);
 
   const value = {
-    logs: getDisplayLogs(), // Provide logs in descending order (newest first)
+    logs: getDisplayLogs(),
     studentsInside,
     addLog,
     addFailedLog,
