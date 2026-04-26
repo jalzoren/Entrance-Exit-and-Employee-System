@@ -44,6 +44,87 @@
   border-top: 1px solid #eee;
 }
 
+.records-tabs {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.records-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-width: 190px;
+  padding: 12px 18px;
+  border: 1px solid rgba(1, 49, 29, 0.12);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--color-text-dark);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  box-shadow: 0 2px 4px var(--color-shadow-soft);
+}
+
+.records-tab:hover {
+  transform: translateY(-1px);
+  border-color: rgba(1, 49, 29, 0.24);
+}
+
+.records-tab.active {
+  background: linear-gradient(135deg, var(--color-primary-dark), var(--color-primary));
+  border-color: transparent;
+  color: white;
+}
+
+.records-tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgba(1, 49, 29, 0.08);
+  color: var(--color-primary-dark);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.records-tab.active .records-tab-count {
+  background: rgba(255, 255, 255, 0.16);
+  color: white;
+}
+
+.records-summary {
+  margin: 0 0 14px;
+  color: #5f6368;
+  font-size: 14px;
+}
+
+.records-summary strong {
+  color: var(--color-primary-dark);
+}
+
+.records-state {
+  padding: 40px 24px;
+  text-align: center;
+  color: #666;
+  font-size: 15px;
+}
+
+.records-state.error {
+  color: #b42318;
+}
+
+.filters-container .button-group .reset-filters-btn {
+  width: 100%;
+  margin-left: 0;
+}
+
 /* Filters Container - Matching Students.css controls */
 .filters-container {
   background-color: white;
@@ -377,6 +458,18 @@
   .records-container {
     padding: 15px;
   }
+
+  .records-tabs {
+    flex-direction: column;
+  }
+
+  .records-tab {
+    width: 100%;
+  }
+
+  .records-summary {
+    font-size: 13px;
+  }
   
   .filters-wrapper {
     flex-direction: column;
@@ -438,6 +531,11 @@
 @media (max-width: 480px) {
   .records-container {
     padding: 10px;
+  }
+
+  .records-tab {
+    padding: 10px 14px;
+    font-size: 13px;
   }
   
   .header-card h1 {

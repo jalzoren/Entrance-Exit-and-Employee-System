@@ -4,6 +4,46 @@ const router  = express.Router();
 const db      = require('../src/db');
 const { getTodayPhRange } = require('../src/time');
 
+const formatStudentName = (row) => {
+  const lastName = row.last_name?.trim();
+  const firstName = row.first_name?.trim();
+  const middleName = row.middle_name?.trim();
+
+  if (lastName && (firstName || middleName)) {
+    return `${lastName}, ${[firstName, middleName].filter(Boolean).join(' ')}`;
+  }
+
+  return [firstName, middleName, lastName].filter(Boolean).join(' ') || row.student_id || 'Unknown';
+};
+
+const formatYearLevel = (yearLevel) => {
+  const numericLevel = Number(yearLevel);
+
+  if (!Number.isFinite(numericLevel) || numericLevel <= 0) {
+    return 'Not Specified';
+  }
+
+  const suffix = numericLevel === 1 ? 'st' : numericLevel === 2 ? 'nd' : numericLevel === 3 ? 'rd' : 'th';
+  return `${numericLevel}${suffix} Year`;
+};
+
+const formatMethod = (method) => {
+  if (method === 'FACIAL') return 'Face Recognition';
+  if (method === 'MANUAL') return 'Manual Entry';
+  if (method === 'QR') return 'QR Code';
+  return 'Unknown';
+};
+
+const formatActionLabel = (action) => (action === 'EXIT' ? 'Exit' : 'Entrance');
+
+const formatVisitorReason = (reason, otherReason) => {
+  if (reason === 'Other' && otherReason?.trim()) {
+    return otherReason.trim();
+  }
+
+  return reason || 'Not Specified';
+};
+
 // ── GET /api/analytics/metrics ────────────────────────────────────────────────
 router.get('/metrics', async (req, res) => {
   try {
@@ -375,6 +415,81 @@ router.get('/auth-methods', async (req, res) => {
   } catch (err) {
     console.error('[analytics/auth-methods] ERROR:', err);
     res.status(500).json({ message: 'Failed to fetch auth method data.' });
+  }
+});
+
+// ── GET /api/analytics/records ───────────────────────────────────────────────
+router.get('/records', async (req, res) => {
+  try {
+    const [studentRows] = await db.query(`
+      SELECT
+        eel.log_id,
+        eel.student_id,
+        eel.action,
+        eel.log_time,
+        s.first_name,
+        s.last_name,
+        s.middle_name,
+        s.college_department,
+        s.year_level,
+        a.method
+      FROM entry_exit_logs eel
+      LEFT JOIN students s ON s.student_id = eel.student_id
+      LEFT JOIN authentication a ON a.auth_id = eel.auth_id
+      ORDER BY eel.log_time DESC, eel.log_id DESC
+    `);
+
+    const [visitorRows] = await db.query(`
+      SELECT
+        visitor_id,
+        full_name,
+        email,
+        reason,
+        other_reason,
+        action,
+        log_time,
+        qr_token
+      FROM visitor_logs
+      ORDER BY log_time DESC, visitor_id DESC
+    `);
+
+    const students = studentRows.map((row) => ({
+      id: row.log_id,
+      timestamp: row.log_time,
+      studentId: row.student_id,
+      name: formatStudentName(row),
+      collegeDept: row.college_department || 'Not Specified',
+      yearLevel: formatYearLevel(row.year_level),
+      action: row.action,
+      actionLabel: formatActionLabel(row.action),
+      method: formatMethod(row.method),
+      methodCode: row.method || 'UNKNOWN',
+    }));
+
+    const visitors = visitorRows.map((row) => ({
+      id: row.visitor_id,
+      timestamp: row.log_time,
+      visitorId: row.visitor_id,
+      name: row.full_name || 'Unknown',
+      email: row.email || 'Not Specified',
+      reason: row.reason || 'Not Specified',
+      otherReason: row.other_reason || '',
+      visitReason: formatVisitorReason(row.reason, row.other_reason),
+      action: row.action,
+      actionLabel: formatActionLabel(row.action),
+      qrToken: row.qr_token || '',
+    }));
+
+    res.json({
+      generatedAt: new Date().toISOString(),
+      studentCount: students.length,
+      visitorCount: visitors.length,
+      students,
+      visitors,
+    });
+  } catch (err) {
+    console.error('[analytics/records] ERROR:', err);
+    res.status(500).json({ message: 'Failed to fetch entry and exit records.' });
   }
 });
 
