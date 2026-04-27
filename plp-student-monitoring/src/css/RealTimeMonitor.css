@@ -836,7 +836,6 @@
 }
 
 .students-inside-table th {
-  background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
   color: var(--color-primary-dark);
   padding: 14px 12px;
   text-align: left;

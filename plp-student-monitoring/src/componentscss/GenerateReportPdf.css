@@ -1,5 +1,380 @@
 /* GenerateReportPdf.css - Styles for PDF Report Component */
+/* GenerateReportPdf.css - Landscape/Horizontal Layout */
 
+.pdf-container {
+  position: relative;
+  background: #f5f5f5;
+  padding: 0;
+  margin: 0;
+}
+
+.pdf-report {
+  background: white;
+  padding: 20px;
+  margin: 0 auto;
+  font-family: 'Arial', 'Helvetica', sans-serif;
+  color: #333;
+  max-width: 100%;
+}
+
+/* Landscape orientation specific */
+.pdf-report.landscape {
+  width: 100%;
+  max-width: 1100px;
+}
+
+/* Header Styles */
+.pdf-header {
+  margin-bottom: 20px;
+}
+
+.pdf-logos-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.pdf-left-logos {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+.pdf-logo-box {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f0f0f0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.pdf-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.pdf-logo-placeholder {
+  font-size: 12px;
+  font-weight: bold;
+  color: #999;
+}
+
+.pdf-center-text {
+  text-align: center;
+  flex: 1;
+}
+
+.pdf-university-name {
+  font-size: 18px;
+  font-weight: bold;
+  color: #01311d;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+.pdf-system-title {
+  font-size: 12px;
+  color: #548772;
+  letter-spacing: 1px;
+  margin-top: 5px;
+}
+
+/* Title Section */
+.pdf-title-row {
+  text-align: center;
+  margin: 20px 0;
+}
+
+.pdf-main-title {
+  font-size: 24px;
+  color: #01311d;
+  margin-bottom: 10px;
+  font-family: 'Cinzel', serif;
+}
+
+.pdf-subtitle {
+  font-size: 11px;
+  color: #666;
+  line-height: 1.5;
+  max-width: 90%;
+  margin: 0 auto;
+}
+
+/* Stats Section - Two Column Layout */
+.pdf-stats-section {
+  display: flex;
+  gap: 30px;
+  margin: 20px 0;
+  flex-wrap: wrap;
+}
+
+.pdf-stats-left {
+  flex: 0.8;
+  min-width: 200px;
+}
+
+.pdf-green-box {
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+.pdf-big-number {
+  font-size: 32px;
+  font-weight: bold;
+  color: white;
+  margin-bottom: 10px;
+}
+
+.pdf-green-box-small {
+  padding: 12px;
+  border-radius: 8px;
+  text-align: center;
+}
+
+/* Chart 1 - Department Distribution */
+.pdf-chart-title {
+  font-size: 14px;
+  font-weight: bold;
+  color: #01311d;
+  margin-bottom: 15px;
+}
+
+.pdf-chart-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pdf-progress-bar-container {
+  width: 100%;
+}
+
+.pdf-progress-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  margin-bottom: 5px;
+  color: #333;
+}
+
+.pdf-progress-bar-bg {
+  background-color: #e0e0e0;
+  border-radius: 10px;
+  overflow: hidden;
+  height: 20px;
+}
+
+.pdf-progress-bar-fill {
+  height: 100%;
+  border-radius: 10px;
+  transition: width 0.3s ease;
+}
+
+/* Section Spacing */
+.pdf-section-spacing {
+  margin: 25px 0;
+  page-break-inside: avoid;
+}
+
+.pdf-section-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #01311d;
+  margin-bottom: 15px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #548772;
+}
+
+/* Tables - Horizontal Scroll */
+.pdf-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10px;
+}
+
+.pdf-table th {
+  padding: 10px 8px;
+  text-align: center;
+  font-weight: bold;
+  color: #01311d;
+  border: 1px solid #ddd;
+}
+
+.pdf-table td {
+  padding: 8px;
+  border: 1px solid #ddd;
+  text-align: center;
+}
+
+.pdf-table-left th,
+.pdf-table-left td {
+  text-align: left;
+}
+
+/* Insights Box */
+.pdf-insights-box {
+  background: #f5f5f5;
+  padding: 15px;
+  border-radius: 8px;
+  margin-top: 15px;
+  border-left: 4px solid #548772;
+}
+
+.pdf-insight-text {
+  font-weight: bold;
+  color: #01311d;
+  font-size: 12px;
+}
+
+/* Two Column Layout for Method Chart and Student Logs */
+.pdf-two-column {
+  display: flex;
+  gap: 30px;
+  margin: 25px 0;
+  flex-wrap: wrap;
+}
+
+.pdf-column-left {
+  flex: 0.8;
+  min-width: 250px;
+}
+
+.pdf-column-right {
+  flex: 1.5;
+  min-width: 400px;
+  overflow-x: auto;
+}
+
+/* Method Chart Styles */
+.pdf-method-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.pdf-method-bar {
+  width: 100%;
+}
+
+.pdf-method-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  margin-bottom: 5px;
+  font-weight: bold;
+  color: #333;
+}
+
+.pdf-method-bar-bg {
+  background-color: #e0e0e0;
+  border-radius: 5px;
+  overflow: hidden;
+  height: 25px;
+}
+
+/* Student Logs Table - Small Font for Better Fit */
+.pdf-table-small {
+  font-size: 9px;
+}
+
+.pdf-table-small th,
+.pdf-table-small td {
+  padding: 6px 4px;
+  white-space: nowrap;
+}
+
+.pdf-table-small td:first-child,
+.pdf-table-small th:first-child {
+  width: 40px;
+}
+
+/* Footer */
+.pdf-footer {
+  margin-top: 30px;
+  padding-top: 15px;
+  border-top: 2px solid #01311d;
+}
+
+.pdf-footer-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.pdf-footer-left {
+  flex: 1;
+}
+
+.pdf-footer-right {
+  text-align: right;
+}
+
+.pdf-footer-text {
+  font-size: 9px;
+  color: #666;
+  line-height: 1.4;
+}
+
+/* Responsive Design */
+@media (max-width: 900px) {
+  .pdf-two-column {
+    flex-direction: column;
+  }
+  
+  .pdf-column-left,
+  .pdf-column-right {
+    width: 100%;
+    min-width: auto;
+  }
+  
+  .pdf-stats-section {
+    flex-direction: column;
+  }
+  
+  .pdf-logos-row {
+    flex-direction: column;
+  }
+  
+  .pdf-left-logos {
+    justify-content: center;
+  }
+}
+
+@media print {
+  .pdf-container {
+    background: white;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .pdf-report {
+    padding: 15px;
+  }
+  
+  .pdf-stats-section,
+  .pdf-two-column {
+    break-inside: avoid;
+  }
+  
+  .pdf-section-spacing {
+    break-inside: avoid;
+  }
+  
+  .pdf-table,
+  .pdf-table-small {
+    break-inside: avoid;
+  }
+}
 /* Container Styles */
 .pdf-container {
   min-height: 100vh;
