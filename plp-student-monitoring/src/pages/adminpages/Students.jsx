@@ -5,6 +5,9 @@ import RegisterStudent from "../../components/RegisterStudent";
 import ImportStudent   from "../../components/ImportStudents";
 import EditStudent     from "../../components/EditStudent";
 import axios from "axios";
+import { FaUserGraduate } from "react-icons/fa";
+import { BsPersonFillDash } from "react-icons/bs";
+import { BsPersonFillSlash } from "react-icons/bs";
 
 import { FiDownload, FiPlus, FiFilter, FiArchive } from "react-icons/fi";
 import {
@@ -95,6 +98,9 @@ function Students() {
   // ── Sorting ────────────────────────────────────────────────────────────────
   const [sortColumn, setSortColumn] = useState("last_name"); // Default sort by last name
   const [sortDirection, setSortDirection] = useState("asc");
+
+  // ── Selection ──────────────────────────────────────────────────────────────
+  const [selectedStudents, setSelectedStudents] = useState(new Set());
 
   // ─────────────────────────────────────────────────────────────────────────
   // DATA FETCHING
@@ -309,6 +315,26 @@ function Students() {
     return sortDirection === "asc" ? " ↑" : " ↓";
   };
 
+  // ── Checkbox handlers ──────────────────────────────────────────────────────
+  const handleSelectStudent = (studentId) => {
+    const newSelected = new Set(selectedStudents);
+    if (newSelected.has(studentId)) {
+      newSelected.delete(studentId);
+    } else {
+      newSelected.add(studentId);
+    }
+    setSelectedStudents(newSelected);
+  };
+
+  const handleSelectAll = () => {
+    if (selectedStudents.size === currentStudents.length) {
+      setSelectedStudents(new Set());
+    } else {
+      const newSelected = new Set(currentStudents.map(s => s.student_id));
+      setSelectedStudents(newSelected);
+    }
+  };
+
   const handleAdd   = () => { openModal(); setShowRegisterModal(true); };
   const handleImport= () => { openModal(); setShowImportModal(true); };
   const handleEdit  = (student) => {
@@ -460,21 +486,22 @@ function Students() {
           </div>
         </div>
         <div className="stat-card loa-students">
-          <div className="stat-icon">🏖</div>
+          <div className="stat-icon"><BsPersonFillSlash />
+</div>
           <div className="stat-details">
             <h3>On Leave (LOA)</h3>
             <p className="stat-number">{stats.loa}</p>
           </div>
         </div>
         <div className="stat-card graduated-students">
-          <div className="stat-icon">🎓</div>
+          <div className="stat-icon"><FaUserGraduate /></div>
           <div className="stat-details">
             <h3>Graduated</h3>
             <p className="stat-number">{stats.graduated}</p>
           </div>
         </div>
         <div className="stat-card withdrawn-students">
-          <div className="stat-icon"><BsPersonDash /></div>
+          <div className="stat-icon"><BsPersonFillDash /></div>
           <div className="stat-details">
             <h3>Withdrawn</h3>
             <p className="stat-number">{stats.withdrawn}</p>
@@ -623,6 +650,14 @@ function Students() {
             <table className="student-table">
               <thead>
                 <tr>
+                  <th style={{ width: "40px", textAlign: "center" }}>
+                    <input
+                      type="checkbox"
+                      checked={selectedStudents.size === currentStudents.length && currentStudents.length > 0}
+                      onChange={handleSelectAll}
+                      title="Select all on this page"
+                    />
+                  </th>
                   <th>No.</th>
                   <th style={{ cursor: "pointer" }} onClick={() => handleSort("student_id")}>
                     Student ID{getSortIndicator("student_id")}
@@ -649,6 +684,13 @@ function Students() {
                   const hasFace = faceStatusMap[s.student_id] === true;
                   return (
                     <tr key={s.student_id}>
+                      <td style={{ width: "40px", textAlign: "center" }}>
+                        <input
+                          type="checkbox"
+                          checked={selectedStudents.has(s.student_id)}
+                          onChange={() => handleSelectStudent(s.student_id)}
+                        />
+                      </td>
                       <td>{indexOfFirst + idx + 1}</td>
                       <td>
                         <div className="student-id-cell">
@@ -683,7 +725,7 @@ function Students() {
                   );
                 }) : (
                   <tr>
-                    <td colSpan={9} className="no-data">No students found</td>
+                    <td colSpan={10} className="no-data">No students found</td>
                   </tr>
                 )}
               </tbody>

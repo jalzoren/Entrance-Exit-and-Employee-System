@@ -54,6 +54,12 @@
   background-color: white;
   border-radius: 8px;
   box-shadow: 0 2px 4px var(--color-shadow-soft);
+  margin-left: 20px;
+
+}
+
+.notification_box{
+    margin: 30px;
 
 }
 
