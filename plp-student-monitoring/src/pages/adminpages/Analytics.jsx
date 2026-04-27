@@ -129,6 +129,12 @@ const AnalyticsService = {
       throw err;
     }
   },
+
+  async fetchVisitorStats() {
+    const res = await fetch('/api/analytics/visitor-stats');
+    if (!res.ok) throw new Error('visitor-stats failed');
+    return res.json();
+  },
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -144,6 +150,7 @@ function Analytics() {
   const [timeRange,    setTimeRange]    = useState('7days');
   const [isLoading,    setIsLoading]    = useState(true);
   const [error,        setError]        = useState(null);
+  const [visitorData, setVisitorData] = useState([]);
 
   // Report / PDF state
   const [showFilterPopup,  setShowFilterPopup]  = useState(false);
@@ -164,11 +171,12 @@ function Analytics() {
     setIsLoading(true);
     setError(null);
     try {
-      const [metricsData, trafficRaw, deptData, authRaw] = await Promise.all([
+      const [metricsData, trafficRaw, deptData, authRaw, visitorStats] = await Promise.all([
         AnalyticsService.fetchMetrics(),
         AnalyticsService.fetchTraffic(days),
         AnalyticsService.fetchDepartments(),
         AnalyticsService.fetchAuthMethods(),
+        AnalyticsService.fetchVisitorStats(),
       ]);
 
       setMetrics({
@@ -178,6 +186,7 @@ function Analytics() {
       setTrafficData(trafficRaw);
       setCollegeData(deptData);
       setAuthData(authRaw);
+      setVisitorData(visitorStats);
     } catch (err) {
       console.error('[Analytics] loadAll error:', err);
       setError('Failed to load analytics data. Please check your server connection.');
@@ -201,6 +210,18 @@ function Analytics() {
     const lowest  = nonZero.reduce((a, b) => b.entrance < a.entrance ? b : a);
     return { highest, lowest };
   }, [trafficData]);
+
+  const visitorChartData = useMemo(() => {
+    if (!visitorData || visitorData.length === 0) return [];
+  
+    const entry = visitorData.filter(v => v.action?.toLowerCase() === "entry").length;
+    const exit  = visitorData.filter(v => v.action?.toLowerCase() === "exit").length;
+  
+    return [
+      { name: "ENTRY", value: entry },
+      { name: "EXIT", value: exit }
+    ];
+  }, [visitorData]);
 
   // ── Pagination ───────────────────────────────────────────────────────────
   const indexOfFirst      = (currentPage - 1) * recordsPerPage;
@@ -489,6 +510,17 @@ function Analytics() {
                 <p className="no-data-msg">No department data available. Students need to be on campus.</p>
               )}
             </section>
+            <section className="chart-section">
+              <div className="section-header">
+                <h2>Visitor Entry and Exit</h2>
+              </div>
+
+              {visitorData.length > 0 ? (
+                <VisitorChart data={visitorData} />
+              ) : (
+                <p className="no-data-msg">No visitor data available.</p>
+              )}
+            </section>
           </>
         )}
       </div>
@@ -648,6 +680,34 @@ function AuthenticationChart({ data }) {
           </Pie>
           <Tooltip contentStyle={{ backgroundColor: 'white', border: '1px solid #01311d', borderRadius: '4px', fontSize: '12px' }} />
           <Legend wrapperStyle={{ fontSize: '12px' }} />
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function VisitorChart({ data }) {
+  const COLORS = ['#4a90d9', '#d99201'];
+
+  return (
+    <div className="chart-container pie-chart">
+      <ResponsiveContainer width="100%" height="100%">
+        <PieChart>
+          <Pie
+            data={data}
+            cx="50%"
+            cy="50%"
+            outerRadius={100}
+            dataKey="value"
+            label
+          >
+            {data.map((_, i) => (
+              <Cell key={i} fill={COLORS[i % COLORS.length]} />
+            ))}
+          </Pie>
+
+          <Tooltip />
+          <Legend />
         </PieChart>
       </ResponsiveContainer>
     </div>

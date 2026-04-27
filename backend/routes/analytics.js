@@ -162,29 +162,52 @@ router.get('/metrics', async (req, res) => {
       ? { hour: peakRows[0].hour, total: Number(peakRows[0].total) } : null;
 
     // ── Total registered active students ────────────────────────────────
-    console.log('\n🔍 [DEBUG] Total active students:');
-    const [totalStudentsRows] = await db.query(
-      `SELECT COUNT(*) AS total FROM students WHERE status != 'Inactive'`
-    );
-    console.log(`   Total active students: ${totalStudentsRows[0].total}`);
-    console.log('[analytics/metrics] totalStudents:', totalStudentsRows[0].total);
+    // ── Visitors currently on campus (last action = ENTRY) ────────────
+            console.log('\n🔍 [DEBUG] Counting visitors currently inside:');
 
-    const payload = {
-      onCampus:        Number(onCampusRows[0].on_campus),
-      totalEntries:    Number(entriesRows[0].total),
-      totalStudents:   Number(totalStudentsRows[0].total),
-      authSuccessRate,
-      peakHour,
-    };
-    console.log('\n✅ [ANALYTICS/METRICS] FINAL RESPONSE:');
-    console.log('   onCampus:', payload.onCampus);
-    console.log('   totalEntries:', payload.totalEntries);
-    console.log('   totalStudents:', payload.totalStudents);
-    console.log('   authSuccessRate:', payload.authSuccessRate);
-    console.log('   peakHour:', payload.peakHour);
-    console.log('[analytics/metrics] → responding with:', payload);
+            const [visitorOnCampusRows] = await db.query(`
+              SELECT COUNT(*) AS on_campus
+              FROM (
+                SELECT visitor_id,
+                  SUBSTRING_INDEX(
+                    GROUP_CONCAT(action ORDER BY log_time DESC SEPARATOR ','),
+                    ',', 1
+                  ) AS last_action
+                FROM visitor_logs
+                WHERE log_time BETWEEN ? AND ?
+                GROUP BY visitor_id
+              ) latest
+              WHERE last_action = 'ENTRY'
+            `, [dayStart, dayEnd]);
 
-    res.json(payload);
+            console.log(`   Visitors on campus: ${visitorOnCampusRows[0].on_campus}`);
+
+            console.log('\n🔍 [DEBUG] Total active students:');
+            const [totalStudentsRows] = await db.query(
+              `SELECT COUNT(*) AS total FROM students WHERE status != 'Inactive'`
+            );
+            console.log(`   Total active students: ${totalStudentsRows[0].total}`);
+            console.log('[analytics/metrics] totalStudents:', totalStudentsRows[0].total);
+
+            const payload = {
+              onCampus:        Number(onCampusRows[0].on_campus),
+              totalEntries:    Number(entriesRows[0].total),
+              totalStudents:   Number(totalStudentsRows[0].total),
+              authSuccessRate,
+              peakHour,
+
+              visitorsOnCampus: Number(visitorOnCampusRows[0].on_campus),
+            };
+            console.log('\n✅ [ANALYTICS/METRICS] FINAL RESPONSE:');
+            console.log('   onCampus:', payload.onCampus);
+            console.log('   totalEntries:', payload.totalEntries);
+            console.log('   totalStudents:', payload.totalStudents);
+            console.log('   authSuccessRate:', payload.authSuccessRate);
+            console.log('   peakHour:', payload.peakHour);
+            console.log('[analytics/metrics] → responding with:', payload);
+            console.log('   visitors:', payload.visitors);
+
+            res.json(payload);
 
   } catch (err) {
     console.error('[analytics/metrics] ERROR:', err);
@@ -600,6 +623,34 @@ router.get('/report', async (req, res) => {
   } catch (err) {
     console.error('[analytics/report] ERROR:', err);
     res.status(500).json({ message: 'Failed to generate report data.' });
+  }
+});
+
+router.get('/visitor-stats', async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT action, COUNT(*) AS total
+      FROM visitor_logs
+      GROUP BY action
+    `);
+
+    const data = {
+      ENTRY: 0,
+      EXIT: 0,
+    };
+
+    rows.forEach(r => {
+      data[r.action] = Number(r.total);
+    });
+
+    res.json([
+      { name: 'Entry', value: data.ENTRY },
+      { name: 'Exit', value: data.EXIT },
+    ]);
+
+  } catch (err) {
+    console.error('[visitor-stats] ERROR:', err);
+    res.status(500).json({ message: 'Failed to fetch visitor stats.' });
   }
 });
 
