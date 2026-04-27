@@ -1,6 +1,6 @@
+@import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Oswald:wght@200..700&family=IBM+Plex+Mono:wght@400;500&display=swap");
+
 :root {
-  @import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Oswald:wght@200..700&family=IBM+Plex+Mono:wght@400;500&display=swap");
-  
   --color-bg-main: #fcfbf4;
   --color-primary: #548772;
   --color-primary-dark: #01311d;
@@ -25,7 +25,6 @@
   margin: 0;
   padding: 0;
 }
-
 
 /* RTM Wrapper */
 .rtm-wrapper {
@@ -60,16 +59,179 @@
   flex-wrap: wrap;
   gap: 10px;
   border-radius: 8px;
-  width: 100%; 
-  max-width: 1040px; 
-  min-width: 600px; 
-      background-color: white;
-    padding: 15px 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px var(--color-shadow-soft);
-    margin-bottom: 20px;
+  width: 100%;
+  max-width: 1040px;
+  min-width: 600px;
+  box-shadow: 0 2px 4px var(--color-shadow-soft);
+  margin-bottom: 5px;
 }
 
+/* Export buttons container */
+.rtm-export-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  width: 100%;
+}
+
+/* Corporate button styles */
+.rtm-filter-btn.export-excel {
+  background-color: #217346;
+  color: white;
+  border-color: #217346;
+}
+
+.rtm-filter-btn.export-excel:hover {
+  background-color: #1a5c38;
+}
+
+.rtm-filter-btn.end-of-day {
+  background-color: #FF9800;
+  color: white;
+  border-color: #FF9800;
+}
+
+.rtm-filter-btn.end-of-day:hover {
+  background-color: #e68900;
+}
+
+.rtm-filter-btn.export-xml {
+  background-color: #4CAF50;
+  color: white;
+  border-color: #4CAF50;
+}
+
+.rtm-filter-btn.export-xml:hover {
+  background-color: #3d8b40;
+}
+
+.rtm-filter-btn.download-xslt {
+  background-color: #9C27B0;
+  color: white;
+  border-color: #9C27B0;
+}
+
+.rtm-filter-btn.download-xslt:hover {
+  background-color: #7b1f8a;
+}
+
+.rtm-filter-btn.import-xml {
+  background-color: #2196F3;
+  color: white;
+  border-color: #2196F3;
+}
+
+.rtm-filter-btn.import-xml:hover {
+  background-color: #1976d2;
+}
+
+.rtm-filter-btn.clear-logs {
+  background-color: #f44336;
+  color: white;
+  border-color: #f44336;
+}
+
+.rtm-filter-btn.clear-logs:hover {
+  background-color: #d32f2f;
+}
+
+/* Modal styles */
+.rtm-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.rtm-modal-content {
+  background-color: #1a1a1a;
+  border-radius: 8px;
+  padding: 20px;
+  width: 80%;
+  max-width: 600px;
+  max-height: 80%;
+  overflow: auto;
+  border: 1px solid var(--color-primary);
+}
+
+.rtm-modal-content h3 {
+  color: var(--color-primary);
+  margin-bottom: 15px;
+  font-family: "Montserrat", sans-serif;
+}
+
+.rtm-modal-preview {
+  max-height: 300px;
+  overflow: auto;
+  margin-bottom: 20px;
+  border: 1px solid #333;
+  border-radius: 4px;
+  padding: 10px;
+}
+
+.rtm-modal-preview-item {
+  padding: 5px;
+  border-bottom: 1px solid #333;
+  font-size: 12px;
+  color: #e8f5e9;
+}
+
+.rtm-modal-more {
+  padding: 5px;
+  color: #888;
+}
+
+.rtm-modal-error {
+  color: #ff4444;
+  margin-bottom: 15px;
+  padding: 10px;
+  background-color: rgba(255, 0, 0, 0.1);
+  border-radius: 4px;
+}
+
+.rtm-modal-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.rtm-modal-cancel {
+  background-color: #666;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: "Montserrat", sans-serif;
+  font-weight: 600;
+}
+
+.rtm-modal-confirm {
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: "Montserrat", sans-serif;
+  font-weight: 600;
+}
+
+.rtm-modal-cancel:hover,
+.rtm-modal-confirm:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  transition: all 0.2s ease;
+}
+
+/* Student count */
 .rtm-student-count {
   font-size: 1.4rem;
   font-weight: 600;
@@ -77,6 +239,7 @@
   letter-spacing: 1px;
   line-height: 1;
   font-stretch: condensed;
+  font-family: "Montserrat", sans-serif;
 }
 
 .rtm-student-count-num {
@@ -107,6 +270,7 @@
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s ease;
+  font-family: "Montserrat", sans-serif;
 }
 
 .rtm-filter-btn:hover {
@@ -121,6 +285,7 @@
   color: white;
   border-color: var(--color-primary-dark);
 }
+
 .rtm-body {
   display: flex;
   flex-direction: column;
@@ -149,28 +314,6 @@
   box-sizing: border-box;
 }
 
-/* Subheader */
-.rtm-subheader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background-color: #ffffff;
-  padding: 15px 20px;
-  flex-wrap: wrap;
-  gap: 10px;
-  border-radius: 8px;
-  width: 100%;
-  box-shadow: 0 2px 4px var(--color-shadow-soft);
-  box-sizing: border-box;
-}
-
-/* Left panel 
-.rtm-left-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
 /* Button row */
 .rtm-btn-row {
   display: grid;
@@ -190,6 +333,7 @@
   cursor: pointer;
   transition: all 0.2s ease;
   border-radius: 4px;
+  font-family: "Montserrat", sans-serif;
 }
 
 .rtm-btn:hover,
@@ -350,6 +494,7 @@
   background: rgba(84, 135, 114, 0.1);
   border-radius: 4px;
   border: 1px solid rgba(1, 49, 29, 0.1);
+  font-family: "Montserrat", sans-serif;
 }
 
 /* Auto status indicator */
@@ -379,7 +524,6 @@
   0%, 100% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.5; transform: scale(1.1); }
 }
-
 
 /* Scrollbar styling */
 .rtm-log-panel::-webkit-scrollbar {
@@ -458,6 +602,7 @@
   min-width: 85px;
   font-size: 0.8rem;
   white-space: nowrap;
+  font-family: "IBM Plex Mono", monospace;
 }
 
 .rtm-log-entry.failed .rtm-log-time {
@@ -476,12 +621,14 @@
   text-overflow: ellipsis;
   max-width: 220px;
   font-size: 0.8rem;
+  font-family: "Montserrat", sans-serif;
 }
 
 .rtm-log-id {
   color: rgba(255, 255, 255, 0.6);
   font-size: 0.75rem;
   white-space: nowrap;
+  font-family: "IBM Plex Mono", monospace;
 }
 
 .rtm-log-action {
@@ -492,6 +639,7 @@
   border-radius: 4px;
   margin-left: auto;
   white-space: nowrap;
+  font-family: "Montserrat", sans-serif;
 }
 
 .rtm-log-entry.success.entry .rtm-log-action {
@@ -514,6 +662,7 @@
   padding: 4px 10px;
   border-radius: 12px;
   white-space: nowrap;
+  font-family: "Montserrat", sans-serif;
 }
 
 /* Failed log entry specific */
@@ -544,6 +693,51 @@
   font-style: italic;
   border: 1px dashed rgba(255, 255, 255, 0.1);
   border-radius: 4px;
+  font-family: "Montserrat", sans-serif;
+}
+
+/* Log action styling - ENTRY vs EXIT */
+.rtm-log-action.entry {
+  color: #d4edda;
+  background: rgba(46, 204, 113, 0.25);
+  border: 1px solid rgba(46, 204, 113, 0.3);
+}
+
+.rtm-log-action.exit {
+  color: #ffcdd2;
+  background: rgba(255, 68, 68, 0.25);
+  border: 1px solid rgba(255, 68, 68, 0.3);
+}
+
+/* Entry/Exit specific styling for the log entry */
+.rtm-log-entry.success.entry {
+  border-left-color: #2ecc71;
+}
+
+.rtm-log-entry.success.exit {
+  border-left-color: #ff4444;
+}
+
+/* Time color based on action */
+.rtm-log-entry.success.entry .rtm-log-time {
+  color: #2ecc71;
+}
+
+.rtm-log-entry.success.exit .rtm-log-time {
+  color: #ff4444;
+}
+
+/* Method styling */
+.rtm-log-method {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  color: var(--color-accent);
+  background: rgba(217, 146, 1, 0.15);
+  padding: 3px 8px;
+  border-radius: 12px;
+  white-space: nowrap;
 }
 
 /* Responsive */
@@ -617,6 +811,10 @@
   .rtm-log-name {
     max-width: 180px;
   }
+  
+  .rtm-export-buttons {
+    justify-content: flex-start;
+  }
 }
 
 @media (max-width: 480px) {
@@ -676,57 +874,59 @@
   .rtm-filter-btn {
     width: 100%;
   }
+  
+  .rtm-export-buttons {
+    flex-direction: column;
+  }
+  
+  .rtm-export-buttons button {
+    width: 100%;
+  }
 }
 
-/* Log action styling - ENTRY vs EXIT */
-.rtm-log-action {
-  font-weight: 600;
-  text-transform: uppercase;
-  font-size: 0.7rem;
-  padding: 3px 8px;
-  border-radius: 4px;
+/* Auto-refresh status indicator */
+.rtm-auto-refresh-status {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 8px 16px;
+  margin: 0 auto 5px auto;
+  border-radius: 6px;
+  max-width: 1040px;
+  font-size: 0.75rem;
+  color: var(--color-primary-dark);
+  font-family: "Montserrat", sans-serif;
+}
+
+.refresh-indicator {
+  width: 8px;
+  height: 8px;
+  background-color: var(--color-success);
+  border-radius: 50%;
+  animation: pulse 2s infinite;
   display: inline-block;
 }
 
-.rtm-log-action.entry {
-  color: #d4edda; /* Light green text */
-  background: rgba(46, 204, 113, 0.25); /* Semi-transparent green background */
-  border: 1px solid rgba(46, 204, 113, 0.3);
+.refresh-text {
+  font-weight: 500;
 }
 
-.rtm-log-action.exit {
-  color: #ffcdd2; /* Light red text */
-  background: rgba(255, 68, 68, 0.25); /* Semi-transparent red background */
-  border: 1px solid rgba(255, 68, 68, 0.3);
+.refresh-time {
+  color: #666;
+  font-family: "IBM Plex Mono", monospace;
 }
 
-/* Entry/Exit specific styling for the log entry */
-.rtm-log-entry.success.entry {
-  border-left-color: #2ecc71; /* Green border for entry */
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.2); }
 }
 
-.rtm-log-entry.success.exit {
-  border-left-color: #ff4444; /* Red border for exit */
-}
-
-/* Time color based on action */
-.rtm-log-entry.success.entry .rtm-log-time {
-  color: #2ecc71; /* Green time for entry */
-}
-
-.rtm-log-entry.success.exit .rtm-log-time {
-  color: #ff4444; /* Red time for exit */
-}
-
-/* Method styling (keep as is) */
-.rtm-log-method {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 0.7rem;
-  color: var(--color-accent);
-  background: rgba(217, 146, 1, 0.15);
-  padding: 3px 8px;
-  border-radius: 12px;
-  white-space: nowrap;
+/* Responsive adjustments */
+@media (max-width: 700px) {
+  .rtm-auto-refresh-status {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
 }

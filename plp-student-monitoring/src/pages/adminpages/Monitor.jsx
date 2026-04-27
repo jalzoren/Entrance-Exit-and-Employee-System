@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import "../../css/RealTimeMonitor.css";
 import '../../css/Monitor.css';
 import { useLogContext } from "../../context/LogContext";
@@ -10,20 +10,44 @@ import {
   readXMLFile,
   downloadXSLT 
 } from "../../utils/xmlUtils";
+import * as XLSX from 'xlsx';
 
 function LogEntry({ log, animDelay }) {
+  // Format student info display
+  const getStudentInfo = () => {
+    if (log.failed) {
+      return <span className="rtm-log-name failed">Unknown Person</span>;
+    }
+    return (
+      <>
+        <span className="rtm-log-name">{log.name}</span>
+        <span className="rtm-log-id">({log.studentId})</span>
+        {log.collegeDept && log.collegeDept !== "Not Specified" && (
+          <span className="rtm-log-dept"> - {log.collegeDept}</span>
+        )}
+        {log.yearLevel && log.yearLevel !== "Not Specified" && (
+          <span className="rtm-log-year"> - {log.yearLevel}</span>
+        )}
+      </>
+    );
+  };
+
   return (
     <>
       {log.failed ? (
         <div className="rtm-log-entry failed" style={{ animationDelay: `${animDelay}s` }}>
           <span className="rtm-log-time">[{log.time}]</span> — Failed Authentication Attempt
+          {log.name && log.name !== "Unknown" && (
+            <span className="rtm-log-attempt"> (Attempted: {log.name})</span>
+          )}
         </div>
       ) : (
         <div className={`rtm-log-entry success ${log.action.toLowerCase()}`} style={{ animationDelay: `${animDelay}s` }}>
           <span className="rtm-log-time">[{log.time}]</span>{" "}
-          <span className="rtm-log-name">{log.name}</span>{" "}
-          <span className="rtm-log-id">({log.studentId})</span>{" "}
-          <span className={`rtm-log-action ${log.action.toLowerCase()}`}>{log.action}</span>{" "}
+          {getStudentInfo()}{" "}
+          <span className={`rtm-log-action ${log.action.toLowerCase()}`}>
+            {log.action === "ENTRY" ? "entered" : "exited"}
+          </span>{" "}
           <span className="rtm-log-method">via {log.method}</span>
         </div>
       )}
@@ -33,7 +57,16 @@ function LogEntry({ log, animDelay }) {
 }
 
 export default function Monitor() {
-  const { logs: contextLogs, studentsInside, addLog, clearLogs } = useLogContext();
+  const { 
+    logs: contextLogs, 
+    studentsInside, 
+    addLog, 
+    getAllLogs,
+    getStatistics,
+    getLogsByDateRange,
+    syncStudentCount
+  } = useLogContext();
+  
   const { 
     cameraStatus, 
     detectedFace, 
@@ -47,6 +80,7 @@ export default function Monitor() {
   const [showImportModal, setShowImportModal] = useState(false);
   const [importPreview, setImportPreview] = useState([]);
   const [importError, setImportError] = useState('');
+  const [lastLogCount, setLastLogCount] = useState(0);
   const logRef = useRef(null);
   const localVideoRef = useRef(null);
   const [streamAttached, setStreamAttached] = useState(false);
@@ -57,6 +91,33 @@ export default function Monitor() {
   const entranceCount = contextLogs.filter(log => !log.failed && log.action === "ENTRY").length;
   const exitCount = contextLogs.filter(log => !log.failed && log.action === "EXIT").length;
   const failedCount = contextLogs.filter(log => log.failed).length;
+
+  // Auto-sync function to check for new logs
+  const syncLogs = useCallback(() => {
+    const currentCount = contextLogs.length;
+    if (currentCount !== lastLogCount) {
+      setLastLogCount(currentCount);
+      // Force refresh of filtered logs
+      setFilteredLogs(prev => [...prev]);
+      // Sync student count
+      syncStudentCount();
+    }
+  }, [contextLogs.length, lastLogCount, syncStudentCount]);
+
+  // Set up auto-refresh every 5 seconds
+  useEffect(() => {
+    // Initial sync
+    syncLogs();
+    
+    // Set up interval to check for new logs every 5 seconds
+    const intervalId = setInterval(() => {
+      syncLogs();
+      console.log("Auto-refreshing logs...");
+    }, 5000);
+    
+    // Cleanup interval on component unmount
+    return () => clearInterval(intervalId);
+  }, [syncLogs]);
 
   // Use the video stream from context
   useEffect(() => {
@@ -84,7 +145,7 @@ export default function Monitor() {
     }
   }, [videoStream, streamAttached]);
 
-  // Filter logs based on active filter and sort in ascending order (oldest first)
+  // Filter logs based on active filter and sort in ascending order (oldest first for display)
   useEffect(() => {
     let filtered = [];
     
@@ -98,7 +159,7 @@ export default function Monitor() {
       filtered = contextLogs.filter(log => log.failed === true);
     }
     
-    // Sort in ascending order (oldest first)
+    // Sort in ascending order (oldest first) for natural reading flow
     const sortedFiltered = filtered.sort((a, b) => {
       const timeA = a.timestamp || new Date(a.time).getTime();
       const timeB = b.timestamp || new Date(b.time).getTime();
@@ -120,6 +181,124 @@ export default function Monitor() {
     if (logRef.current) {
       logRef.current.scrollTop = logRef.current.scrollHeight;
     }
+  };
+
+  // Export logs to Excel
+  const exportToExcel = () => {
+    // Prepare data for Excel
+    const excelData = filteredLogs.map(log => ({
+      'Date & Time': log.time,
+      'Full Date': log.timestamp ? new Date(log.timestamp).toLocaleString() : log.date,
+      'Name': log.failed ? 'Failed Attempt' : log.name,
+      'Student ID': log.failed ? 'N/A' : log.studentId,
+      'Department': log.collegeDept || 'N/A',
+      'Year Level': log.yearLevel || 'N/A',
+      'Action': log.failed ? 'FAILED' : log.action,
+      'Method': log.method || 'N/A',
+      'Status': log.failed ? 'Failed' : 'Success'
+    }));
+
+    // Create worksheet
+    const ws = XLSX.utils.json_to_sheet(excelData);
+    
+    // Auto-size columns (basic approach)
+    const colWidths = [
+      { wch: 15 }, // Date & Time
+      { wch: 20 }, // Full Date
+      { wch: 25 }, // Name
+      { wch: 15 }, // Student ID
+      { wch: 30 }, // Department
+      { wch: 12 }, // Year Level
+      { wch: 10 }, // Action
+      { wch: 15 }, // Method
+      { wch: 10 }  // Status
+    ];
+    ws['!cols'] = colWidths;
+
+    // Create workbook
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Entry-Exit Logs');
+
+    // Add summary sheet
+    const summaryData = [
+      { 'Metric': 'Total Logs', 'Value': totalLogsCount },
+      { 'Metric': 'Total Entries', 'Value': entranceCount },
+      { 'Metric': 'Total Exits', 'Value': exitCount },
+      { 'Metric': 'Failed Attempts', 'Value': failedCount },
+      { 'Metric': 'Students Currently Inside', 'Value': studentsInside },
+      { 'Metric': 'Export Date', 'Value': new Date().toLocaleString() }
+    ];
+    
+    const wsSummary = XLSX.utils.json_to_sheet(summaryData);
+    XLSX.utils.book_append_sheet(wb, wsSummary, 'Summary');
+
+    // Generate filename with current date
+    const fileName = `entry_exit_logs_${new Date().toISOString().split('T')[0]}.xlsx`;
+    
+    // Download file
+    XLSX.writeFile(wb, fileName);
+  };
+
+  // Export end of day report
+  const exportEndOfDayReport = () => {
+    const today = new Date();
+    const todayStart = new Date(today.setHours(0, 0, 0, 0));
+    const todayEnd = new Date(today.setHours(23, 59, 59, 999));
+    
+    const todayLogs = getLogsByDateRange(todayStart, todayEnd);
+    
+    if (todayLogs.length === 0) {
+      alert('No logs recorded today to export.');
+      return;
+    }
+
+    // Prepare end of day report data
+    const reportData = todayLogs.map(log => ({
+      'Time': log.time,
+      'Date': log.date,
+      'Name': log.failed ? 'Failed Attempt' : log.name,
+      'Student ID': log.failed ? 'N/A' : log.studentId,
+      'Department': log.collegeDept || 'N/A',
+      'Year Level': log.yearLevel || 'N/A',
+      'Action': log.failed ? 'FAILED' : log.action,
+      'Method': log.method || 'N/A'
+    }));
+
+    // Create worksheet
+    const ws = XLSX.utils.json_to_sheet(reportData);
+    
+    // Auto-size columns
+    ws['!cols'] = [
+      { wch: 12 }, { wch: 12 }, { wch: 25 }, { wch: 15 }, 
+      { wch: 30 }, { wch: 12 }, { wch: 10 }, { wch: 15 }
+    ];
+
+    // Create workbook
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, `End_of_Day_${new Date().toISOString().split('T')[0]}`);
+
+    // Add daily summary
+    const dailyEntries = todayLogs.filter(log => !log.failed && log.action === "ENTRY").length;
+    const dailyExits = todayLogs.filter(log => !log.failed && log.action === "EXIT").length;
+    const dailyFailed = todayLogs.filter(log => log.failed).length;
+
+    const summaryData = [
+      { 'Metric': 'Report Date', 'Value': new Date().toLocaleDateString() },
+      { 'Metric': 'Total Logs Today', 'Value': todayLogs.length },
+      { 'Metric': 'Entries Today', 'Value': dailyEntries },
+      { 'Metric': 'Exits Today', 'Value': dailyExits },
+      { 'Metric': 'Failed Attempts Today', 'Value': dailyFailed },
+      { 'Metric': 'Net Change', 'Value': dailyEntries - dailyExits },
+      { 'Metric': 'Students Inside (End of Day)', 'Value': studentsInside },
+      { 'Metric': 'Report Generated', 'Value': new Date().toLocaleString() }
+    ];
+    
+    const wsSummary = XLSX.utils.json_to_sheet(summaryData);
+    XLSX.utils.book_append_sheet(wb, wsSummary, 'Daily_Summary');
+
+    // Download file
+    const fileName = `end_of_day_report_${new Date().toISOString().split('T')[0]}.xlsx`;
+    XLSX.writeFile(wb, fileName);
   };
 
   // Export logs to XML
@@ -161,7 +340,7 @@ export default function Monitor() {
   // Confirm import
   const confirmImport = () => {
     if (importPreview.length > 0) {
-      // Add imported logs
+      // Add imported logs in chronological order
       importPreview.forEach(log => {
         addLog(log);
       });
@@ -172,6 +351,8 @@ export default function Monitor() {
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
+      // Trigger a sync after import
+      syncLogs();
     }
   };
 
@@ -195,19 +376,28 @@ export default function Monitor() {
     return 'Waiting for camera...';
   };
 
+  // Auto-refresh indicator
+  const [lastRefresh, setLastRefresh] = useState(new Date());
+  
+  useEffect(() => {
+    const refreshTimer = setInterval(() => {
+      setLastRefresh(new Date());
+    }, 5000);
+    return () => clearInterval(refreshTimer);
+  }, []);
+
   return (
     <div>
       <header className="header-card">
         <h1>REAL-TIME MONITOR</h1>
         <p className="subtitle">Dashboard / Real-Time Monitor</p>
       </header>
-      <hr className="header-divider" />
 
       <div className="rtm-wrapper">
         <div className="rtm-card">
           <div className="rtm-subheader">
             <div className="rtm-student-count">
-              Students Inside: <span className="rtm-student-count-num">{studentsInside}</span>
+              Students Currently Inside: <span className="rtm-student-count-num">{studentsInside}</span>
             </div>
             <div className="rtm-filter-controls">
               <button
@@ -236,29 +426,29 @@ export default function Monitor() {
               </button>
             </div>
 
-            {/* Export Buttons 
-            <div style={{ 
-              display: 'flex', 
-              gap: '8px',
-              marginLeft: 'auto'
-            }}>
+            {/* Export/Import Buttons - Corporate Design */}
+            <div className="rtm-export-buttons">
+              <button
+                onClick={exportToExcel}
+                className="rtm-filter-btn export-excel"
+              >
+                Export Excel
+              </button>
+              <button
+                onClick={exportEndOfDayReport}
+                className="rtm-filter-btn end-of-day"
+              >
+                End of Day Report
+              </button>
               <button
                 onClick={exportToXML}
-                className="rtm-filter-btn"
-                style={{
-                  backgroundColor: '#4CAF50',
-                  color: 'white'
-                }}
+                className="rtm-filter-btn export-xml"
               >
                 Export XML
               </button>
               <button
                 onClick={exportXSLT}
-                className="rtm-filter-btn"
-                style={{
-                  backgroundColor: '#FF9800',
-                  color: 'white'
-                }}
+                className="rtm-filter-btn download-xslt"
               >
                 Download XSLT
               </button>
@@ -272,17 +462,18 @@ export default function Monitor() {
               />
               <button
                 onClick={() => document.getElementById('xml-import-input').click()}
-                className="rtm-filter-btn"
-                style={{
-                  backgroundColor: '#2196F3',
-                  color: 'white'
-                }}
+                className="rtm-filter-btn import-xml"
               >
                 Import XML
               </button>
             </div>
+          </div>
 
-            */}
+          {/* Auto-refresh status indicator */}
+          <div className="rtm-auto-refresh-status">
+            <span className="refresh-indicator"></span>
+            <span className="refresh-text">Auto-refreshing every 5 seconds</span>
+            <span className="refresh-time">Last refresh: {lastRefresh.toLocaleTimeString()}</span>
           </div>
 
           <div className="rtm-body">
@@ -290,7 +481,10 @@ export default function Monitor() {
             <div className="rtm-log-panel" ref={logRef}>
               {filteredLogs.length === 0 ? (
                 <div className="rtm-empty-state">
-                  No {activeFilter === 'entrance' ? 'entrance' : activeFilter === 'exit' ? 'exit' : activeFilter === 'failed' ? 'failed attempts' : ''} logs to display
+                  {activeFilter === 'entrance' ? 'No entrance records yet' : 
+                   activeFilter === 'exit' ? 'No exit records yet' : 
+                   activeFilter === 'failed' ? 'No failed attempts recorded' : 
+                   'No activity logs to display'}
                 </div>
               ) : (
                 filteredLogs.map((log, i) => (
@@ -304,87 +498,40 @@ export default function Monitor() {
 
       {/* Import Modal */}
       {showImportModal && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.7)',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          zIndex: 1000
-        }}>
-          <div style={{
-            backgroundColor: '#1a1a1a',
-            borderRadius: '8px',
-            padding: '20px',
-            width: '80%',
-            maxWidth: '600px',
-            maxHeight: '80%',
-            overflow: 'auto',
-            border: '1px solid #00ff41'
-          }}>
-            <h3 style={{ color: '#00ff41', marginBottom: '15px' }}>Import XML Data</h3>
+        <div className="rtm-modal-overlay">
+          <div className="rtm-modal-content">
+            <h3>Import XML Data</h3>
             <p>Found {importPreview.length} logs to import:</p>
-            <div style={{
-              maxHeight: '300px',
-              overflow: 'auto',
-              marginBottom: '20px',
-              border: '1px solid #333',
-              borderRadius: '4px',
-              padding: '10px'
-            }}>
+            <div className="rtm-modal-preview">
               {importPreview.slice(0, 10).map((log, idx) => (
-                <div key={idx} style={{
-                  padding: '5px',
-                  borderBottom: '1px solid #333',
-                  fontSize: '12px'
-                }}>
+                <div key={idx} className="rtm-modal-preview-item">
                   {log.failed ? (
                     <span style={{ color: '#ff4444' }}>Failed Attempt - {log.time}</span>
                   ) : (
-                    <span style={{ color: '#00ff41' }}>{log.name} - {log.action} ({log.time})</span>
+                    <span>
+                      {log.name} - {log.action} ({log.time})
+                      {log.collegeDept && log.collegeDept !== "Not Specified" && ` - ${log.collegeDept}`}
+                      {log.yearLevel && log.yearLevel !== "Not Specified" && ` - ${log.yearLevel}`}
+                    </span>
                   )}
                 </div>
               ))}
               {importPreview.length > 10 && (
-                <div style={{ padding: '5px', color: '#888' }}>
+                <div className="rtm-modal-more">
                   ... and {importPreview.length - 10} more
                 </div>
               )}
             </div>
             {importError && (
-              <div style={{ color: '#ff4444', marginBottom: '15px', padding: '10px', backgroundColor: 'rgba(255,0,0,0.1)', borderRadius: '4px' }}>
+              <div className="rtm-modal-error">
                 {importError}
               </div>
             )}
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-              <button
-                onClick={cancelImport}
-                style={{
-                  backgroundColor: '#666',
-                  color: 'white',
-                  border: 'none',
-                  padding: '8px 16px',
-                  borderRadius: '4px',
-                  cursor: 'pointer'
-                }}
-              >
+            <div className="rtm-modal-buttons">
+              <button onClick={cancelImport} className="rtm-modal-cancel">
                 Cancel
               </button>
-              <button
-                onClick={confirmImport}
-                style={{
-                  backgroundColor: '#4CAF50',
-                  color: 'white',
-                  border: 'none',
-                  padding: '8px 16px',
-                  borderRadius: '4px',
-                  cursor: 'pointer'
-                }}
-              >
+              <button onClick={confirmImport} className="rtm-modal-confirm">
                 Import {importPreview.length} Logs
               </button>
             </div>
