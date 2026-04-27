@@ -5,10 +5,7 @@ import { useLogContext } from "../../context/LogContext";
 import { useCameraContext } from "../../context/CameraContext";
 import { 
   exportLogsToXML, 
-  downloadXML, 
-  importLogsFromXML, 
-  readXMLFile,
-  downloadXSLT 
+  downloadXML
 } from "../../utils/xmlUtils";
 import * as XLSX from 'xlsx';
 
@@ -56,6 +53,61 @@ function LogEntry({ log, animDelay }) {
   );
 }
 
+function StudentsInsideModal({ isOpen, onClose, studentsInsideList, studentsCount }) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="rtm-modal-overlay" onClick={onClose}>
+      <div className="rtm-modal-content students-inside-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3>Students Currently Inside Campus</h3>
+          <button className="modal-close" onClick={onClose}>&times;</button>
+        </div>
+        <div className="modal-body">
+          <div className="students-count-badge">
+            Total Students Inside: <span className="count-number">{studentsCount}</span>
+          </div>
+          {studentsInsideList.length === 0 ? (
+            <div className="no-students-message">
+              No students currently inside the campus.
+            </div>
+          ) : (
+            <div className="students-table-container">
+              <table className="students-inside-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Student ID</th>
+                    <th>Full Name</th>
+                    <th>Department</th>
+                    <th>Year Level</th>
+                    <th>Entry Time</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {studentsInsideList.map((student, index) => (
+                    <tr key={student.studentId}>
+                      <td>{index + 1}</td>
+                      <td>{student.studentId}</td>
+                      <td>{student.name}</td>
+                      <td>{student.department || 'N/A'}</td>
+                      <td>{student.yearLevel || 'N/A'}</td>
+                      <td>{student.entryTime}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+        <div className="modal-footer">
+          <button className="modal-close-btn" onClick={onClose}>Close</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Monitor() {
   const { 
     logs: contextLogs, 
@@ -77,14 +129,12 @@ export default function Monitor() {
   
   const [activeFilter, setActiveFilter] = useState('all');
   const [filteredLogs, setFilteredLogs] = useState([]);
-  const [showImportModal, setShowImportModal] = useState(false);
-  const [importPreview, setImportPreview] = useState([]);
-  const [importError, setImportError] = useState('');
+  const [showStudentsModal, setShowStudentsModal] = useState(false);
+  const [studentsInsideList, setStudentsInsideList] = useState([]);
   const [lastLogCount, setLastLogCount] = useState(0);
   const logRef = useRef(null);
   const localVideoRef = useRef(null);
   const [streamAttached, setStreamAttached] = useState(false);
-  const fileInputRef = useRef(null);
 
   // Calculate counts for each filter
   const totalLogsCount = contextLogs.length;
@@ -92,30 +142,60 @@ export default function Monitor() {
   const exitCount = contextLogs.filter(log => !log.failed && log.action === "EXIT").length;
   const failedCount = contextLogs.filter(log => log.failed).length;
 
+  // Calculate students currently inside based on logs
+  const calculateStudentsInside = useCallback(() => {
+    const insideMap = new Map();
+    const sortedLogs = [...contextLogs].sort((a, b) => {
+      const timeA = a.timestamp || new Date(a.time).getTime();
+      const timeB = b.timestamp || new Date(b.time).getTime();
+      return timeA - timeB;
+    });
+
+    for (const log of sortedLogs) {
+      if (!log.failed) {
+        if (log.action === "ENTRY") {
+          insideMap.set(log.studentId, {
+            studentId: log.studentId,
+            name: log.name,
+            department: log.collegeDept,
+            yearLevel: log.yearLevel,
+            entryTime: log.time,
+            entryTimestamp: log.timestamp
+          });
+        } else if (log.action === "EXIT") {
+          insideMap.delete(log.studentId);
+        }
+      }
+    }
+
+    return Array.from(insideMap.values());
+  }, [contextLogs]);
+
+  // Update students inside list when logs change
+  useEffect(() => {
+    const inside = calculateStudentsInside();
+    setStudentsInsideList(inside);
+  }, [contextLogs, calculateStudentsInside]);
+
   // Auto-sync function to check for new logs
   const syncLogs = useCallback(() => {
     const currentCount = contextLogs.length;
     if (currentCount !== lastLogCount) {
       setLastLogCount(currentCount);
-      // Force refresh of filtered logs
       setFilteredLogs(prev => [...prev]);
-      // Sync student count
       syncStudentCount();
     }
   }, [contextLogs.length, lastLogCount, syncStudentCount]);
 
   // Set up auto-refresh every 5 seconds
   useEffect(() => {
-    // Initial sync
     syncLogs();
     
-    // Set up interval to check for new logs every 5 seconds
     const intervalId = setInterval(() => {
       syncLogs();
       console.log("Auto-refreshing logs...");
     }, 5000);
     
-    // Cleanup interval on component unmount
     return () => clearInterval(intervalId);
   }, [syncLogs]);
 
@@ -127,7 +207,6 @@ export default function Monitor() {
         localVideoRef.current.srcObject = videoStream;
         setStreamAttached(true);
         
-        // Apply mirror effect
         localVideoRef.current.style.transform = 'scaleX(-1)';
         localVideoRef.current.style.webkitTransform = 'scaleX(-1)';
         
@@ -145,7 +224,7 @@ export default function Monitor() {
     }
   }, [videoStream, streamAttached]);
 
-  // Filter logs based on active filter and sort in ascending order (oldest first for display)
+  // Filter logs based on active filter
   useEffect(() => {
     let filtered = [];
     
@@ -159,7 +238,6 @@ export default function Monitor() {
       filtered = contextLogs.filter(log => log.failed === true);
     }
     
-    // Sort in ascending order (oldest first) for natural reading flow
     const sortedFiltered = filtered.sort((a, b) => {
       const timeA = a.timestamp || new Date(a.time).getTime();
       const timeB = b.timestamp || new Date(b.time).getTime();
@@ -185,7 +263,6 @@ export default function Monitor() {
 
   // Export logs to Excel
   const exportToExcel = () => {
-    // Prepare data for Excel
     const excelData = filteredLogs.map(log => ({
       'Date & Time': log.time,
       'Full Date': log.timestamp ? new Date(log.timestamp).toLocaleString() : log.date,
@@ -198,28 +275,16 @@ export default function Monitor() {
       'Status': log.failed ? 'Failed' : 'Success'
     }));
 
-    // Create worksheet
     const ws = XLSX.utils.json_to_sheet(excelData);
-    
-    // Auto-size columns (basic approach)
     const colWidths = [
-      { wch: 15 }, // Date & Time
-      { wch: 20 }, // Full Date
-      { wch: 25 }, // Name
-      { wch: 15 }, // Student ID
-      { wch: 30 }, // Department
-      { wch: 12 }, // Year Level
-      { wch: 10 }, // Action
-      { wch: 15 }, // Method
-      { wch: 10 }  // Status
+      { wch: 15 }, { wch: 20 }, { wch: 25 }, { wch: 15 }, 
+      { wch: 30 }, { wch: 12 }, { wch: 10 }, { wch: 15 }, { wch: 10 }
     ];
     ws['!cols'] = colWidths;
 
-    // Create workbook
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Entry-Exit Logs');
 
-    // Add summary sheet
     const summaryData = [
       { 'Metric': 'Total Logs', 'Value': totalLogsCount },
       { 'Metric': 'Total Entries', 'Value': entranceCount },
@@ -232,10 +297,7 @@ export default function Monitor() {
     const wsSummary = XLSX.utils.json_to_sheet(summaryData);
     XLSX.utils.book_append_sheet(wb, wsSummary, 'Summary');
 
-    // Generate filename with current date
     const fileName = `entry_exit_logs_${new Date().toISOString().split('T')[0]}.xlsx`;
-    
-    // Download file
     XLSX.writeFile(wb, fileName);
   };
 
@@ -252,7 +314,6 @@ export default function Monitor() {
       return;
     }
 
-    // Prepare end of day report data
     const reportData = todayLogs.map(log => ({
       'Time': log.time,
       'Date': log.date,
@@ -264,20 +325,15 @@ export default function Monitor() {
       'Method': log.method || 'N/A'
     }));
 
-    // Create worksheet
     const ws = XLSX.utils.json_to_sheet(reportData);
-    
-    // Auto-size columns
     ws['!cols'] = [
       { wch: 12 }, { wch: 12 }, { wch: 25 }, { wch: 15 }, 
       { wch: 30 }, { wch: 12 }, { wch: 10 }, { wch: 15 }
     ];
 
-    // Create workbook
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, `End_of_Day_${new Date().toISOString().split('T')[0]}`);
 
-    // Add daily summary
     const dailyEntries = todayLogs.filter(log => !log.failed && log.action === "ENTRY").length;
     const dailyExits = todayLogs.filter(log => !log.failed && log.action === "EXIT").length;
     const dailyFailed = todayLogs.filter(log => log.failed).length;
@@ -296,7 +352,6 @@ export default function Monitor() {
     const wsSummary = XLSX.utils.json_to_sheet(summaryData);
     XLSX.utils.book_append_sheet(wb, wsSummary, 'Daily_Summary');
 
-    // Download file
     const fileName = `end_of_day_report_${new Date().toISOString().split('T')[0]}.xlsx`;
     XLSX.writeFile(wb, fileName);
   };
@@ -313,67 +368,6 @@ export default function Monitor() {
       true
     );
     downloadXML(xmlContent);
-  };
-
-  // Export XSLT
-  const exportXSLT = () => {
-    downloadXSLT();
-  };
-
-  // Import XML file
-  const importFromXML = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    setImportError('');
-    try {
-      const xmlContent = await readXMLFile(file);
-      const logs = await importLogsFromXML(xmlContent);
-      setImportPreview(logs);
-      setShowImportModal(true);
-    } catch (err) {
-      setImportError(`Error importing XML: ${err.message}`);
-      console.error('Import error:', err);
-    }
-  };
-
-  // Confirm import
-  const confirmImport = () => {
-    if (importPreview.length > 0) {
-      // Add imported logs in chronological order
-      importPreview.forEach(log => {
-        addLog(log);
-      });
-      
-      setShowImportModal(false);
-      setImportPreview([]);
-      setImportError('');
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-      // Trigger a sync after import
-      syncLogs();
-    }
-  };
-
-  // Cancel import
-  const cancelImport = () => {
-    setShowImportModal(false);
-    setImportPreview([]);
-    setImportError('');
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
-  const getStatusText = () => {
-    if (!isCameraActive) return 'Camera offline - Go to Face Recognition';
-    if (cameraStatus === 'detected' && detectedFace) {
-      return `RECOGNIZED\n${detectedFace.name}`;
-    }
-    if (cameraStatus === 'unauthorized') return 'UNAUTHORIZED';
-    if (videoStream && streamAttached) return 'LIVE FEED ACTIVE';
-    return 'Waiting for camera...';
   };
 
   // Auto-refresh indicator
@@ -395,10 +389,19 @@ export default function Monitor() {
 
       <div className="rtm-wrapper">
         <div className="rtm-card">
-          <div className="rtm-subheader">
+          {/* Horizontal subheader */}
+          <div className="rtm-subheader-horizontal">
             <div className="rtm-student-count">
-              Students Currently Inside: <span className="rtm-student-count-num">{studentsInside}</span>
+              Students Currently Inside: 
+              <span className="rtm-student-count-num">{studentsInside}</span>
+              <button 
+                className="view-students-btn"
+                onClick={() => setShowStudentsModal(true)}
+              >
+                View List
+              </button>
             </div>
+            
             <div className="rtm-filter-controls">
               <button
                 className={`rtm-filter-btn ${activeFilter === 'all' ? 'active' : ''}`}
@@ -426,7 +429,6 @@ export default function Monitor() {
               </button>
             </div>
 
-            {/* Export/Import Buttons - Corporate Design */}
             <div className="rtm-export-buttons">
               <button
                 onClick={exportToExcel}
@@ -445,26 +447,6 @@ export default function Monitor() {
                 className="rtm-filter-btn export-xml"
               >
                 Export XML
-              </button>
-              <button
-                onClick={exportXSLT}
-                className="rtm-filter-btn download-xslt"
-              >
-                Download XSLT
-              </button>
-              <input
-                type="file"
-                ref={fileInputRef}
-                accept=".xml"
-                onChange={importFromXML}
-                style={{ display: 'none' }}
-                id="xml-import-input"
-              />
-              <button
-                onClick={() => document.getElementById('xml-import-input').click()}
-                className="rtm-filter-btn import-xml"
-              >
-                Import XML
               </button>
             </div>
           </div>
@@ -496,48 +478,13 @@ export default function Monitor() {
         </div>
       </div>
 
-      {/* Import Modal */}
-      {showImportModal && (
-        <div className="rtm-modal-overlay">
-          <div className="rtm-modal-content">
-            <h3>Import XML Data</h3>
-            <p>Found {importPreview.length} logs to import:</p>
-            <div className="rtm-modal-preview">
-              {importPreview.slice(0, 10).map((log, idx) => (
-                <div key={idx} className="rtm-modal-preview-item">
-                  {log.failed ? (
-                    <span style={{ color: '#ff4444' }}>Failed Attempt - {log.time}</span>
-                  ) : (
-                    <span>
-                      {log.name} - {log.action} ({log.time})
-                      {log.collegeDept && log.collegeDept !== "Not Specified" && ` - ${log.collegeDept}`}
-                      {log.yearLevel && log.yearLevel !== "Not Specified" && ` - ${log.yearLevel}`}
-                    </span>
-                  )}
-                </div>
-              ))}
-              {importPreview.length > 10 && (
-                <div className="rtm-modal-more">
-                  ... and {importPreview.length - 10} more
-                </div>
-              )}
-            </div>
-            {importError && (
-              <div className="rtm-modal-error">
-                {importError}
-              </div>
-            )}
-            <div className="rtm-modal-buttons">
-              <button onClick={cancelImport} className="rtm-modal-cancel">
-                Cancel
-              </button>
-              <button onClick={confirmImport} className="rtm-modal-confirm">
-                Import {importPreview.length} Logs
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Students Inside Modal */}
+      <StudentsInsideModal 
+        isOpen={showStudentsModal}
+        onClose={() => setShowStudentsModal(false)}
+        studentsInsideList={studentsInsideList}
+        studentsCount={studentsInsideList.length}
+      />
     </div>
   );
 }

@@ -55,7 +55,7 @@
   justify-content: space-between;
   background-color: #ffffff;
   margin: 30px auto;
-  padding: 15px;
+  padding: 15px 20px;
   flex-wrap: wrap;
   gap: 10px;
   border-radius: 8px;
@@ -63,175 +63,24 @@
   max-width: 1040px;
   min-width: 600px;
   box-shadow: 0 2px 4px var(--color-shadow-soft);
-  margin-bottom: 5px;
+  margin-bottom: 20px;
 }
 
-/* Export buttons container */
-.rtm-export-buttons {
+/* Horizontal subheader for new layout */
+.rtm-subheader-horizontal {
   display: flex;
-  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #ffffff;
+  padding: 20px 25px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px var(--color-shadow-soft);
+  margin: 20px auto;
+  gap: 20px;
   flex-wrap: wrap;
-  margin-top: 10px;
   width: 100%;
 }
 
-/* Corporate button styles */
-.rtm-filter-btn.export-excel {
-  background-color: #217346;
-  color: white;
-  border-color: #217346;
-}
-
-.rtm-filter-btn.export-excel:hover {
-  background-color: #1a5c38;
-}
-
-.rtm-filter-btn.end-of-day {
-  background-color: #FF9800;
-  color: white;
-  border-color: #FF9800;
-}
-
-.rtm-filter-btn.end-of-day:hover {
-  background-color: #e68900;
-}
-
-.rtm-filter-btn.export-xml {
-  background-color: #4CAF50;
-  color: white;
-  border-color: #4CAF50;
-}
-
-.rtm-filter-btn.export-xml:hover {
-  background-color: #3d8b40;
-}
-
-.rtm-filter-btn.download-xslt {
-  background-color: #9C27B0;
-  color: white;
-  border-color: #9C27B0;
-}
-
-.rtm-filter-btn.download-xslt:hover {
-  background-color: #7b1f8a;
-}
-
-.rtm-filter-btn.import-xml {
-  background-color: #2196F3;
-  color: white;
-  border-color: #2196F3;
-}
-
-.rtm-filter-btn.import-xml:hover {
-  background-color: #1976d2;
-}
-
-.rtm-filter-btn.clear-logs {
-  background-color: #f44336;
-  color: white;
-  border-color: #f44336;
-}
-
-.rtm-filter-btn.clear-logs:hover {
-  background-color: #d32f2f;
-}
-
-/* Modal styles */
-.rtm-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.7);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-.rtm-modal-content {
-  background-color: #1a1a1a;
-  border-radius: 8px;
-  padding: 20px;
-  width: 80%;
-  max-width: 600px;
-  max-height: 80%;
-  overflow: auto;
-  border: 1px solid var(--color-primary);
-}
-
-.rtm-modal-content h3 {
-  color: var(--color-primary);
-  margin-bottom: 15px;
-  font-family: "Montserrat", sans-serif;
-}
-
-.rtm-modal-preview {
-  max-height: 300px;
-  overflow: auto;
-  margin-bottom: 20px;
-  border: 1px solid #333;
-  border-radius: 4px;
-  padding: 10px;
-}
-
-.rtm-modal-preview-item {
-  padding: 5px;
-  border-bottom: 1px solid #333;
-  font-size: 12px;
-  color: #e8f5e9;
-}
-
-.rtm-modal-more {
-  padding: 5px;
-  color: #888;
-}
-
-.rtm-modal-error {
-  color: #ff4444;
-  margin-bottom: 15px;
-  padding: 10px;
-  background-color: rgba(255, 0, 0, 0.1);
-  border-radius: 4px;
-}
-
-.rtm-modal-buttons {
-  display: flex;
-  gap: 10px;
-  justify-content: flex-end;
-}
-
-.rtm-modal-cancel {
-  background-color: #666;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-family: "Montserrat", sans-serif;
-  font-weight: 600;
-}
-
-.rtm-modal-confirm {
-  background-color: var(--color-primary);
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-family: "Montserrat", sans-serif;
-  font-weight: 600;
-}
-
-.rtm-modal-cancel:hover,
-.rtm-modal-confirm:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
-  transition: all 0.2s ease;
-}
-
-/* Student count */
 .rtm-student-count {
   font-size: 1.4rem;
   font-weight: 600;
@@ -239,7 +88,9 @@
   letter-spacing: 1px;
   line-height: 1;
   font-stretch: condensed;
-  font-family: "Montserrat", sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .rtm-student-count-num {
@@ -249,6 +100,29 @@
   letter-spacing: 1px;
   line-height: 1;
   font-family: "Montserrat", sans-serif;
+}
+
+/* View Students Button */
+.view-students-btn {
+  margin-left: 15px;
+  padding: 5px 12px;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: "Montserrat", sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.view-students-btn:hover {
+  background: var(--color-primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px var(--color-shadow-soft);
 }
 
 /* Filter controls */
@@ -284,6 +158,44 @@
   background: var(--color-primary-dark);
   color: white;
   border-color: var(--color-primary-dark);
+}
+
+/* Export buttons container */
+.rtm-export-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Corporate button styles */
+.rtm-filter-btn.export-excel {
+  background-color: #217346;
+  color: white;
+  border-color: #217346;
+}
+
+.rtm-filter-btn.export-excel:hover {
+  background-color: #1a5c38;
+}
+
+.rtm-filter-btn.end-of-day {
+  background-color: #FF9800;
+  color: white;
+  border-color: #FF9800;
+}
+
+.rtm-filter-btn.end-of-day:hover {
+  background-color: #e68900;
+}
+
+.rtm-filter-btn.export-xml {
+  background-color: #4CAF50;
+  color: white;
+  border-color: #4CAF50;
+}
+
+.rtm-filter-btn.export-xml:hover {
+  background-color: #3d8b40;
 }
 
 .rtm-body {
@@ -342,6 +254,39 @@
   border-color: #024d2c;
   transform: translateY(-1px);
   box-shadow: 0 4px 10px rgba(1, 49, 29, 0.3);
+}
+
+/* Auto-refresh status indicator */
+.rtm-auto-refresh-status {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 8px 16px;
+  margin: 0 auto 5px auto;
+  border-radius: 6px;
+  max-width: 1040px;
+  font-size: 0.75rem;
+  color: var(--color-primary-dark);
+  font-family: "Montserrat", sans-serif;
+}
+
+.refresh-indicator {
+  width: 8px;
+  height: 8px;
+  background-color: var(--color-success);
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+  display: inline-block;
+}
+
+.refresh-text {
+  font-weight: 500;
+}
+
+.refresh-time {
+  color: #666;
+  font-family: "IBM Plex Mono", monospace;
 }
 
 /* Avatar box */
@@ -631,6 +576,13 @@
   font-family: "IBM Plex Mono", monospace;
 }
 
+.rtm-log-dept, 
+.rtm-log-year {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+
 .rtm-log-action {
   font-weight: 600;
   text-transform: uppercase;
@@ -740,7 +692,219 @@
   white-space: nowrap;
 }
 
-/* Responsive */
+/* Modal Overlay */
+.rtm-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Modal Content - Corporate Design */
+.rtm-modal-content {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  border-radius: 16px;
+  padding: 0;
+  width: 90%;
+  max-width: 900px;
+  max-height: 85vh;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(84, 135, 114, 0.2);
+  animation: slideUp 0.3s ease;
+  font-family: "Montserrat", sans-serif;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Students Inside Modal Specific */
+.students-inside-modal {
+  max-width: 900px !important;
+}
+
+/* Modal Header - Corporate */
+.modal-header {
+  background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 100%);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 25px;
+  border-bottom: none;
+}
+
+.modal-header h3 {
+  color: white;
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  font-family: "Montserrat", sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+
+.modal-close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: white;
+  transition: all 0.2s ease;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+}
+
+
+
+/* Modal Body */
+.modal-body {
+  padding: 25px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+/* Students Count Badge - Corporate */
+.students-count-badge {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  color: white;
+  padding: 15px 20px;
+  border-radius: 12px;
+  margin-bottom: 25px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 1.1rem;
+  box-shadow: 0 4px 15px rgba(84, 135, 114, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.students-count-badge .count-number {
+  font-size: 2rem;
+  font-weight: 900;
+  background: white;
+  color: var(--color-primary-dark);
+  padding: 5px 15px;
+  border-radius: 50px;
+  min-width: 80px;
+  display: inline-block;
+}
+
+/* Table Container */
+.students-table-container {
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid #e0e0e0;
+}
+
+/* Students Inside Table - Corporate */
+.students-inside-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: "Montserrat", sans-serif;
+  background: white;
+}
+
+.students-inside-table th {
+  color: var(--color-primary-dark);
+  padding: 14px 12px;
+  text-align: left;
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid var(--color-primary);
+}
+
+.students-inside-table td {
+  padding: 12px;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 0.85rem;
+  color: #333;
+}
+
+.students-inside-table tr {
+  transition: all 0.2s ease;
+}
+
+
+
+.students-inside-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* No Students Message */
+.no-students-message {
+  text-align: center;
+  padding: 60px 20px;
+  color: #999;
+  font-style: italic;
+  font-family: "Montserrat", sans-serif;
+  background: #f9f9f9;
+  border-radius: 12px;
+}
+
+/* Modal Footer - Corporate */
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 20px 25px;
+  background: #f8f9fa;
+  border-top: 1px solid #e0e0e0;
+}
+
+.modal-close-btn {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: "Montserrat", sans-serif;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(84, 135, 114, 0.3);
+}
+
+.modal-close-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(84, 135, 114, 0.4);
+}
+
+/* Responsive Design */
 @media (max-width: 1200px) {
   .rtm-card {
     max-width: 1000px;
@@ -771,6 +935,47 @@
   }
 }
 
+@media (max-width: 768px) {
+  .rtm-subheader-horizontal {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .rtm-student-count {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  
+  .rtm-filter-controls {
+    justify-content: center;
+  }
+  
+  .rtm-export-buttons {
+    justify-content: center;
+  }
+  
+  .students-inside-table th,
+  .students-inside-table td {
+    padding: 8px;
+    font-size: 0.75rem;
+  }
+  
+  .modal-header h3 {
+    font-size: 1.1rem;
+  }
+  
+  .view-students-btn {
+    margin-left: 10px;
+    padding: 4px 10px;
+    font-size: 0.65rem;
+  }
+  
+  .students-count-badge {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
 @media (max-width: 700px) {
   .rtm-wrapper { 
     padding: 16px 20px; 
@@ -785,7 +990,11 @@
   }
   
   .rtm-student-count {
-    font-size: 1.5rem;
+    font-size: 1.2rem;
+  }
+  
+  .rtm-student-count-num {
+    font-size: 1.3rem;
   }
   
   .rtm-subheader {
@@ -815,6 +1024,32 @@
   .rtm-export-buttons {
     justify-content: flex-start;
   }
+  
+  .rtm-auto-refresh-status {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+  
+  .rtm-modal-content {
+    width: 95%;
+    max-height: 90vh;
+  }
+}
+
+@media (max-width: 600px) {
+  .students-inside-table {
+    font-size: 0.7rem;
+  }
+  
+  .students-inside-table th,
+  .students-inside-table td {
+    padding: 6px;
+  }
+  
+  .modal-body {
+    padding: 15px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -832,7 +1067,11 @@
   }
   
   .rtm-student-count {
-    font-size: 1.3rem;
+    font-size: 1rem;
+  }
+  
+  .rtm-student-count-num {
+    font-size: 1.1rem;
   }
   
   .rtm-btn {
@@ -882,51 +1121,21 @@
   .rtm-export-buttons button {
     width: 100%;
   }
-}
-
-/* Auto-refresh status indicator */
-.rtm-auto-refresh-status {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 12px;
-  padding: 8px 16px;
-  margin: 0 auto 5px auto;
-  border-radius: 6px;
-  max-width: 1040px;
-  font-size: 0.75rem;
-  color: var(--color-primary-dark);
-  font-family: "Montserrat", sans-serif;
-}
-
-.refresh-indicator {
-  width: 8px;
-  height: 8px;
-  background-color: var(--color-success);
-  border-radius: 50%;
-  animation: pulse 2s infinite;
-  display: inline-block;
-}
-
-.refresh-text {
-  font-weight: 500;
-}
-
-.refresh-time {
-  color: #666;
-  font-family: "IBM Plex Mono", monospace;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(1.2); }
-}
-
-/* Responsive adjustments */
-@media (max-width: 700px) {
-  .rtm-auto-refresh-status {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 5px;
+  
+  .modal-header {
+    padding: 15px 20px;
+  }
+  
+  .modal-header h3 {
+    font-size: 1rem;
+  }
+  
+  .students-count-badge {
+    font-size: 0.9rem;
+  }
+  
+  .students-count-badge .count-number {
+    font-size: 1.5rem;
+    min-width: 60px;
   }
 }

@@ -71,7 +71,6 @@ router.post('/departments', async (req, res) => {
         const created_at = getPHDateTime();
         const updated_at = getPHDateTime();
         
-        // Validate required fields
         if (!dept_code || !dept_name) {
             return res.status(400).json({ error: 'Department code and name are required' });
         }
@@ -102,7 +101,6 @@ router.put('/departments/:id', async (req, res) => {
         const { dept_code, dept_name, status } = req.body;
         const updated_at = getPHDateTime();
         
-        // Validate required fields
         if (!dept_code || !dept_name) {
             return res.status(400).json({ error: 'Department code and name are required' });
         }
@@ -131,32 +129,11 @@ router.put('/departments/:id', async (req, res) => {
     }
 });
 
-// Archive department
-router.patch('/departments/:id/archive', async (req, res) => {
-    try {
-        const updated_at = getPHDateTime();
-
-        const [result] = await pool.query(
-            'UPDATE departments SET status = "Inactive", updated_at = ? WHERE id = ?',
-            [updated_at, req.params.id]
-        );
-
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ error: 'Department not found' });
-        }
-
-        res.json({ message: 'Department archived successfully' });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Database error' });
-    }
-});
-
-// Add these routes to your program.js file
-
-// Get affected counts before archiving department
+// ============ FIXED: Get affected counts before archiving department ============
 router.get('/departments/:id/archive-impact', async (req, res) => {
     try {
+        console.log('📊 Archive impact check for department ID:', req.params.id);
+        
         const [dept] = await pool.query(
             'SELECT dept_name FROM departments WHERE id = ?',
             [req.params.id]
@@ -167,16 +144,20 @@ router.get('/departments/:id/archive-impact', async (req, res) => {
         }
         
         const deptName = dept[0].dept_name;
+        console.log('📊 Department name:', deptName);
         
         const [programsCount] = await pool.query(
-            'SELECT COUNT(*) as count FROM programs WHERE department COLLATE utf8mb4_general_ci = ? AND programStatus = "Active"',
+            'SELECT COUNT(*) as count FROM programs WHERE department = ? AND programStatus = "Active"',
             [deptName]
         );
         
         const [studentsCount] = await pool.query(
-            'SELECT COUNT(*) as count FROM students WHERE college_department COLLATE utf8mb4_general_ci = ? AND status != "Inactive"',
+            'SELECT COUNT(*) as count FROM students WHERE college_department = ? AND status != "Inactive"',
             [deptName]
         );
+        
+        console.log('📊 Programs count:', programsCount[0].count);
+        console.log('📊 Students count:', studentsCount[0].count);
         
         res.json({
             programsCount: programsCount[0].count || 0,
@@ -184,17 +165,75 @@ router.get('/departments/:id/archive-impact', async (req, res) => {
         });
     } catch (error) {
         console.error('Error fetching archive impact:', error);
-        res.json({
-            programsCount: 0,
-            studentsCount: 0
+        res.status(500).json({ 
+            programsCount: 0, 
+            studentsCount: 0, 
+            error: error.message 
         });
+    }
+});
+
+// Archive department (cascades to programs and students)
+router.patch('/departments/:id/archive', async (req, res) => {
+    const connection = await pool.getConnection();
+    
+    try {
+        await connection.beginTransaction();
+        
+        const updated_at = getPHDateTime();
+        
+        const [dept] = await connection.query(
+            'SELECT dept_name FROM departments WHERE id = ?',
+            [req.params.id]
+        );
+        
+        if (dept.length === 0) {
+            await connection.rollback();
+            return res.status(404).json({ error: 'Department not found' });
+        }
+        
+        const deptName = dept[0].dept_name;
+        
+        const [deptResult] = await connection.query(
+            'UPDATE departments SET status = "Inactive", updated_at = ? WHERE id = ?',
+            [updated_at, req.params.id]
+        );
+        
+        if (deptResult.affectedRows === 0) {
+            await connection.rollback();
+            return res.status(404).json({ error: 'Department not found' });
+        }
+        
+        const [programsResult] = await connection.query(
+            'UPDATE programs SET programStatus = "Inactive" WHERE department = ? AND programStatus = "Active"',
+            [deptName]
+        );
+        
+        const [studentsResult] = await connection.query(
+            'UPDATE students SET status = "Inactive" WHERE college_department = ? AND status != "Inactive"',
+            [deptName]
+        );
+        
+        await connection.commit();
+        
+        res.json({ 
+            message: 'Department and all associated programs/students archived successfully',
+            affectedPrograms: programsResult.affectedRows,
+            affectedStudents: studentsResult.affectedRows
+        });
+        
+    } catch (error) {
+        await connection.rollback();
+        console.error('Error archiving department with cascade:', error);
+        res.status(500).json({ error: 'Database error during cascading archive' });
+    } finally {
+        connection.release();
     }
 });
 
 // Get affected counts before archiving program
 router.get('/programs/:id/archive-impact', async (req, res) => {
     try {
-        // First get the program name
         const [program] = await pool.query(
             'SELECT programName FROM programs WHERE id = ?',
             [req.params.id]
@@ -206,7 +245,6 @@ router.get('/programs/:id/archive-impact', async (req, res) => {
         
         const programName = program[0].programName;
         
-        // Use 'program_name' column (not 'program')
         const [studentsCount] = await pool.query(
             'SELECT COUNT(*) as count FROM students WHERE program_name = ? AND status != "Inactive"',
             [programName]
@@ -223,7 +261,7 @@ router.get('/programs/:id/archive-impact', async (req, res) => {
     }
 });
 
-// Get total departments count (active + inactive)
+// Get total departments count
 router.get('/departments/total/count', async (req, res) => {
     try {
         const [result] = await pool.query('SELECT COUNT(*) as total FROM departments');
@@ -234,7 +272,7 @@ router.get('/departments/total/count', async (req, res) => {
     }
 });
 
-// Get total programs count (active + inactive)
+// Get total programs count
 router.get('/programs/total/count', async (req, res) => {
     try {
         const [result] = await pool.query('SELECT COUNT(*) as total FROM programs');
@@ -266,10 +304,9 @@ router.patch('/departments/:id/restore', async (req, res) => {
     }
 });
 
-// Delete department permanently (use with caution)
+// Delete department permanently
 router.delete('/departments/:id', async (req, res) => {
     try {
-        // Check if department has any programs
         const [programs] = await pool.query(
             'SELECT COUNT(*) as count FROM programs WHERE department = (SELECT dept_name FROM departments WHERE id = ?)',
             [req.params.id]
@@ -294,7 +331,7 @@ router.delete('/departments/:id', async (req, res) => {
     }
 });
 
-// Get active departments only (for registration/editing)
+// Get active departments only
 router.get('/departments/active', async (req, res) => {
     try {
         const [rows] = await pool.query(
@@ -307,7 +344,7 @@ router.get('/departments/active', async (req, res) => {
     }
 });
 
-// Get active programs only (with active departments)
+// Get active programs only
 router.get('/programs/active', async (req, res) => {
     try {
         const { department } = req.query;
@@ -449,7 +486,7 @@ router.post('/programs', async (req, res) => {
     }
 });
 
-// Update program (PUT)
+// Update program
 router.put('/programs/:id', async (req, res) => {
     try {
         const { programCode, programName, department, programType, programStatus, duration } = req.body;
@@ -478,7 +515,7 @@ router.put('/programs/:id', async (req, res) => {
     }
 });
 
-// Partial update program (PATCH) - for status updates
+// Partial update program
 router.patch('/programs/:id', async (req, res) => {
     try {
         const { programStatus } = req.body;
@@ -504,22 +541,48 @@ router.patch('/programs/:id', async (req, res) => {
     }
 });
 
-// Archive program
+// Archive program with cascade to students
 router.patch('/programs/:id/archive', async (req, res) => {
+    const connection = await pool.getConnection();
+    
     try {
-        const [result] = await pool.query(
+        await connection.beginTransaction();
+        
+        const [program] = await connection.query(
+            'SELECT programName FROM programs WHERE id = ?',
+            [req.params.id]
+        );
+        
+        if (program.length === 0) {
+            await connection.rollback();
+            return res.status(404).json({ error: 'Program not found' });
+        }
+        
+        const programName = program[0].programName;
+        
+        const [progResult] = await connection.query(
             'UPDATE programs SET programStatus = "Inactive" WHERE id = ?',
             [req.params.id]
         );
         
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ error: 'Program not found' });
-        }
+        const [studentsResult] = await connection.query(
+            'UPDATE students SET status = "Inactive" WHERE program_name = ? AND status != "Inactive"',
+            [programName]
+        );
         
-        res.json({ message: 'Program archived successfully' });
+        await connection.commit();
+        
+        res.json({ 
+            message: 'Program and all associated students archived successfully',
+            affectedStudents: studentsResult.affectedRows
+        });
+        
     } catch (error) {
-        console.error('Error archiving program:', error);
-        res.status(500).json({ error: 'Database error' });
+        await connection.rollback();
+        console.error('Error archiving program with cascade:', error);
+        res.status(500).json({ error: 'Database error during cascading archive' });
+    } finally {
+        connection.release();
     }
 });
 

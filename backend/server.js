@@ -1,4 +1,5 @@
 // server.js
+// server.js
 require("dotenv").config();
 
 const app = require("./src/app");
@@ -13,7 +14,7 @@ const manualEntryRoute  = require('./routes/manualEntry');
 const qrScanRoute       = require('./routes/qrScan');
 const visitorRoute      = require('./routes/visitor');
 const visitorExitRoute    = require('./routes/visitor-exit');
-const programRoutes = require('./routes/programs');
+const programRoutes = require('./routes/programs'); 
 const analyticsRoute = require('./routes/analytics');
 const { router: timeRouter } = require('./src/time');
 const settingsRoute = require('./routes/systemSettings');
@@ -26,7 +27,7 @@ app.use("/api", registrationRoutes);
 app.use('/api', importStudentsRouter);
 app.use('/api', addUserRouter); 
 app.use("/api", recognizeRoute);
-app.use('/api', programRoutes);
+app.use('/api', programRoutes); 
 app.use('/api/time', timeRouter);
 app.use('/api/analytics', analyticsRoute);
 app.use('/api/settings', settingsRoute);
