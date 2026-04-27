@@ -1,9 +1,0 @@
-
-
-/* Import global modal styles */
-@import '../css/GlobalModal.css';
-
-.modal-box {
-  width: 90% !important;
-  max-width: 450px !important;
-}
