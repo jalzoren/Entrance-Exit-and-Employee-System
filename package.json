@@ -1,7 +1,0 @@
-{
-  "dependencies": {
-    "face-api.js": "^0.20.0",
-    "html5-qrcode": "^2.3.8",
-    "qrcode.react": "^4.2.0"
-  }
-}
